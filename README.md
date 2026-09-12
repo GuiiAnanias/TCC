@@ -1,395 +1,482 @@
 # Sistema de Indicadores
 
-Trabalho de Conclusão de Curso — Tecnólogo em Sistemas para Internet
-UniALFA Umuarama / Paraná — 2026
+## Guia rápido para rodar o projeto
 
-Sistema web para gestão de projetos e acompanhamento de indicadores. Centraliza os dados de projetos, colaboradores e custos, calcula indicadores de desempenho e gera relatórios, substituindo o processo atual de exportação manual de dados para planilhas.
+Use os comandos abaixo no PowerShell, a partir da pasta raiz do projeto.
 
-**Integrantes**
+### 1. Habilitar o gerenciador de pacotes
+
+```powershell
+corepack enable
+```
+
+> Se o comando `pnpm` não for reconhecido no terminal, use sempre `corepack pnpm`, como nos exemplos abaixo.
+
+### 2. Subir o banco PostgreSQL
+
+Abra o Docker Desktop e execute:
+
+```powershell
+docker compose up -d postgres
+```
+
+### 3. Configurar e rodar o back-end
+
+```powershell
+cd backend
+corepack pnpm install
+Copy-Item .env.example .env
+corepack pnpm run prisma:generate
+corepack pnpm run prisma:migrate
+corepack pnpm run seed
+corepack pnpm run dev
+```
+
+A API ficará disponível em:
 
 ```txt
-Arthur Soares Gardim — 14526
-Guilherme Ananias Calixto Ribeiro — 14652
-Kaiki Teles de Andrade — 14518
+http://localhost:3333
+http://localhost:3333/api/health
+```
+
+### 4. Configurar e rodar o front-end
+
+Em outro terminal:
+
+```powershell
+cd frontend
+corepack pnpm install
+Copy-Item .env.example .env
+corepack pnpm run dev
+```
+
+Abra o sistema no navegador:
+
+```txt
+http://localhost:5173
+```
+
+### 5. Abrir o banco em interface visual
+
+Em outro terminal, com o banco e o back-end configurados:
+
+```powershell
+cd backend
+corepack pnpm run prisma:studio
+```
+
+Abra o Prisma Studio no navegador:
+
+```txt
+http://localhost:5555
+```
+
+### Solução rápida de problemas
+
+```txt
+Para parar back-end ou front-end: Ctrl + C no terminal correspondente.
+Se o front abrir em branco: confira se o Vite está rodando e pressione Ctrl + F5 no navegador.
+Se aparecer "Banco de dados indisponível": confira se o Docker Desktop está aberto e se o container postgres está rodando.
+Se a API responder "Rota não encontrada" em http://localhost:3333: acesse as rotas com /api, por exemplo /api/clientes.
 ```
 
 ---
 
-## Sumário
+## Visão Geral
 
-- [Arquitetura](#arquitetura)
-- [Stack](#stack)
-- [Estrutura de pastas](#estrutura-de-pastas)
-- [Modelo de dados](#modelo-de-dados)
-- [Escopo por fase](#escopo-por-fase)
-- [Como rodar](#como-rodar)
-- [Roteiro de demonstração](#roteiro-de-demonstração)
-- [Fluxo Git](#fluxo-git)
-- [Divisão do time](#divisão-do-time)
-- [Cronograma](#cronograma)
+O Sistema de Indicadores é uma aplicação web para centralizar a gestão operacional de clientes, colaboradores, projetos, equipes e tabelas de remuneração. A base foi estruturada para preservar histórico, reduzir planilhas manuais e preparar o sistema para indicadores financeiros e operacionais.
+
+Funcionalidades disponíveis:
+
+- Cadastro, edição, consulta e inativação de clientes.
+- Cadastro, edição, consulta e inativação de colaboradores.
+- Cadastro, edição, consulta e inativação de itens de remuneração.
+- Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios e histórico.
+- Cadastro, edição, consulta e inativação de projetos.
+- Vinculação de colaboradores aos projetos, com papel/função e período de participação.
+- Consulta visual dos dados do banco pelo Prisma Studio.
+- Collection do Postman para testes da API.
 
 ---
 
 ## Arquitetura
 
-```
-              ┌─────────────────┐
-              │    Front-end    │
-              │  React + Vite   │
-              └────────┬────────┘
-                       │ HTTP + JWT
-                       ▼
-         ┌─────────────────────────┐
-         │    Node + Express       │
-         │  ┌───────────────────┐  │
-         │  │  http/routes      │  │  adaptador REST
-         │  ├───────────────────┤  │
-         │  │  services         │  │  regra de negócio
-         │  ├───────────────────┤  │
-         │  │  repositories     │  │  Prisma Client
-         │  └───────────────────┘  │
-         │  ┌───────────────────┐  │
-         │  │  graphql (fase 2) │  │  adaptador alternativo
-         │  └───────────────────┘  │
-         └────────────┬────────────┘
-                      ▼
-              ┌───────────────┐
-              │  PostgreSQL   │
-              └───────────────┘
+```txt
+Front-end React + Vite
+        |
+        | HTTP / JSON
+        v
+Back-end Node.js + Express
+        |
+        | Prisma Client
+        v
+PostgreSQL
 ```
 
-A camada `services` concentra toda a regra de negócio e **não conhece HTTP**. Ela recebe dados, aplica as regras e devolve dados.
+No back-end, a aplicação está separada em camadas:
 
-Essa separação é intencional: na fase 2, os módulos de relatórios e filtros analíticos recebem uma interface GraphQL, implementada como um segundo adaptador que chama exatamente os mesmos services. Nenhuma regra de negócio é reescrita.
+```txt
+routes       -> definição das rotas REST
+controllers  -> entrada HTTP: request, response e validação inicial
+services     -> regras de negócio
+repositories -> acesso ao banco via Prisma
+schemas      -> validação dos dados com Zod
+```
+
+Essa separação facilita manutenção, testes, troca de interface e evolução do produto sem espalhar regra de negócio pela aplicação inteira.
 
 ---
 
 ## Stack
 
-**Front-end**
+Front-end:
 
 ```txt
 React
 Vite
 React Router
 Axios
+Lucide React
 Recharts
 ```
 
-**Back-end**
+Back-end:
 
 ```txt
 Node.js
 Express
 Prisma ORM
+Zod
 JWT
 bcrypt
-Zod
 Nodemailer
 ```
 
-**Banco de dados**
+Banco e ferramentas:
 
 ```txt
 PostgreSQL
-```
-
-**Ferramentas**
-
-```txt
-Postman — teste e documentação da API
-Prisma Studio — inspeção dos dados
-Git / GitHub — versionamento
-Trello — gestão das tarefas
+Docker
+Prisma Studio
+Postman
+pnpm
+Corepack
 ```
 
 ---
 
-## Estrutura de pastas
+## Estrutura de Pastas
 
 ```txt
 sistema-indicadores/
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma     # modelagem do banco
+│   │   ├── schema.prisma
 │   │   ├── migrations/
 │   │   └── seed.js
 │   ├── src/
+│   │   ├── app.js
 │   │   ├── server.js
-│   │   ├── config/           # env, conexão, constantes
+│   │   ├── config/
 │   │   ├── http/
-│   │   │   ├── routes/       # definição das rotas REST
-│   │   │   ├── controllers/  # adaptador fino: req/res
-│   │   │   └── middlewares/  # auth, validação, erros
-│   │   ├── services/         # REGRA DE NEGÓCIO (sem HTTP)
-│   │   ├── repositories/     # acesso ao Prisma
-│   │   ├── schemas/          # validação Zod
-│   │   ├── utils/
-│   │   └── graphql/          # FASE 2
+│   │   ├── repositories/
+│   │   ├── schemas/
+│   │   ├── services/
+│   │   └── utils/
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── main.jsx
-│   │   ├── api/              # cliente Axios + interceptor JWT
-│   │   ├── contexts/         # AuthContext
-│   │   ├── routes/           # rotas e proteção
-│   │   ├── pages/            # telas
-│   │   ├── components/       # componentes reutilizáveis
-│   │   └── hooks/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── config/
+│   │   ├── pages/
+│   │   ├── App.jsx
+│   │   └── main.jsx
 │   └── package.json
 ├── docs/
-│   ├── documentacao-tcc.pdf
-│   └── postman/              # collections exportadas
+│   └── postman/
+├── docker-compose.yml
 └── README.md
 ```
 
 ---
 
-## Modelo de dados
+## Modelo de Dados
 
-| Tabela | Descrição | Campos principais |
-|---|---|---|
-| `usuarios` | Contas de acesso ao sistema | id, nomeUsuario, senhaHash, resetToken, status |
-| `clientes` | Clientes contratantes | id, nome, status |
-| `projetos` | Projetos da empresa | id, clienteId, nome, tipoContrato, horasContratadas, valorProjeto, dataInicio, status |
-| `colaboradores` | Profissionais cadastrados | id, nomeCompleto, email, cargo, departamento, status |
-| `projetos_colaboradores` | Equipe vinculada ao projeto | id, projetoId, colaboradorId, papel, dataEntrada, dataSaida |
-| `itens_tabela_remuneracao` | Níveis de remuneração e bonificação | id, nivel, valorHora, bonificacao, tipoBonificacao, status |
-| `configuracoes_financeiras` | Configuração financeira vigente do colaborador | id, colaboradorId, itemTabelaId, beneficios, dataInicio, dataFim |
-
-**Duas decisões de modelagem que precisam ser respeitadas por todos:**
-
-`configuracoes_financeiras` usa **vigência temporal**. Editar os dados financeiros de um colaborador nunca faz `UPDATE` — fecha a linha atual preenchendo `dataFim` e insere uma nova. O custo de uma tarefa é calculado buscando a configuração vigente na data daquela tarefa. Isso atende a regra de negócio que exige preservar histórico e não recalcular registros já consolidados.
-
-Nenhum registro é excluído fisicamente. Inativação é lógica, pelo campo `status`. Remover um colaborador da equipe preenche `dataSaida`, não deleta a linha.
-
----
-
-## Escopo por fase
-
-**Fase 1 — MVP (pré-banca, 14/09)**
-
-```txt
-Autenticação e recuperação de senha
-CRUD de itens da tabela de remuneração e bonificação
-CRUD de colaboradores e configuração financeira
-CRUD de clientes e projetos
-Vinculação de equipe ao projeto com papel e período
-```
-
-**Fase 2 — out/nov**
-
-```txt
-Cálculo de custo real e indicadores
-Dashboard geral, por projeto e por colaborador
-Filtros e consultas analíticas
-Importação de dados do ClickUp
-Geração e exportação de relatórios (PDF e XLSX)
-Interface GraphQL para relatórios e filtros
-```
-
----
-
-## Como rodar
-
-### Pré-requisitos
-
-```txt
-Node.js 20+
-PostgreSQL 15+
-Banco: sistema_indicadores
-```
-
-### 1. Back-end
-
-```bash
-cd backend
-npm install
-cp .env.example .env
-npx prisma migrate dev
-npx prisma db seed
-npm run dev
-```
-
-API disponível em:
-
-```txt
-http://localhost:3333
-```
-
-Variáveis de ambiente necessárias no `.env`:
-
-```txt
-DATABASE_URL="postgresql://usuario:senha@localhost:5432/sistema_indicadores"
-JWT_SECRET
-JWT_EXPIRATION
-SMTP_HOST
-SMTP_USER
-SMTP_PASS
-```
-
-Em desenvolvimento, o envio de e-mail de recuperação de senha usa Ethereal (caixa de entrada de teste, sem configuração).
-
-### 2. Front-end
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Aplicação disponível em:
-
-```txt
-http://localhost:5173
-```
-
-### 3. Inspecionar o banco
-
-```bash
-cd backend
-npx prisma studio
-```
-
----
-
-## Roteiro de demonstração
-
-```txt
-1. Fazer login no sistema.
-2. Cadastrar itens da tabela de remuneração e bonificação.
-3. Cadastrar um colaborador e configurar seus dados financeiros.
-4. Alterar a configuração financeira e mostrar que o histórico foi preservado.
-5. Cadastrar um cliente e um projeto.
-6. Vincular colaboradores ao projeto definindo os papéis.
-7. Remover um colaborador da equipe e mostrar o registro histórico.
-8. Consultar, editar e inativar registros nas listagens.
-9. Mostrar a collection do Postman com as rotas testadas.
-```
-
----
-
-## Fluxo Git
-
-```txt
-feature/... → develop → main
-```
-
-- `main` — apenas versão estável, pronta para apresentação. Ninguém trabalha direto nela.
-- `develop` — integração do time. Tudo chega aqui por Pull Request.
-- `feature/...` — branch individual de cada integrante.
-
-### Rotina de trabalho
-
-```bash
-git checkout develop
-git pull origin develop
-
-git checkout nome-da-sua-branch
-git merge develop
-
-git status
-git add .
-git commit -m "feat: descricao da alteracao"
-git push
-```
-
-### Padrão de commits
-
-```txt
-feat:     nova funcionalidade
-fix:      correção de erro
-style:    alteração visual
-docs:     documentação
-refactor: reorganização de código
-chore:    configuração
-```
-
-Exemplos:
-
-```bash
-git commit -m "feat(colaborador): cria endpoint de cadastro"
-git commit -m "feat(financeiro): implementa vigencia da configuracao"
-git commit -m "fix(auth): corrige validacao do token de reset"
-git commit -m "docs: adiciona modelo de dados no readme"
-```
-
-### Migrations do Prisma
-
-O `schema.prisma` é compartilhado pelos três. Antes de alterar o schema, avise o time. Depois de dar `git pull` com uma migration nova:
-
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-Nunca edite uma migration que já foi enviada para a `develop`.
-
-### Checklist antes do Pull Request para a develop
-
-```txt
-[ ] Atualizei minha branch com a develop
-[ ] Rodei as migrations pendentes
-[ ] Testei minhas rotas no Postman
-[ ] Fiz commits com mensagens claras
-[ ] O Pull Request está indo para a develop
-```
-
-### Checklist antes de enviar para a main
-
-```txt
-[ ] A develop está rodando
-[ ] O back-end sobe sem erro
-[ ] As migrations aplicam em banco limpo
-[ ] O front-end não quebrou por alterações da API
-[ ] O fluxo da apresentação foi testado do início ao fim
-```
-
-### Regras
-
-```txt
-Ninguém faz push direto na main
-Cada integrante trabalha na sua própria branch
-Toda entrega passa por Pull Request para a develop
-A main só é atualizada quando a develop está funcionando
-Funcionalidade quebrada não vai para a main
-```
-
----
-
-## Divisão do time
-
-| Branch | Responsabilidades |
+| Tabela | Descrição |
 |---|---|
-| `feature/auth-remuneracao` | Setup do repositório, arquitetura base, Prisma, JWT, bcrypt, login, recuperação de senha por token, CRUD da tabela de remuneração e bonificação |
-| `feature/colaborador-financeiro` | CRUD de colaboradores, inativação lógica, configuração financeira com vigência temporal, validação de e-mail único |
-| `feature/projeto-equipe` | CRUD de clientes, CRUD de projetos, vinculação de equipe ao projeto com papel e período, histórico de alterações de equipe |
+| `usuarios` | Contas de acesso e recuperação de senha |
+| `clientes` | Empresas ou contratantes atendidos |
+| `colaboradores` | Profissionais internos ou alocados |
+| `itens_tabela_remuneracao` | Faixas de remuneração e bonificação |
+| `configuracoes_financeiras` | Configuração financeira vigente por colaborador |
+| `projetos` | Projetos contratados por cliente |
+| `projetos_colaboradores` | Relação entre projeto, colaborador, papel e período |
 
-### Ordem de dependência
+Regras importantes:
+
+- Registros principais são inativados por `status`, sem exclusão física.
+- A bonificação pertence à faixa de remuneração, não ao cadastro principal do colaborador.
+- O colaborador recebe a regra financeira ao ser vinculado a uma faixa em `configuracoes_financeiras`.
+- Ao aplicar uma nova configuração financeira, a configuração vigente anterior é encerrada com `dataFim`.
+- A equipe do projeto preserva histórico: encerrar uma participação preenche `dataSaida`.
+- Um colaborador não pode ficar ativo duas vezes no mesmo projeto ao mesmo tempo.
+- Colaboradores inativos não podem ser vinculados a novos projetos.
+- Projetos inativos ficam disponíveis para consulta, mas não permitem alterações na equipe.
+
+---
+
+## Configuração Financeira do Colaborador
+
+A tabela de remuneração define as faixas financeiras do sistema:
 
 ```txt
-tabela de remuneração → colaborador → configuração financeira
-cliente → projeto → vínculo de equipe
+Nível/Faixa
+Valor hora
+Bonificação
+Tipo de bonificação
+Status
 ```
 
-O setup base (Prisma, autenticação, cliente HTTP do front) precisa estar na `develop` antes dos outros dois começarem, ou o time trava.
+O colaborador não recebe a bonificação diretamente no cadastro principal. Ele é vinculado a uma faixa por meio da configuração financeira:
 
-### Criação das branches
-
-```bash
-git checkout main
-git pull origin main
-git checkout -b develop
-git push -u origin develop
+```txt
+Colaborador
+Faixa de remuneração
+Benefícios
+Data de início
+Data de fim
 ```
 
-```bash
-git checkout develop
-git checkout -b feature/auth-remuneracao
-git push -u origin feature/auth-remuneracao
+Essa estrutura preserva histórico. Quando uma nova configuração financeira é aplicada para o colaborador, a configuração vigente anterior é encerrada e a nova passa a ser usada como referência.
+
+---
+
+## Papéis de Projeto
+
+Os papéis disponíveis para vincular colaboradores aos projetos são retornados pela API em:
+
+```txt
+GET /api/projetos/papeis
 ```
 
-Repetir para as demais branches, trocando o nome.
+Lista atual:
+
+```txt
+Product Owner
+Scrum Master
+Gerente de Projeto
+Tech Lead
+Líder Técnico
+Arquiteto de Software
+Analista de Sistemas
+Analista de Negócios
+Analista de Produto
+Desenvolvedor Full Stack
+Desenvolvedor Back-end
+Desenvolvedor Front-end
+Desenvolvedor Mobile
+Programador
+QA
+UI/UX Designer
+DevOps
+Engenheiro de Dados
+DBA
+Especialista em Segurança
+Suporte Técnico
+```
+
+---
+
+## Endpoints
+
+Base URL:
+
+```txt
+http://localhost:3333/api
+```
+
+Clientes:
+
+```txt
+GET    /clientes
+POST   /clientes
+GET    /clientes/:id
+PUT    /clientes/:id
+DELETE /clientes/:id
+```
+
+Colaboradores:
+
+```txt
+GET    /colaboradores
+POST   /colaboradores
+GET    /colaboradores/:id
+PUT    /colaboradores/:id
+DELETE /colaboradores/:id
+
+GET    /colaboradores/:id/configuracoes-financeiras
+POST   /colaboradores/:id/configuracoes-financeiras
+PUT    /colaboradores/:id/configuracoes-financeiras/:configuracaoId
+DELETE /colaboradores/:id/configuracoes-financeiras/:configuracaoId
+```
+
+Remuneração:
+
+```txt
+GET    /remuneracoes
+POST   /remuneracoes
+GET    /remuneracoes/:id
+PUT    /remuneracoes/:id
+DELETE /remuneracoes/:id
+```
+
+Projetos:
+
+```txt
+GET    /projetos
+POST   /projetos
+GET    /projetos/:id
+PUT    /projetos/:id
+DELETE /projetos/:id
+```
+
+Equipe do projeto:
+
+```txt
+GET    /projetos/papeis
+GET    /projetos/:id/equipe
+POST   /projetos/:id/equipe
+PUT    /projetos/:id/equipe/:vinculoId
+DELETE /projetos/:id/equipe/:vinculoId
+```
+
+Exemplo para vincular colaborador a um projeto:
+
+```json
+{
+  "colaboradorId": 1,
+  "papel": "Tech Lead",
+  "dataEntrada": "2026-09-04"
+}
+```
+
+Exemplo para aplicar uma configuração financeira ao colaborador:
+
+```json
+{
+  "itemTabelaId": 1,
+  "beneficios": 500,
+  "dataInicio": "2026-09-04"
+}
+```
+
+---
+
+## Variáveis de Ambiente
+
+Back-end:
+
+```txt
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/sistema_indicadores"
+PORT=3333
+JWT_SECRET="dev-secret"
+JWT_EXPIRATION="1d"
+SMTP_HOST=""
+SMTP_USER=""
+SMTP_PASS=""
+```
+
+Front-end:
+
+```txt
+VITE_API_URL="http://localhost:3333/api"
+```
+
+---
+
+## Antes de Compactar o Projeto
+
+Estas pastas e arquivos podem ficar fora do zip:
+
+```txt
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/.env
+frontend/.env
+```
+
+Mantenha estes arquivos, porque eles permitem instalar tudo de novo:
+
+```txt
+backend/package.json
+backend/pnpm-lock.yaml
+frontend/package.json
+frontend/pnpm-lock.yaml
+backend/.env.example
+frontend/.env.example
+docker-compose.yml
+```
+
+Depois de extrair o projeto em outra máquina, os comandos do guia rápido recriam as dependências e os arquivos `.env` locais.
+
+---
+
+## Banco de Dados
+
+O banco padrão do ambiente local roda em PostgreSQL pelo Docker.
+
+Dados do `docker-compose.yml`:
+
+```txt
+Host: localhost
+Porta: 5432
+Banco: sistema_indicadores
+Usuário: postgres
+Senha: postgres
+```
+
+Com esses dados, também é possível conectar por ferramentas como DBeaver, DataGrip ou pgAdmin.
+
+---
+
+## Postman
+
+A collection da API fica em:
+
+```txt
+docs/postman/sistema-indicadores.postman_collection.json
+```
+
+Ela usa a variável:
+
+```txt
+baseUrl = http://localhost:3333/api
+```
+
+---
+
+## Scripts Úteis
+
+Back-end:
+
+```powershell
+corepack pnpm run dev
+corepack pnpm run start
+corepack pnpm run prisma:generate
+corepack pnpm run prisma:migrate
+corepack pnpm run prisma:studio
+corepack pnpm run seed
+```
+
+Front-end:
+
+```powershell
+corepack pnpm run dev
+corepack pnpm run build
+corepack pnpm run preview
+```
 
 ---
 
@@ -399,7 +486,7 @@ Repetir para as demais branches, trocando o nome.
 |---|---|
 | 05/09 | 1ª orientação |
 | 11/09 | Especificação do MVP |
-| 14/09 e 21/09 | Apresentação para avaliação (pré-banca) dos CRUDs |
+| 14/09 e 21/09 | Apresentação para avaliação dos CRUDs |
 | 28/09 a 02/10 | 2ª orientação |
 | 30/10 a 06/11 | 3ª orientação |
 | 13/11 | Entrega do relatório do projeto de TCC |
@@ -407,12 +494,27 @@ Repetir para as demais branches, trocando o nome.
 
 ---
 
-## Documentação
+## Fluxo de Versionamento
 
 ```txt
-docs/documentacao-tcc.pdf — user stories, critérios de aceite, regras de negócio,
-                            testes de aceitação, wireframes e requisitos não funcionais
-docs/postman/              — collections exportadas do Postman
+feature/... -> develop -> main
 ```
 
-Gestão de tarefas no Trello.
+Recomendações:
+
+- Trabalhar em branches `feature/...`.
+- Integrar alterações por Pull Request.
+- Manter `main` apenas com versões estáveis.
+- Rodar migrations, API e build do front-end antes de integrar alterações.
+- Não editar migrations já compartilhadas com o time.
+
+Padrão sugerido de commits:
+
+```txt
+feat: nova funcionalidade
+fix: correção de erro
+docs: documentação
+style: ajuste visual
+refactor: reorganização interna
+chore: configuração ou manutenção
+```
