@@ -1,0 +1,364 @@
+{
+  "info": {
+    "name": "Sistema de Indicadores - API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3333/api"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/clientes"
+          }
+        },
+        {
+          "name": "Criar cliente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"E/Code\"\n}"
+            },
+            "url": "{{baseUrl}}/clientes"
+          }
+        },
+        {
+          "name": "Buscar cliente por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/clientes/1"
+          }
+        },
+        {
+          "name": "Atualizar cliente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"E/Code Software\",\n  \"status\": \"ATIVO\"\n}"
+            },
+            "url": "{{baseUrl}}/clientes/1"
+          }
+        },
+        {
+          "name": "Inativar cliente",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/clientes/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Colaboradores",
+      "item": [
+        {
+          "name": "Listar colaboradores",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/colaboradores"
+          }
+        },
+        {
+          "name": "Criar colaborador",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Arthur Soares Gardim\",\n  \"email\": \"arthur@empresa.com\",\n  \"cargo\": \"Desenvolvedor\",\n  \"departamento\": \"Tecnologia\"\n}"
+            },
+            "url": "{{baseUrl}}/colaboradores"
+          }
+        },
+        {
+          "name": "Buscar colaborador por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/colaboradores/1"
+          }
+        },
+        {
+          "name": "Atualizar colaborador",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nomeCompleto\": \"Arthur S. Gardim\",\n  \"email\": \"arthur@empresa.com\",\n  \"cargo\": \"Analista Desenvolvedor\",\n  \"departamento\": \"Tecnologia\",\n  \"status\": \"ATIVO\"\n}"
+            },
+            "url": "{{baseUrl}}/colaboradores/1"
+          }
+        },
+        {
+          "name": "Inativar colaborador",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/colaboradores/1"
+          }
+        },
+        {
+          "name": "Listar configurações financeiras",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/colaboradores/1/configuracoes-financeiras"
+          }
+        },
+        {
+          "name": "Aplicar configuração financeira",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemTabelaId\": 1,\n  \"beneficios\": 500,\n  \"dataInicio\": \"2026-09-04\"\n}"
+            },
+            "url": "{{baseUrl}}/colaboradores/1/configuracoes-financeiras"
+          }
+        },
+        {
+          "name": "Atualizar configuração financeira",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"itemTabelaId\": 1,\n  \"beneficios\": 650\n}"
+            },
+            "url": "{{baseUrl}}/colaboradores/1/configuracoes-financeiras/1"
+          }
+        },
+        {
+          "name": "Encerrar configuração financeira",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/colaboradores/1/configuracoes-financeiras/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Remuneracoes",
+      "item": [
+        {
+          "name": "Listar remuneracoes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/remuneracoes"
+          }
+        },
+        {
+          "name": "Criar remuneração",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivel\": \"Junior\",\n  \"valorHora\": 45,\n  \"bonificacao\": 0,\n  \"tipoBonificacao\": \"NENHUMA\"\n}"
+            },
+            "url": "{{baseUrl}}/remuneracoes"
+          }
+        },
+        {
+          "name": "Buscar remuneração por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/remuneracoes/1"
+          }
+        },
+        {
+          "name": "Atualizar remuneração",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nivel\": \"Junior\",\n  \"valorHora\": 50,\n  \"bonificacao\": 5,\n  \"tipoBonificacao\": \"PERCENTUAL\",\n  \"status\": \"ATIVO\"\n}"
+            },
+            "url": "{{baseUrl}}/remuneracoes/1"
+          }
+        },
+        {
+          "name": "Inativar remuneração",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/remuneracoes/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projetos",
+      "item": [
+        {
+          "name": "Listar projetos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projetos"
+          }
+        },
+        {
+          "name": "Criar projeto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": 1,\n  \"nome\": \"Sistema de Indicadores\",\n  \"tipoContrato\": \"FECHADO\",\n  \"horasContratadas\": 120,\n  \"valorProjeto\": 18000,\n  \"dataInicio\": \"2026-09-04\"\n}"
+            },
+            "url": "{{baseUrl}}/projetos"
+          }
+        },
+        {
+          "name": "Buscar projeto por ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projetos/1"
+          }
+        },
+        {
+          "name": "Atualizar projeto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clienteId\": 1,\n  \"nome\": \"Sistema de Indicadores\",\n  \"tipoContrato\": \"FECHADO\",\n  \"horasContratadas\": 140,\n  \"valorProjeto\": 21000,\n  \"dataInicio\": \"2026-09-04\",\n  \"status\": \"ATIVO\"\n}"
+            },
+            "url": "{{baseUrl}}/projetos/1"
+          }
+        },
+        {
+          "name": "Inativar projeto",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/projetos/1"
+          }
+        },
+        {
+          "name": "Listar papéis de projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projetos/papeis"
+          }
+        },
+        {
+          "name": "Listar equipe do projeto",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/projetos/1/equipe"
+          }
+        },
+        {
+          "name": "Vincular colaborador ao projeto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"colaboradorId\": 1,\n  \"papel\": \"Tech Lead\",\n  \"dataEntrada\": \"2026-09-04\"\n}"
+            },
+            "url": "{{baseUrl}}/projetos/1/equipe"
+          }
+        },
+        {
+          "name": "Atualizar papel na equipe",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"papel\": \"Desenvolvedor Full Stack\"\n}"
+            },
+            "url": "{{baseUrl}}/projetos/1/equipe/1"
+          }
+        },
+        {
+          "name": "Encerrar participação no projeto",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/projetos/1/equipe/1"
+          }
+        }
+      ]
+    }
+  ]
+}
