@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Status {
+  ATIVO
+  INATIVO
+}
+
+enum TipoContrato {
+  FIXO
+  HORAS
+  FECHADO
+}
+
+enum TipoBonificacao {
+  NENHUMA
+  VALOR_FIXO
+  PERCENTUAL
+}
+
+model Usuario {
+  id                  Int       @id @default(autoincrement())
+  nomeUsuario         String    @unique
+  email               String    @unique
+  senhaHash           String
+  resetToken          String?
+  resetTokenExpiraEm  DateTime?
+  status              Status    @default(ATIVO)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id        Int       @id @default(autoincrement())
+  nome      String    @unique
+  status    Status    @default(ATIVO)
+  projetos  Projeto[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("clientes")
+}
+
+model Colaborador {
+  id                         Int                       @id @default(autoincrement())
+  nomeCompleto               String
+  email                      String                    @unique
+  cargo                      String
+  departamento               String
+  status                     Status                    @default(ATIVO)
+  configuracoesFinanceiras   ConfiguracaoFinanceira[]
+  projetos                   ProjetoColaborador[]
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+
+  @@map("colaboradores")
+}
+
+model ItemTabelaRemuneracao {
+  id                         Int                       @id @default(autoincrement())
+  nivel                      String                    @unique
+  valorHora                  Decimal                   @db.Decimal(10, 2)
+  bonificacao                Decimal                   @default(0) @db.Decimal(10, 2)
+  tipoBonificacao            TipoBonificacao           @default(NENHUMA)
+  status                     Status                    @default(ATIVO)
+  configuracoesFinanceiras   ConfiguracaoFinanceira[]
+  createdAt                  DateTime                  @default(now())
+  updatedAt                  DateTime                  @updatedAt
+
+  @@map("itens_tabela_remuneracao")
+}
+
+model ConfiguracaoFinanceira {
+  id              Int                     @id @default(autoincrement())
+  colaboradorId   Int
+  itemTabelaId    Int
+  beneficios      Decimal                 @default(0) @db.Decimal(10, 2)
+  dataInicio      DateTime
+  dataFim         DateTime?
+  colaborador     Colaborador             @relation(fields: [colaboradorId], references: [id])
+  itemTabela      ItemTabelaRemuneracao   @relation(fields: [itemTabelaId], references: [id])
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+
+  @@index([colaboradorId, dataInicio, dataFim])
+  @@map("configuracoes_financeiras")
+}
+
+model Projeto {
+  id                Int                    @id @default(autoincrement())
+  clienteId         Int
+  nome              String
+  tipoContrato      TipoContrato
+  horasContratadas  Decimal                @db.Decimal(10, 2)
+  valorProjeto      Decimal                @db.Decimal(12, 2)
+  dataInicio        DateTime
+  status            Status                 @default(ATIVO)
+  cliente           Cliente                @relation(fields: [clienteId], references: [id])
+  equipe            ProjetoColaborador[]
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  @@index([clienteId])
+  @@map("projetos")
+}
+
+model ProjetoColaborador {
+  id             Int           @id @default(autoincrement())
+  projetoId      Int
+  colaboradorId  Int
+  papel          String
+  dataEntrada    DateTime
+  dataSaida      DateTime?
+  projeto        Projeto       @relation(fields: [projetoId], references: [id])
+  colaborador    Colaborador   @relation(fields: [colaboradorId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([projetoId])
+  @@index([colaboradorId])
+  @@map("projetos_colaboradores")
+}
