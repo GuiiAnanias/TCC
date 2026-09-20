@@ -3,6 +3,7 @@ import { clientesRoutes } from "./clientesRoutes.js";
 import { colaboradoresRoutes } from "./colaboradoresRoutes.js";
 import { remuneracoesRoutes } from "./remuneracoesRoutes.js";
 import { projetosRoutes } from "./projetosRoutes.js";
+import { apontamentosRoutes } from "./apontamentosRoutes.js";
 
 export const routes = Router();
 
@@ -17,3 +18,4 @@ routes.use("/clientes", clientesRoutes);
 routes.use("/colaboradores", colaboradoresRoutes);
 routes.use("/remuneracoes", remuneracoesRoutes);
 routes.use("/projetos", projetosRoutes);
+routes.use("/apontamentos", apontamentosRoutes);
