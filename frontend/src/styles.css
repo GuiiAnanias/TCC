@@ -651,3 +651,166 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+/* SearchableSelect ------------------------------------------------------- */
+.searchable-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.searchable-select__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  padding: 0 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  color: var(--text);
+  background: #ffffff;
+  text-align: left;
+  font: inherit;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.searchable-select__control:hover:not(:disabled) {
+  border-color: #8ea0ad;
+  background: #fcfdfd;
+}
+
+.searchable-select.is-open .searchable-select__control,
+.searchable-select__control:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(0, 127, 115, 0.14);
+  outline: none;
+}
+
+.searchable-select__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: #f4f6f7;
+}
+
+.searchable-select__value,
+.searchable-select__placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.searchable-select__value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.searchable-select__placeholder {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.searchable-select__chevron {
+  flex: 0 0 auto;
+  color: #52606d;
+  transition: transform 0.16s ease;
+}
+
+.searchable-select.is-open .searchable-select__chevron {
+  transform: rotate(180deg);
+}
+
+.searchable-select__dropdown {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 16px 40px rgba(32, 39, 51, 0.14);
+}
+
+.searchable-select__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.searchable-select__search svg {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchable-select__search input {
+  min-height: 40px;
+  padding-left: 36px;
+  border-radius: 8px;
+}
+
+.searchable-select__options {
+  display: grid;
+  gap: 3px;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.searchable-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 7px;
+  color: #354052;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+
+.searchable-select__option:hover,
+.searchable-select__option.is-selected {
+  color: #004c46;
+  background: #eaf5f3;
+}
+
+.searchable-select__option.is-selected {
+  font-weight: 700;
+}
+
+.searchable-select__option svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.searchable-select__empty {
+  padding: 13px 10px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* Deixa os campos comuns com a mesma presença visual do seletor pesquisável. */
+.field > input,
+.field > select {
+  min-height: 50px;
+  padding: 0 14px;
+  border-radius: 10px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.field > input:hover:not(:disabled),
+.field > select:hover:not(:disabled) {
+  border-color: #8ea0ad;
+}
