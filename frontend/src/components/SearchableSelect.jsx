@@ -1,74 +1,133 @@
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, Search } from "lucide-react";
 
-export function SearchableSelect({ name, options, value, onChange, placeholder = "Selecione..." }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
-  const dropdownRef = useRef(null);
+export function SearchableSelect({
+  id,
+  name,
+  options = [],
+  value = "",
+  onChange,
+  placeholder = "Selecione...",
+  required = false,
+  disabled = false
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef(null);
+  const searchRef = useRef(null);
 
-  const selectedOption = options.find((opt) => String(opt.value) === String(value));
-
-  const filteredOptions = options.filter((opt) =>
-    opt.label.toLowerCase().includes(searchTerm.toLowerCase())
+  const selectedOption = useMemo(
+    () => options.find((option) => String(option.value) === String(value)),
+    [options, value]
   );
 
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
+
+    if (!normalizedQuery) {
+      return options;
+    }
+
+    return options.filter((option) =>
+      String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery)
+    );
+  }, [options, query]);
+
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
+    function handleOutsideClick(event) {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setOpen(false);
+        setQuery("");
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  function handleSelect(opt) {
-    onChange({ target: { name, value: opt.value } });
-    setIsOpen(false);
-    setSearchTerm("");
+  useEffect(() => {
+    if (open) {
+      requestAnimationFrame(() => searchRef.current?.focus());
+    }
+  }, [open]);
+
+  function selectOption(option) {
+    onChange?.({
+      target: {
+        name,
+        value: String(option.value)
+      }
+    });
+
+    setOpen(false);
+    setQuery("");
+  }
+
+  function handleKeyDown(event) {
+    if (event.key === "Escape") {
+      setOpen(false);
+      setQuery("");
+    }
   }
 
   return (
-    <div className="searchable-select" ref={dropdownRef}>
-      <div className="select-trigger" onClick={() => setIsOpen(!isOpen)}>
-        <span className={selectedOption ? "" : "placeholder"}>
-          {selectedOption ? selectedOption.label : placeholder}
+    <div className={`searchable-select${open ? " is-open" : ""}`} ref={rootRef} onKeyDown={handleKeyDown}>
+      <button
+        id={id || name}
+        className="searchable-select__control"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-required={required}
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span className={selectedOption ? "searchable-select__value" : "searchable-select__placeholder"}>
+          {selectedOption?.label || placeholder}
         </span>
-        <ChevronDown size={16} />
-      </div>
+        <ChevronDown className="searchable-select__chevron" size={18} aria-hidden="true" />
+      </button>
 
-      {isOpen && (
-        <div className="select-dropdown">
-          <div className="search-input-wrapper">
-            <Search size={14} className="search-icon" />
+
+      {open ? (
+        <div className="searchable-select__dropdown">
+          <div className="searchable-select__search">
+            <Search size={17} aria-hidden="true" />
             <input
+              ref={searchRef}
               type="text"
-              className="search-input"
-              placeholder="Buscar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              autoFocus
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Digite para buscar..."
+              autoComplete="off"
             />
           </div>
 
-          <ul className="options-list">
-            {filteredOptions.length > 0 ? (
-              filteredOptions.map((opt) => (
-                <li
-                  key={opt.value}
-                  className={`option-item ${String(value) === String(opt.value) ? "selected" : ""}`}
-                  onClick={() => handleSelect(opt)}
-                >
-                  {opt.label}
-                </li>
-              ))
+          <div className="searchable-select__options" role="listbox" aria-labelledby={id || name}>
+            {filteredOptions.length ? (
+              filteredOptions.map((option) => {
+                const selected = String(option.value) === String(value);
+
+                return (
+                  <button
+                    key={option.value}
+                    className={`searchable-select__option${selected ? " is-selected" : ""}`}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => selectOption(option)}
+                  >
+                    <span>{option.label}</span>
+                    {selected ? <Check size={17} aria-hidden="true" /> : null}
+                  </button>
+                );
+              })
             ) : (
-              <li className="no-options">Nenhum resultado</li>
+              <div className="searchable-select__empty">Nenhum resultado encontrado.</div>
             )}
-          </ul>
+          </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

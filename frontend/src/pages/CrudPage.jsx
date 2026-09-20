@@ -262,11 +262,13 @@ export function CrudPage({ config }) {
 
       return (
         <SearchableSelect
+          id={field.name}
           name={field.name}
           options={clienteOptions}
           value={formData[field.name] ?? ""}
           onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
           placeholder="Buscar cliente..."
+          required={field.required}
         />
       );
     }
@@ -279,11 +281,13 @@ export function CrudPage({ config }) {
 
       return (
         <SearchableSelect
+          id={field.name}
           name={field.name}
           options={projetoOptions}
           value={formData[field.name] ?? ""}
           onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
           placeholder="Buscar projeto..."
+          required={field.required}
         />
       );
     }
@@ -296,11 +300,13 @@ export function CrudPage({ config }) {
 
       return (
         <SearchableSelect
+          id={field.name}
           name={field.name}
           options={colaboradorOptions}
           value={formData[field.name] ?? ""}
           onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
           placeholder="Buscar colaborador..."
+          required={field.required}
         />
       );
     }
