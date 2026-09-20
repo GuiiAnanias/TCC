@@ -551,6 +551,21 @@ tbody tr:hover {
   border: 1px solid #efcf9f;
 }
 
+.status-pendente {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-aprovado {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.status-faturado {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
 .icon-button {
   width: 36px;
   min-height: 36px;

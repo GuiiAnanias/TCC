@@ -1,5 +1,5 @@
 import React from "react";
-import { BriefcaseBusiness, Building2, UsersRound, WalletCards } from "lucide-react";
+import { BriefcaseBusiness, Building2, UsersRound, WalletCards, Clock } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge.jsx";
 
 const statusOptions = [
@@ -149,6 +149,31 @@ export const resources = [
       },
       { key: "dataInicio", label: "Início", render: (item) => date(item.dataInicio) },
       { key: "status", label: "Status", render: (item) => <StatusBadge status={item.status} /> }
+    ]
+  },
+  {
+    key: "apontamentos",
+    title: "Apontamento de Horas",
+    singular: "apontamento",
+    endpoint: "/apontamentos",
+    icon: Clock,
+    loadColaboradores: true,
+    loadProjetos: true,
+    fields: [
+      { name: "colaboradorId", label: "Colaborador", type: "colaborador", required: true },
+      { name: "projetoId", label: "Projeto", type: "projeto", required: true },
+      { name: "data", label: "Data", type: "date", required: true },
+      { name: "horas", label: "Horas trabalhadas", type: "number", step: "0.5", min: "0", required: true },
+      { name: 'status', label: 'Status', type: 'select', defaultValue: 'Pendente', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
+      { name: "descricao", label: "Descrição da atividade", type: "text", required: true }
+    ],
+    columns: [
+      { key: "colaborador", label: "Colaborador", render: (item) => item.colaborador?.nomeCompleto || "-" },
+      { key: "projeto", label: "Projeto", render: (item) => item.projeto?.nome || "-" },
+      { key: "data", label: "Data", render: (item) => date(item.data) },
+      { key: "horas", label: "Horas", render: (item) => decimal(item.horas) },
+      { key: 'status', label: 'Status', render: (val) => (typeof val === 'string' ? val : val?.status || 'PENDENTE')},
+      { key: "descricao", label: "Descrição" }
     ]
   }
 ];
