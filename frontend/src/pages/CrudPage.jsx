@@ -4,6 +4,7 @@ import { Check, Edit3, Plus, RefreshCw, RotateCcw, Save, Search, Trash2, UsersRo
 import { api } from "../api/client.js";
 import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceManager.jsx";
 import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
+import { SearchableSelect } from "../components/SearchableSelect.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -51,6 +52,8 @@ function buildPayload(fields, formData, isEditing) {
 export function CrudPage({ config }) {
   const [records, setRecords] = useState([]);
   const [clientes, setClientes] = useState([]);
+  const [projetos, setProjetos] = useState([]);
+  const [colaboradores, setColaboradores] = useState([]);
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
@@ -110,6 +113,36 @@ export function CrudPage({ config }) {
     }
   }, [config.loadClientes]);
 
+  const loadProjetos = useCallback(async () => {
+    if (!config.loadProjetos) {
+      return;
+    }
+
+    try {
+      const { data } = await api.get("/projetos", {
+        params: { status: "ATIVO" }
+      });
+      setProjetos(data);
+    } catch {
+      setProjetos([]);
+    }
+  }, [config.loadProjetos]);
+
+  const loadColaboradores = useCallback(async () => {
+    if (!config.loadColaboradores) {
+      return;
+    }
+
+    try {
+      const { data } = await api.get("/colaboradores", {
+        params: { status: "ATIVO" }
+      });
+      setColaboradores(data);
+    } catch {
+      setColaboradores([]);
+    }
+  }, [config.loadColaboradores]);
+
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
     setEditingId(null);
@@ -122,7 +155,9 @@ export function CrudPage({ config }) {
   useEffect(() => {
     loadRecords();
     loadClientes();
-  }, [loadRecords, loadClientes]);
+    loadProjetos();
+    loadColaboradores();
+  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores]);
 
   function resetForm() {
     setFormData(getInitialForm(config.fields));
@@ -220,15 +255,59 @@ export function CrudPage({ config }) {
     }
 
     if (field.type === "cliente") {
+      const clienteOptions = clientes.map((cliente) => ({
+        value: String(cliente.id),
+        label: cliente.nome
+      }));
+
       return (
-        <select {...commonProps}>
-          <option value="">Selecione</option>
-          {clientes.map((cliente) => (
-            <option key={cliente.id} value={cliente.id}>
-              {cliente.nome}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          id={field.name}
+          name={field.name}
+          options={clienteOptions}
+          value={formData[field.name] ?? ""}
+          onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
+          placeholder="Buscar cliente..."
+          required={field.required}
+        />
+      );
+    }
+
+    if (field.type === "projeto") {
+      const projetoOptions = projetos.map((projeto) => ({
+        value: String(projeto.id),
+        label: projeto.nome
+      }));
+
+      return (
+        <SearchableSelect
+          id={field.name}
+          name={field.name}
+          options={projetoOptions}
+          value={formData[field.name] ?? ""}
+          onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
+          placeholder="Buscar projeto..."
+          required={field.required}
+        />
+      );
+    }
+
+    if (field.type === "colaborador") {
+      const colaboradorOptions = colaboradores.map((colaborador) => ({
+        value: String(colaborador.id),
+        label: colaborador.nomeCompleto
+      }));
+
+      return (
+        <SearchableSelect
+          id={field.name}
+          name={field.name}
+          options={colaboradorOptions}
+          value={formData[field.name] ?? ""}
+          onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
+          placeholder="Buscar colaborador..."
+          required={field.required}
+        />
       );
     }
 
