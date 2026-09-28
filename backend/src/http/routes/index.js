@@ -4,8 +4,13 @@ import { colaboradoresRoutes } from "./colaboradoresRoutes.js";
 import { remuneracoesRoutes } from "./remuneracoesRoutes.js";
 import { projetosRoutes } from "./projetosRoutes.js";
 import { apontamentosRoutes } from "./apontamentosRoutes.js";
+import { departamentosTi, funcoesTi } from "../../schemas/cadastroOptions.js";
 
 export const routes = Router();
+
+routes.get("/opcoes-cadastro", (request, response) => {
+  response.json({ funcoes: funcoesTi, departamentos: departamentosTi });
+});
 
 routes.get("/health", (request, response) => {
   response.json({

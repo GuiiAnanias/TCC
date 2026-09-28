@@ -33,7 +33,7 @@ function readValue(item, column) {
   return item[column.key] ?? "-";
 }
 
-function buildPayload(fields, formData, isEditing) {
+function buildPayload(fields, formData, isEditing, originalRecord) {
   return fields.reduce((payload, field) => {
     if (field.hiddenOnCreate && !isEditing) {
       return payload;
@@ -42,6 +42,12 @@ function buildPayload(fields, formData, isEditing) {
     const value = formData[field.name];
 
     if (value !== "" && value !== null && value !== undefined) {
+      if (isEditing && originalRecord) {
+        const previous = field.type === "date"
+          ? toInputDate(originalRecord[field.name])
+          : originalRecord[field.name];
+        if (String(value) === String(previous ?? "")) return payload;
+      }
       payload[field.name] = value;
     }
 
@@ -54,9 +60,11 @@ export function CrudPage({ config }) {
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
   const [colaboradores, setColaboradores] = useState([]);
+  const [catalog, setCatalog] = useState({ funcoes: [], departamentos: [] });
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
+  const [originalRecord, setOriginalRecord] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -143,9 +151,20 @@ export function CrudPage({ config }) {
     }
   }, [config.loadColaboradores]);
 
+  const loadCatalog = useCallback(async () => {
+    if (!config.fields.some((field) => field.type === "catalog-select")) return;
+    try {
+      const { data } = await api.get("/opcoes-cadastro");
+      setCatalog(data);
+    } catch {
+      setError("Não foi possível carregar as opções de cadastro.");
+    }
+  }, [config.fields]);
+
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
     setEditingId(null);
+    setOriginalRecord(null);
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
@@ -157,11 +176,13 @@ export function CrudPage({ config }) {
     loadClientes();
     loadProjetos();
     loadColaboradores();
-  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores]);
+    loadCatalog();
+  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
 
   function resetForm() {
     setFormData(getInitialForm(config.fields));
     setEditingId(null);
+    setOriginalRecord(null);
     setMessage("");
     setError("");
   }
@@ -180,6 +201,7 @@ export function CrudPage({ config }) {
 
     setFormData(nextForm);
     setEditingId(record.id);
+    setOriginalRecord(record);
     setMessage("");
     setError("");
   }
@@ -191,17 +213,21 @@ export function CrudPage({ config }) {
     setMessage("");
 
     try {
-      const payload = buildPayload(config.fields, formData, isEditing);
+      const payload = buildPayload(config.fields, formData, isEditing, originalRecord);
+
+      if (isEditing && Object.keys(payload).length === 0) {
+        setMessage("Nenhuma alteração para salvar.");
+        return;
+      }
 
       if (isEditing) {
         await api.put(`${config.endpoint}/${editingId}`, payload);
-        setMessage(`${config.singular} atualizado com sucesso.`);
       } else {
         await api.post(config.endpoint, payload);
-        setMessage(`${config.singular} cadastrado com sucesso.`);
       }
 
       resetForm();
+      setMessage(`${config.singular} ${isEditing ? "atualizado" : "cadastrado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
@@ -214,7 +240,8 @@ export function CrudPage({ config }) {
   }
 
   async function handleInactivate(record) {
-    const confirmMessage = `Inativar ${config.singular} "${record.nome || record.nomeCompleto || record.nivel}"?`;
+    const deleting = config.deleteMode === "delete";
+    const confirmMessage = `${deleting ? "Excluir definitivamente" : "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
 
     if (!window.confirm(confirmMessage)) {
       return;
@@ -225,11 +252,12 @@ export function CrudPage({ config }) {
 
     try {
       await api.delete(`${config.endpoint}/${record.id}`);
-      setMessage(`${config.singular} inativado com sucesso.`);
+      if (editingId === record.id) resetForm();
+      setMessage(`${config.singular} ${deleting ? "excluído" : "inativado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível inativar o registro.");
+      setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
     }
   }
 
@@ -239,8 +267,24 @@ export function CrudPage({ config }) {
       name: field.name,
       value: formData[field.name] ?? "",
       required: field.required,
-      onChange: (event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))
+      onChange: (event) => {
+        const value = field.noNumbers ? event.target.value.replace(/\p{N}/gu, "") : event.target.value;
+        setFormData((current) => ({ ...current, [field.name]: value }));
+      }
     };
+
+    if (field.type === "catalog-select") {
+      const options = catalog[field.catalog] || [];
+      const selected = String(formData[field.name] ?? "");
+      const legacy = selected && !options.includes(selected) ? [selected] : [];
+      return (
+        <select {...commonProps} disabled={options.length === 0 && !legacy.length}>
+          <option value="">Selecione...</option>
+          {legacy.map((option) => <option key={option} value={option}>{option} (registro antigo)</option>)}
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      );
+    }
 
     if (field.type === "select") {
       return (
@@ -394,8 +438,9 @@ export function CrudPage({ config }) {
             title="Filtrar por status"
           >
             <option value="">Todos</option>
-            <option value="ATIVO">Ativos</option>
-            <option value="INATIVO">Inativos</option>
+            {config.fields.find((field) => field.name === "status")?.options.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </div>
 
@@ -447,7 +492,7 @@ export function CrudPage({ config }) {
                             <WalletCards size={17} />
                           </button>
                         ) : null}
-                        <button type="button" className="icon-button danger" onClick={() => handleInactivate(record)} title="Inativar">
+                        <button type="button" className="icon-button danger" onClick={() => handleInactivate(record)} title={config.deleteMode === "delete" ? "Excluir" : "Inativar"}>
                           <Trash2 size={17} />
                         </button>
                       </div>
