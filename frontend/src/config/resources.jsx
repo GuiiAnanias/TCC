@@ -80,10 +80,10 @@ export const resources = [
     icon: UsersRound,
     financeManager: true,
     fields: [
-      { name: "nomeCompleto", label: "Nome completo", type: "text", placeholder: "Nome do colaborador", required: true },
+      { name: "nomeCompleto", label: "Nome completo", type: "text", placeholder: "Nome do colaborador", required: true, noNumbers: true },
       { name: "email", label: "E-mail", type: "email", placeholder: "email@empresa.com", required: true },
-      { name: "cargo", label: "Cargo/Função", type: "text", placeholder: "Desenvolvedor", required: true },
-      { name: "departamento", label: "Departamento", type: "text", placeholder: "Tecnologia", required: true },
+      { name: "cargo", label: "Cargo/Função", type: "catalog-select", catalog: "funcoes", required: true },
+      { name: "departamento", label: "Departamento", type: "catalog-select", catalog: "departamentos", required: true },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
@@ -102,7 +102,7 @@ export const resources = [
     endpoint: "/remuneracoes",
     icon: WalletCards,
     fields: [
-      { name: "nivel", label: "Nível/Faixa", type: "text", placeholder: "Junior", required: true },
+      { name: "nivel", label: "Nível/Faixa", type: "catalog-select", catalog: "funcoes", required: true },
       { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0", required: true },
       { name: "bonificacao", label: "Bonificação", type: "number", step: "0.01", min: "0", defaultValue: 0 },
       { name: "tipoBonificacao", label: "Tipo de bonificação", type: "select", options: tipoBonificacaoOptions, defaultValue: "NENHUMA" },
@@ -153,6 +153,7 @@ export const resources = [
   },
   {
     key: "apontamentos",
+    deleteMode: "delete",
     title: "Apontamento de Horas",
     singular: "apontamento",
     endpoint: "/apontamentos",
@@ -164,7 +165,7 @@ export const resources = [
       { name: "projetoId", label: "Projeto", type: "projeto", required: true },
       { name: "data", label: "Data", type: "date", required: true },
       { name: "horas", label: "Horas trabalhadas", type: "number", step: "0.5", min: "0", required: true },
-      { name: 'status', label: 'Status', type: 'select', defaultValue: 'Pendente', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
+      { name: 'status', label: 'Status', type: 'select', defaultValue: 'PENDENTE', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
       { name: "descricao", label: "Descrição da atividade", type: "text", required: true }
     ],
     columns: [

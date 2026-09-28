@@ -12,7 +12,7 @@ export function App() {
         <div className="brand">
           <DatabaseZap size={28} />
           <div>
-            <strong>Sistema de Indicadores</strong>
+            <strong>CODE BI</strong>
             <span>Gestão de projetos</span>
           </div>
         </div>
