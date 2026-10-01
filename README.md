@@ -56,6 +56,16 @@ Abra o sistema no navegador:
 http://localhost:5173
 ```
 
+### Login e proteção de acesso
+
+Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. Executar o seed novamente não redefine uma conta existente.
+
+As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há cadastro de usuários nesta etapa.
+
+Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "admin123" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
+
+Para testar a autenticação e a proteção da API com banco simulado, execute `corepack pnpm test` na pasta `backend`.
+
 ### 5. Abrir o banco em interface visual
 
 Em outro terminal, com o banco e o back-end configurados:
