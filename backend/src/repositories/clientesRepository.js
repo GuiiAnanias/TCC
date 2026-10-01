@@ -5,7 +5,13 @@ export const clientesRepository = {
     return prisma.cliente.findMany({
       where: {
         ...(status ? { status } : {}),
-        ...(busca ? { nome: { contains: busca, mode: "insensitive" } } : {})
+        ...(busca ? { OR: [
+          { nome: { contains: busca, mode: "insensitive" } },
+          { nomeFantasia: { contains: busca, mode: "insensitive" } },
+          { cnpj: { contains: busca.toUpperCase().replace(/[.\/\-\s]/g, "") || busca, mode: "insensitive" } },
+          { cidade: { contains: busca, mode: "insensitive" } },
+          { email: { contains: busca, mode: "insensitive" } }
+        ] } : {})
       },
       orderBy: [{ status: "asc" }, { nome: "asc" }]
     });
@@ -17,6 +23,9 @@ export const clientesRepository = {
 
   findByNome(nome) {
     return prisma.cliente.findUnique({ where: { nome } });
+  },
+  findByCnpj(cnpj) {
+    return prisma.cliente.findUnique({ where: { cnpj } });
   },
 
   create(data) {

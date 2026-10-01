@@ -210,6 +210,17 @@ button {
   gap: 14px;
 }
 
+.company-section { margin: 20px 0 0; padding: 18px; border: 1px solid var(--line); border-radius: 10px; min-width: 0; }
+.company-section legend { padding: 0 8px; font-weight: 700; color: var(--primary-dark); }
+.company-help { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.field-wide { grid-column: 1 / -1; }
+.cnpj-input-row { display: flex; gap: 10px; }
+.cnpj-input-row input { flex: 1; min-width: 0; }
+.cnpj-input-row button { white-space: nowrap; }
+.company-name, .company-contact { display: grid; gap: 4px; }
+.company-name small, .company-contact small { color: var(--muted); }
+@media (max-width: 600px) { .cnpj-input-row { flex-direction: column; } .company-section { padding: 12px; } }
+
 .field {
   display: grid;
   gap: 7px;

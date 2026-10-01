@@ -1,8 +1,12 @@
 import { clienteCreateSchema, clienteQuerySchema, clienteUpdateSchema } from "../../schemas/clientesSchemas.js";
 import { clientesService } from "../../services/clientesService.js";
 import { parseId } from "../../utils/parseId.js";
+import { consultarCnpj } from "../../services/cnpjService.js";
 
 export const clientesController = {
+  async consultarCnpj(request, response) {
+    return response.json(await consultarCnpj(request.params.cnpj));
+  },
   async index(request, response) {
     const filters = clienteQuerySchema.parse(request.query);
     const clientes = await clientesService.list(filters);

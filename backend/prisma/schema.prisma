@@ -47,6 +47,23 @@ model Usuario {
 model Cliente {
   id        Int       @id @default(autoincrement())
   nome      String    @unique
+  cnpj      String?   @unique
+  nomeFantasia String?
+  email String?
+  telefone String?
+  contato String?
+  cep String?
+  logradouro String?
+  numero String?
+  complemento String?
+  bairro String?
+  cidade String?
+  estado String?
+  situacaoCadastral String?
+  abertura String?
+  porte String?
+  naturezaJuridica String?
+  atividadePrincipal String?
   status    Status    @default(ATIVO)
   projetos  Projeto[]
   createdAt DateTime  @default(now())

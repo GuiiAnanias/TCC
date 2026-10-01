@@ -226,6 +226,21 @@ Regras importantes:
 
 ---
 
+### Clientes como empresas e consulta de CNPJ
+
+O cadastro de clientes reúne CNPJ, razão social, nome fantasia, pessoa de contato, e-mail, telefone, endereço e informações cadastrais. **Consultar CNPJ** preenche os dados pela ReceitaWS; confira e ajuste antes de salvar. A consulta não salva automaticamente. Se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente.
+
+Novos clientes exigem CNPJ válido e único. Clientes antigos continuam disponíveis, com os novos campos vazios até serem atualizados. O status ativo/inativo no sistema é independente da situação cadastral retornada pela ReceitaWS. CNPJs numéricos e alfanuméricos são aceitos na validação e no cadastro; a consulta depende da disponibilidade do documento no provedor.
+
+A integração reutiliza `https://receitaws.com.br/v1/cnpj/{cnpj}` do GiveHope, com consulta pelo backend em `GET /api/clientes/cnpj/:cnpj` (autenticada após integrar a branch `feature/login`), timeout de 12 segundos e cache local de 10 minutos. A API pública da ReceitaWS não exige chave e permite até 3 consultas por minuto. Referência: https://developers.receitaws.com.br/.
+
+Depois de atualizar esta versão, aplique a migration e gere o cliente Prisma na pasta `backend`:
+
+```powershell
+corepack pnpm exec prisma migrate deploy
+corepack pnpm run prisma:generate
+```
+
 ## Configuração Financeira do Colaborador
 
 A tabela de remuneração define as faixas financeiras do sistema:
