@@ -1,6 +1,7 @@
 import React from "react";
 import { BriefcaseBusiness, Building2, UsersRound, WalletCards, Clock } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge.jsx";
+import { formatCnpj, formatCep } from "../utils/companyFormat.js";
 
 const statusOptions = [
   { label: "Ativo", value: "ATIVO" },
@@ -63,12 +64,34 @@ export const resources = [
     singular: "cliente",
     endpoint: "/clientes",
     icon: Building2,
+    cnpjLookup: true,
+    formSections: ["Dados da empresa", "Contato", "Endereço", "Informações cadastrais"],
     fields: [
-      { name: "nome", label: "Nome", type: "text", placeholder: "Nome do cliente", required: true },
-      { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
+      { name: "cnpj", label: "CNPJ", type: "text", placeholder: "00.000.000/0000-00", requiredOnCreate: true, format: formatCnpj, maxLength: 18, clearable: true, section: "Dados da empresa" },
+      { name: "nome", label: "Razão social", type: "text", placeholder: "Razão social da empresa", required: true, maxLength: 255, section: "Dados da empresa" },
+      { name: "nomeFantasia", label: "Nome fantasia", type: "text", clearable: true, section: "Dados da empresa" },
+      { name: "status", label: "Status no sistema", type: "select", options: statusOptions, defaultValue: "ATIVO", section: "Dados da empresa" },
+      { name: "contato", label: "Pessoa de contato", type: "text", clearable: true, section: "Contato" },
+      { name: "email", label: "E-mail", type: "email", clearable: true, section: "Contato" },
+      { name: "telefone", label: "Telefone", type: "tel", maxLength: 50, clearable: true, section: "Contato" },
+      { name: "cep", label: "CEP", type: "text", format: formatCep, maxLength: 9, clearable: true, section: "Endereço" },
+      { name: "logradouro", label: "Logradouro", type: "text", clearable: true, section: "Endereço" },
+      { name: "numero", label: "Número", type: "text", maxLength: 30, clearable: true, section: "Endereço" },
+      { name: "complemento", label: "Complemento", type: "text", clearable: true, section: "Endereço" },
+      { name: "bairro", label: "Bairro", type: "text", clearable: true, section: "Endereço" },
+      { name: "cidade", label: "Cidade", type: "text", maxLength: 150, clearable: true, section: "Endereço" },
+      { name: "estado", label: "UF", type: "select", options: [{ label: "Selecione…", value: "" }, ..."AC AL AP AM BA CE DF ES GO MA MT MS MG PA PB PR PE PI RJ RN RS RO RR SC SP SE TO".split(" ").map((uf) => ({ label: uf, value: uf }))], clearable: true, section: "Endereço" },
+      { name: "situacaoCadastral", label: "Situação cadastral do CNPJ", type: "text", maxLength: 80, clearable: true, section: "Informações cadastrais" },
+      { name: "abertura", label: "Data de abertura", type: "text", placeholder: "DD/MM/AAAA", maxLength: 30, clearable: true, section: "Informações cadastrais" },
+      { name: "porte", label: "Porte", type: "text", maxLength: 100, clearable: true, section: "Informações cadastrais" },
+      { name: "naturezaJuridica", label: "Natureza jurídica", type: "text", clearable: true, section: "Informações cadastrais" },
+      { name: "atividadePrincipal", label: "Atividade principal", type: "text", clearable: true, section: "Informações cadastrais" }
     ],
     columns: [
-      { key: "nome", label: "Nome" },
+      { key: "nome", label: "Empresa", render: (item) => <div className="company-name"><strong>{item.nome}</strong>{item.nomeFantasia && <small>{item.nomeFantasia}</small>}</div> },
+      { key: "cnpj", label: "CNPJ", render: (item) => item.cnpj ? formatCnpj(item.cnpj) : "Não informado" },
+      { key: "cidade", label: "Cidade / UF", render: (item) => [item.cidade, item.estado].filter(Boolean).join(" / ") || "—" },
+      { key: "contato", label: "Contato", render: (item) => <div className="company-contact">{item.contato && <span>{item.contato}</span>}<span>{item.email || "—"}</span>{item.telefone && <small>{item.telefone}</small>}</div> },
       { key: "status", label: "Status", render: (item) => <StatusBadge status={item.status} /> }
     ]
   },
@@ -80,10 +103,10 @@ export const resources = [
     icon: UsersRound,
     financeManager: true,
     fields: [
-      { name: "nomeCompleto", label: "Nome completo", type: "text", placeholder: "Nome do colaborador", required: true },
+      { name: "nomeCompleto", label: "Nome completo", type: "text", placeholder: "Nome do colaborador", required: true, noNumbers: true },
       { name: "email", label: "E-mail", type: "email", placeholder: "email@empresa.com", required: true },
-      { name: "cargo", label: "Cargo/Função", type: "text", placeholder: "Desenvolvedor", required: true },
-      { name: "departamento", label: "Departamento", type: "text", placeholder: "Tecnologia", required: true },
+      { name: "cargo", label: "Cargo/Função", type: "catalog-select", catalog: "funcoes", required: true },
+      { name: "departamento", label: "Departamento", type: "catalog-select", catalog: "departamentos", required: true },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
@@ -102,7 +125,7 @@ export const resources = [
     endpoint: "/remuneracoes",
     icon: WalletCards,
     fields: [
-      { name: "nivel", label: "Nível/Faixa", type: "text", placeholder: "Junior", required: true },
+      { name: "nivel", label: "Nível/Faixa", type: "catalog-select", catalog: "funcoes", required: true },
       { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0", required: true },
       { name: "bonificacao", label: "Bonificação", type: "number", step: "0.01", min: "0", defaultValue: 0 },
       { name: "tipoBonificacao", label: "Tipo de bonificação", type: "select", options: tipoBonificacaoOptions, defaultValue: "NENHUMA" },
@@ -153,6 +176,7 @@ export const resources = [
   },
   {
     key: "apontamentos",
+    deleteMode: "delete",
     title: "Apontamento de Horas",
     singular: "apontamento",
     endpoint: "/apontamentos",
@@ -164,7 +188,7 @@ export const resources = [
       { name: "projetoId", label: "Projeto", type: "projeto", required: true },
       { name: "data", label: "Data", type: "date", required: true },
       { name: "horas", label: "Horas trabalhadas", type: "number", step: "0.5", min: "0", required: true },
-      { name: 'status', label: 'Status', type: 'select', defaultValue: 'Pendente', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
+      { name: 'status', label: 'Status', type: 'select', defaultValue: 'PENDENTE', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
       { name: "descricao", label: "Descrição da atividade", type: "text", required: true }
     ],
     columns: [

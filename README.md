@@ -56,6 +56,16 @@ Abra o sistema no navegador:
 http://localhost:5173
 ```
 
+### Login e proteção de acesso
+
+Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. Executar o seed novamente não redefine uma conta existente.
+
+As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há cadastro de usuários nesta etapa.
+
+Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "admin123" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
+
+Para testar a autenticação e a proteção da API com banco simulado, execute `corepack pnpm test` na pasta `backend`.
+
 ### 5. Abrir o banco em interface visual
 
 Em outro terminal, com o banco e o back-end configurados:
@@ -225,6 +235,21 @@ Regras importantes:
 - Projetos inativos ficam disponíveis para consulta, mas não permitem alterações na equipe.
 
 ---
+
+### Clientes como empresas e consulta de CNPJ
+
+O cadastro de clientes reúne CNPJ, razão social, nome fantasia, pessoa de contato, e-mail, telefone, endereço e informações cadastrais. **Consultar CNPJ** preenche os dados pela ReceitaWS; confira e ajuste antes de salvar. A consulta não salva automaticamente. Se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente.
+
+Novos clientes exigem CNPJ válido e único. Clientes antigos continuam disponíveis, com os novos campos vazios até serem atualizados. O status ativo/inativo no sistema é independente da situação cadastral retornada pela ReceitaWS. CNPJs numéricos e alfanuméricos são aceitos na validação e no cadastro; a consulta depende da disponibilidade do documento no provedor.
+
+A integração reutiliza `https://receitaws.com.br/v1/cnpj/{cnpj}` do GiveHope, com consulta pelo backend em `GET /api/clientes/cnpj/:cnpj` (autenticada após integrar a branch `feature/login`), timeout de 12 segundos e cache local de 10 minutos. A API pública da ReceitaWS não exige chave e permite até 3 consultas por minuto. Referência: https://developers.receitaws.com.br/.
+
+Depois de atualizar esta versão, aplique a migration e gere o cliente Prisma na pasta `backend`:
+
+```powershell
+corepack pnpm exec prisma migrate deploy
+corepack pnpm run prisma:generate
+```
 
 ## Configuração Financeira do Colaborador
 

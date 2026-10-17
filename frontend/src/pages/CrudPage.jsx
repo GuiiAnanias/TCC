@@ -1,5 +1,5 @@
 import React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Check, Edit3, Plus, RefreshCw, RotateCcw, Save, Search, Trash2, UsersRound, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceManager.jsx";
@@ -33,7 +33,7 @@ function readValue(item, column) {
   return item[column.key] ?? "-";
 }
 
-function buildPayload(fields, formData, isEditing) {
+function buildPayload(fields, formData, isEditing, originalRecord) {
   return fields.reduce((payload, field) => {
     if (field.hiddenOnCreate && !isEditing) {
       return payload;
@@ -41,7 +41,18 @@ function buildPayload(fields, formData, isEditing) {
 
     const value = formData[field.name];
 
+    if (field.clearable && isEditing && (value === "" || value === null) && originalRecord?.[field.name]) {
+      payload[field.name] = null;
+      return payload;
+    }
+
     if (value !== "" && value !== null && value !== undefined) {
+      if (isEditing && originalRecord) {
+        const previous = field.type === "date"
+          ? toInputDate(originalRecord[field.name])
+          : originalRecord[field.name];
+        if (String(value) === String(previous ?? "")) return payload;
+      }
       payload[field.name] = value;
     }
 
@@ -54,14 +65,19 @@ export function CrudPage({ config }) {
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
   const [colaboradores, setColaboradores] = useState([]);
+  const [catalog, setCatalog] = useState({ funcoes: [], departamentos: [] });
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
+  const [originalRecord, setOriginalRecord] = useState(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [consultingCnpj, setConsultingCnpj] = useState(false);
+  const cnpjRequest = useRef(null);
+  useEffect(() => () => cnpjRequest.current?.abort(), [config]);
 
   const isEditing = Boolean(editingId);
 
@@ -143,13 +159,25 @@ export function CrudPage({ config }) {
     }
   }, [config.loadColaboradores]);
 
+  const loadCatalog = useCallback(async () => {
+    if (!config.fields.some((field) => field.type === "catalog-select")) return;
+    try {
+      const { data } = await api.get("/opcoes-cadastro");
+      setCatalog(data);
+    } catch {
+      setError("Não foi possível carregar as opções de cadastro.");
+    }
+  }, [config.fields]);
+
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
     setEditingId(null);
+    setOriginalRecord(null);
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
     setSelectedRecord(null);
+    setConsultingCnpj(false);
   }, [config]);
 
   useEffect(() => {
@@ -157,16 +185,22 @@ export function CrudPage({ config }) {
     loadClientes();
     loadProjetos();
     loadColaboradores();
-  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores]);
+    loadCatalog();
+  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
 
   function resetForm() {
+    cnpjRequest.current?.abort();
+    setConsultingCnpj(false);
     setFormData(getInitialForm(config.fields));
     setEditingId(null);
+    setOriginalRecord(null);
     setMessage("");
     setError("");
   }
 
   function handleEdit(record) {
+    cnpjRequest.current?.abort();
+    setConsultingCnpj(false);
     const nextForm = getInitialForm(config.fields, true);
 
     config.fields.forEach((field) => {
@@ -175,11 +209,13 @@ export function CrudPage({ config }) {
         return;
       }
 
-      nextForm[field.name] = record[field.name] ?? field.defaultValue ?? "";
+      const value = record[field.name] ?? field.defaultValue ?? "";
+      nextForm[field.name] = field.format ? field.format(value) : value;
     });
 
     setFormData(nextForm);
     setEditingId(record.id);
+    setOriginalRecord(record);
     setMessage("");
     setError("");
   }
@@ -191,17 +227,21 @@ export function CrudPage({ config }) {
     setMessage("");
 
     try {
-      const payload = buildPayload(config.fields, formData, isEditing);
+      const payload = buildPayload(config.fields, formData, isEditing, originalRecord);
+
+      if (isEditing && Object.keys(payload).length === 0) {
+        setMessage("Nenhuma alteração para salvar.");
+        return;
+      }
 
       if (isEditing) {
         await api.put(`${config.endpoint}/${editingId}`, payload);
-        setMessage(`${config.singular} atualizado com sucesso.`);
       } else {
         await api.post(config.endpoint, payload);
-        setMessage(`${config.singular} cadastrado com sucesso.`);
       }
 
       resetForm();
+      setMessage(`${config.singular} ${isEditing ? "atualizado" : "cadastrado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
@@ -213,8 +253,41 @@ export function CrudPage({ config }) {
     }
   }
 
+  async function handleCnpjLookup() {
+    const cnpj = (formData.cnpj || "").toUpperCase().replace(/[.\/\-\s]/g, "");
+    if (!/^[A-Z0-9]{12}\d{2}$/.test(cnpj)) {
+      setError("Informe um CNPJ completo para consultar.");
+      return;
+    }
+    const controller = new AbortController();
+    cnpjRequest.current?.abort();
+    cnpjRequest.current = controller;
+    setConsultingCnpj(true);
+    setError("");
+    setMessage("");
+    try {
+      const { data } = await api.get(`/clientes/cnpj/${cnpj}`, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setFormData((current) => {
+        const next = { ...current };
+        config.fields.forEach((field) => {
+          if (data[field.name] !== undefined && data[field.name] !== null && data[field.name] !== "") {
+            next[field.name] = field.format ? field.format(data[field.name]) : data[field.name];
+          }
+        });
+        return next;
+      });
+      setMessage("Dados da empresa preenchidos. Confira as informações antes de salvar.");
+    } catch (requestError) {
+      if (!controller.signal.aborted) setError(requestError.response?.data?.errors?.[0]?.message || requestError.response?.data?.message || "Não foi possível consultar o CNPJ. Preencha os dados manualmente.");
+    } finally {
+      if (cnpjRequest.current === controller) setConsultingCnpj(false);
+    }
+  }
+
   async function handleInactivate(record) {
-    const confirmMessage = `Inativar ${config.singular} "${record.nome || record.nomeCompleto || record.nivel}"?`;
+    const deleting = config.deleteMode === "delete";
+    const confirmMessage = `${deleting ? "Excluir definitivamente" : "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
 
     if (!window.confirm(confirmMessage)) {
       return;
@@ -225,11 +298,12 @@ export function CrudPage({ config }) {
 
     try {
       await api.delete(`${config.endpoint}/${record.id}`);
-      setMessage(`${config.singular} inativado com sucesso.`);
+      if (editingId === record.id) resetForm();
+      setMessage(`${config.singular} ${deleting ? "excluído" : "inativado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível inativar o registro.");
+      setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
     }
   }
 
@@ -238,9 +312,31 @@ export function CrudPage({ config }) {
       id: field.name,
       name: field.name,
       value: formData[field.name] ?? "",
-      required: field.required,
-      onChange: (event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))
+      required: field.required || (field.requiredOnCreate && !isEditing),
+      disabled: consultingCnpj || saving,
+      onChange: (event) => {
+        const raw = field.noNumbers ? event.target.value.replace(/\p{N}/gu, "") : event.target.value;
+        const value = field.format ? field.format(raw) : raw;
+        setFormData((current) => ({ ...current, [field.name]: value }));
+      }
     };
+
+    if (field.name === "cnpj" && config.cnpjLookup) {
+      return <div className="cnpj-input-row"><input {...commonProps} type="text" maxLength={field.maxLength} placeholder={field.placeholder} /><button type="button" className="secondary-button" onClick={handleCnpjLookup} disabled={consultingCnpj || saving} aria-label="Consultar CNPJ">{consultingCnpj ? "Consultando…" : "Consultar CNPJ"}</button></div>;
+    }
+
+    if (field.type === "catalog-select") {
+      const options = catalog[field.catalog] || [];
+      const selected = String(formData[field.name] ?? "");
+      const legacy = selected && !options.includes(selected) ? [selected] : [];
+      return (
+        <select {...commonProps} disabled={options.length === 0 && !legacy.length}>
+          <option value="">Selecione...</option>
+          {legacy.map((option) => <option key={option} value={option}>{option} (registro antigo)</option>)}
+          {options.map((option) => <option key={option} value={option}>{option}</option>)}
+        </select>
+      );
+    }
 
     if (field.type === "select") {
       return (
@@ -315,6 +411,7 @@ export function CrudPage({ config }) {
       <input
         {...commonProps}
         type={field.type}
+        maxLength={field.maxLength || (config.cnpjLookup ? 255 : undefined)}
         min={field.min}
         step={field.step}
         placeholder={field.placeholder}
@@ -356,17 +453,25 @@ export function CrudPage({ config }) {
           <strong>{isEditing ? `Editar ${config.singular}` : `Novo ${config.singular}`}</strong>
         </div>
 
-        <div className="form-grid">
+        {config.formSections ? config.formSections.map((section) => (
+          <fieldset className="company-section" key={section} disabled={consultingCnpj || saving}>
+            <legend>{section}</legend>
+            {section === "Dados da empresa" && <p className="company-help">Informe o CNPJ e consulte para preencher os dados da empresa, ou preencha manualmente.</p>}
+            <div className="form-grid">{visibleFields.filter((field) => field.section === section).map((field) => (
+              <div key={field.name} className={`field ${field.name === "cnpj" ? "field-wide" : ""}`}><label htmlFor={field.name}><span>{field.label}{(field.required || (field.requiredOnCreate && !isEditing)) ? " *" : ""}</span></label>{renderField(field)}</div>
+            ))}</div>
+          </fieldset>
+        )) : <div className="form-grid">
           {visibleFields.map((field) => (
             <label key={field.name} className="field">
               <span>{field.label}</span>
               {renderField(field)}
             </label>
           ))}
-        </div>
+        </div>}
 
         <div className="actions-row">
-          <button className="primary-button" type="submit" disabled={saving} title="Salvar">
+          <button className="primary-button" type="submit" disabled={saving || consultingCnpj} title="Salvar">
             <Save size={18} />
             {saving ? "Salvando" : "Salvar"}
           </button>
@@ -394,8 +499,9 @@ export function CrudPage({ config }) {
             title="Filtrar por status"
           >
             <option value="">Todos</option>
-            <option value="ATIVO">Ativos</option>
-            <option value="INATIVO">Inativos</option>
+            {config.fields.find((field) => field.name === "status")?.options.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
           </select>
         </div>
 
@@ -447,7 +553,7 @@ export function CrudPage({ config }) {
                             <WalletCards size={17} />
                           </button>
                         ) : null}
-                        <button type="button" className="icon-button danger" onClick={() => handleInactivate(record)} title="Inativar">
+                        <button type="button" className="icon-button danger" onClick={() => handleInactivate(record)} title={config.deleteMode === "delete" ? "Excluir" : "Inativar"}>
                           <Trash2 size={17} />
                         </button>
                       </div>

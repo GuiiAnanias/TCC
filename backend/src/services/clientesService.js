@@ -21,6 +21,7 @@ export const clientesService = {
   },
 
   async create(data) {
+    if (data.cnpj && await clientesRepository.findByCnpj(data.cnpj)) throw new HttpError(409, "Já existe um cliente com este CNPJ.");
     const cliente = await clientesRepository.findByNome(data.nome);
 
     if (cliente) {
@@ -32,6 +33,10 @@ export const clientesService = {
 
   async update(id, data) {
     await ensureClienteExists(id);
+    if (data.cnpj) {
+      const duplicate = await clientesRepository.findByCnpj(data.cnpj);
+      if (duplicate && duplicate.id !== id) throw new HttpError(409, "Já existe um cliente com este CNPJ.");
+    }
 
     if (data.nome) {
       const cliente = await clientesRepository.findByNome(data.nome);
