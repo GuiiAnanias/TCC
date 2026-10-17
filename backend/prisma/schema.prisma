@@ -12,6 +12,11 @@ enum Status {
   INATIVO
 }
 
+enum TipoPessoa {
+  PF
+  PJ
+}
+
 enum TipoContrato {
   FIXO
   HORAS
@@ -46,7 +51,9 @@ model Usuario {
 
 model Cliente {
   id        Int       @id @default(autoincrement())
-  nome      String    @unique
+  nome      String
+  tipoPessoa TipoPessoa @default(PJ)
+  cpf       String?   @unique
   cnpj      String?   @unique
   nomeFantasia String?
   email String?

@@ -2,8 +2,12 @@ import { clienteCreateSchema, clienteQuerySchema, clienteUpdateSchema } from "..
 import { clientesService } from "../../services/clientesService.js";
 import { parseId } from "../../utils/parseId.js";
 import { consultarCnpj } from "../../services/cnpjService.js";
+import { consultarCep } from "../../services/cepService.js";
 
 export const clientesController = {
+  async consultarCep(request, response) {
+    return response.json(await consultarCep(request.params.cep));
+  },
   async consultarCnpj(request, response) {
     return response.json(await consultarCnpj(request.params.cnpj));
   },

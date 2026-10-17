@@ -1,10 +1,11 @@
 import React from "react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Check, Edit3, Plus, RefreshCw, RotateCcw, Save, Search, Trash2, UsersRound, WalletCards, X } from "lucide-react";
+import { Building2, UserRound, Check, Edit3, Plus, RotateCcw, Save, Search, Trash2, UsersRound, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceManager.jsx";
 import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
+import { FloatingActions } from "../components/FloatingActions.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -61,6 +62,13 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 }
 
 export function CrudPage({ config }) {
+  const isClient = config.key === "clientes";
+  const [clientKind, setClientKind] = useState("PJ");
+  const [formOpen, setFormOpen] = useState(false);
+  const clientDrafts = useRef({});
+  const formRegion = useRef(null);
+  const formFields = useMemo(() => isClient && clientKind === "PF" ? config.personFields(config.fields) : config.fields, [config, isClient, clientKind]);
+  const formSections = isClient && clientKind === "PF" ? ["Dados pessoais", "Contato", "Endereço"] : config.formSections;
   const [records, setRecords] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
@@ -76,14 +84,17 @@ export function CrudPage({ config }) {
   const [error, setError] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
+  const [consultingCep, setConsultingCep] = useState(false);
+  const [cepFeedback, setCepFeedback] = useState("");
+  const cepRequest = useRef(null);
   const cnpjRequest = useRef(null);
-  useEffect(() => () => cnpjRequest.current?.abort(), [config]);
+  useEffect(() => () => { cnpjRequest.current?.abort(); cepRequest.current?.abort(); }, [config]);
 
   const isEditing = Boolean(editingId);
 
   const visibleFields = useMemo(
-    () => config.fields.filter((field) => !field.hiddenOnCreate || isEditing),
-    [config.fields, isEditing]
+    () => formFields.filter((field) => !field.hiddenOnCreate || isEditing),
+    [formFields, isEditing]
   );
 
   const loadRecords = useCallback(async () => {
@@ -171,6 +182,9 @@ export function CrudPage({ config }) {
 
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
+    setFormOpen(false);
+    setClientKind("PJ");
+    clientDrafts.current = {};
     setEditingId(null);
     setOriginalRecord(null);
     setMessage("");
@@ -178,6 +192,8 @@ export function CrudPage({ config }) {
     setFilters({ busca: "", status: "" });
     setSelectedRecord(null);
     setConsultingCnpj(false);
+    setConsultingCep(false);
+    setCepFeedback("");
   }, [config]);
 
   useEffect(() => {
@@ -188,10 +204,63 @@ export function CrudPage({ config }) {
     loadCatalog();
   }, [loadRecords, loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
 
+  function cancelCepLookup() {
+    cepRequest.current?.abort();
+    setConsultingCep(false);
+    setCepFeedback("");
+  }
+
+  async function handleCepChange(value) {
+    cancelCepLookup();
+    const cep = value.replace(/\D/g, "");
+    if (cep.length !== 8) return;
+    const controller = new AbortController();
+    cepRequest.current = controller;
+    const previous = { ...formData };
+    setConsultingCep(true);
+    setCepFeedback("Consultando CEP…");
+    try {
+      const { data } = await api.get(`/clientes/cep/${cep}`, { signal: controller.signal });
+      if (controller.signal.aborted) return;
+      setFormData((current) => {
+        if (String(current.cep || "").replace(/\D/g, "") !== cep) return current;
+        const next = { ...current };
+        for (const name of ["logradouro", "bairro", "cidade", "estado"]) {
+          // Preserve o que o usuário digitou enquanto a consulta estava em andamento.
+          if (current[name] === previous[name]) next[name] = data[name] || "";
+        }
+        return next;
+      });
+      setCepFeedback("");
+    } catch (requestError) {
+      if (!controller.signal.aborted) setCepFeedback(requestError.response?.data?.message || "Não foi possível consultar o CEP. Preencha o endereço manualmente.");
+    } finally {
+      if (cepRequest.current === controller && !controller.signal.aborted) setConsultingCep(false);
+    }
+  }
+
   function resetForm() {
+    cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
-    setFormData(getInitialForm(config.fields));
+    setFormData(getInitialForm(formFields));
+    setFormOpen(false);
+    clientDrafts.current = {};
+    setEditingId(null);
+    setOriginalRecord(null);
+    setMessage("");
+    setError("");
+  }
+
+  function chooseClientKind(kind) {
+    cancelCepLookup();
+    cnpjRequest.current?.abort();
+    setConsultingCnpj(false);
+    if (formOpen && !isEditing) clientDrafts.current[clientKind] = formData;
+    const fields = kind === "PF" ? config.personFields(config.fields) : config.fields;
+    setFormData(clientDrafts.current[kind] || getInitialForm(fields));
+    setClientKind(kind);
+    setFormOpen(true);
     setEditingId(null);
     setOriginalRecord(null);
     setMessage("");
@@ -199,11 +268,20 @@ export function CrudPage({ config }) {
   }
 
   function handleEdit(record) {
+    cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
-    const nextForm = getInitialForm(config.fields, true);
+    const kind = record.tipoPessoa || "PJ";
+    const fields = isClient && kind === "PF" ? config.personFields(config.fields) : config.fields;
+    if (isClient) {
+      setClientKind(kind);
+      setFormOpen(true);
+      clientDrafts.current = {};
+      requestAnimationFrame(() => formRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+    const nextForm = getInitialForm(fields, true);
 
-    config.fields.forEach((field) => {
+    fields.forEach((field) => {
       if (field.type === "date") {
         nextForm[field.name] = toInputDate(record[field.name]);
         return;
@@ -227,12 +305,14 @@ export function CrudPage({ config }) {
     setMessage("");
 
     try {
-      const payload = buildPayload(config.fields, formData, isEditing, originalRecord);
+      const payload = buildPayload(formFields, formData, isEditing, originalRecord);
 
       if (isEditing && Object.keys(payload).length === 0) {
         setMessage("Nenhuma alteração para salvar.");
         return;
       }
+
+      if (isClient && !isEditing) payload.tipoPessoa = clientKind;
 
       if (isEditing) {
         await api.put(`${config.endpoint}/${editingId}`, payload);
@@ -311,6 +391,8 @@ export function CrudPage({ config }) {
     const commonProps = {
       id: field.name,
       name: field.name,
+      inputMode: field.inputMode,
+      pattern: field.pattern,
       value: formData[field.name] ?? "",
       required: field.required || (field.requiredOnCreate && !isEditing),
       disabled: consultingCnpj || saving,
@@ -318,11 +400,16 @@ export function CrudPage({ config }) {
         const raw = field.noNumbers ? event.target.value.replace(/\p{N}/gu, "") : event.target.value;
         const value = field.format ? field.format(raw) : raw;
         setFormData((current) => ({ ...current, [field.name]: value }));
+        if (isClient && field.name === "cep") handleCepChange(value);
       }
     };
 
     if (field.name === "cnpj" && config.cnpjLookup) {
       return <div className="cnpj-input-row"><input {...commonProps} type="text" maxLength={field.maxLength} placeholder={field.placeholder} /><button type="button" className="secondary-button" onClick={handleCnpjLookup} disabled={consultingCnpj || saving} aria-label="Consultar CNPJ">{consultingCnpj ? "Consultando…" : "Consultar CNPJ"}</button></div>;
+    }
+
+    if (isClient && field.name === "cep") {
+      return <div className="cep-input"><input {...commonProps} type="text" maxLength={field.maxLength} placeholder={field.placeholder} aria-describedby={cepFeedback ? "cep-feedback" : undefined} aria-busy={consultingCep} />{cepFeedback && <small id="cep-feedback" className="field-help" role="status">{cepFeedback}</small>}</div>;
     }
 
     if (field.type === "catalog-select") {
@@ -426,10 +513,7 @@ export function CrudPage({ config }) {
           <span className="eyebrow">Cadastro</span>
           <h1>{config.title}</h1>
         </div>
-        <button className="secondary-button" type="button" onClick={loadRecords} disabled={loading} title="Atualizar">
-          <RefreshCw size={18} />
-          Atualizar
-        </button>
+        <FloatingActions onRefresh={loadRecords} loading={loading} />
       </header>
 
       <div className="feedback-row">
@@ -447,13 +531,22 @@ export function CrudPage({ config }) {
         ) : null}
       </div>
 
+      {isClient && <div className={`client-type-picker ${formOpen ? "is-open" : ""}`} aria-label="Tipo de cliente">
+        {[["PF", "Pessoa Física", UserRound], ["PJ", "Pessoa Jurídica", Building2]].map(([kind, label, Icon]) => (
+          <button key={kind} type="button" className={`secondary-button client-type-button ${formOpen && clientKind === kind ? "is-selected" : ""}`} disabled={saving} aria-pressed={formOpen && clientKind === kind} aria-expanded={formOpen && clientKind === kind} aria-controls="client-form" onClick={() => chooseClientKind(kind)}>
+            <Icon size={21} /><span>+ {label}</span>
+          </button>
+        ))}
+      </div>}
+      <div ref={formRegion} id={isClient ? "client-form" : undefined} className={isClient ? `client-form-reveal ${formOpen ? "is-open" : ""}` : undefined} inert={isClient && !formOpen ? true : undefined} aria-hidden={isClient && !formOpen ? true : undefined}>
+      <div className={isClient ? "client-form-inner" : undefined}>
       <form className="form-panel" onSubmit={handleSubmit}>
         <div className="form-title">
           <Plus size={18} />
-          <strong>{isEditing ? `Editar ${config.singular}` : `Novo ${config.singular}`}</strong>
+          <strong>{isClient ? `${isEditing ? "Editar" : "Cadastrar"} ${clientKind === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}` : isEditing ? `Editar ${config.singular}` : `Novo ${config.singular}`}</strong>
         </div>
 
-        {config.formSections ? config.formSections.map((section) => (
+        {formSections ? formSections.map((section) => (
           <fieldset className="company-section" key={section} disabled={consultingCnpj || saving}>
             <legend>{section}</legend>
             {section === "Dados da empresa" && <p className="company-help">Informe o CNPJ e consulte para preencher os dados da empresa, ou preencha manualmente.</p>}
@@ -471,16 +564,18 @@ export function CrudPage({ config }) {
         </div>}
 
         <div className="actions-row">
-          <button className="primary-button" type="submit" disabled={saving || consultingCnpj} title="Salvar">
+          <button className="primary-button" type="submit" disabled={saving || consultingCnpj || consultingCep} title="Salvar">
             <Save size={18} />
             {saving ? "Salvando" : "Salvar"}
           </button>
-          <button className="secondary-button" type="button" onClick={resetForm} title="Limpar">
+          <button className="secondary-button" type="button" onClick={resetForm} disabled={saving} title={isClient ? "Cancelar cadastro" : "Limpar"}>
             <RotateCcw size={18} />
-            Limpar
+            {isClient ? "Cancelar" : "Limpar"}
           </button>
         </div>
       </form>
+      </div>
+      </div>
 
       <div className="table-panel">
         <div className="table-toolbar">

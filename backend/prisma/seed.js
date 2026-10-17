@@ -38,17 +38,13 @@ async function main() {
     }
   });
 
-  const ecode = await prisma.cliente.upsert({
-    where: { nome: "E/Code" },
-    update: {},
-    create: { nome: "E/Code" }
-  });
-
-  const acme = await prisma.cliente.upsert({
-    where: { nome: "Acme Tecnologia" },
-    update: {},
-    create: { nome: "Acme Tecnologia" }
-  });
+  // Pessoas físicas podem ter nomes iguais; os exemplos são identificados por nome e tipo.
+  async function ensureCompany(nome) {
+    return await prisma.cliente.findFirst({ where: { nome, tipoPessoa: "PJ" } })
+      || prisma.cliente.create({ data: { nome, tipoPessoa: "PJ" } });
+  }
+  const ecode = await ensureCompany("E/Code");
+  const acme = await ensureCompany("Acme Tecnologia");
 
   const ana = await prisma.colaborador.upsert({
     where: { email: "ana.silva@exemplo.local" },
