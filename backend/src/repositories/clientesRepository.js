@@ -9,6 +9,7 @@ export const clientesRepository = {
           { nome: { contains: busca, mode: "insensitive" } },
           { nomeFantasia: { contains: busca, mode: "insensitive" } },
           { cnpj: { contains: busca.toUpperCase().replace(/[.\/\-\s]/g, "") || busca, mode: "insensitive" } },
+          { cpf: { contains: busca.replace(/[.\-\s]/g, "") || busca } },
           { cidade: { contains: busca, mode: "insensitive" } },
           { email: { contains: busca, mode: "insensitive" } }
         ] } : {})
@@ -22,7 +23,10 @@ export const clientesRepository = {
   },
 
   findByNome(nome) {
-    return prisma.cliente.findUnique({ where: { nome } });
+    return prisma.cliente.findFirst({ where: { nome, tipoPessoa: "PJ" } });
+  },
+  findByCpf(cpf) {
+    return prisma.cliente.findUnique({ where: { cpf } });
   },
   findByCnpj(cnpj) {
     return prisma.cliente.findUnique({ where: { cnpj } });

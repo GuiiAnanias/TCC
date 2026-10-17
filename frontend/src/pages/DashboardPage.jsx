@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Activity, BriefcaseBusiness, Building2, RefreshCw, UsersRound, WalletCards } from "lucide-react";
+import { Activity, BriefcaseBusiness, Building2, UsersRound, WalletCards } from "lucide-react";
 import { api } from "../api/client.js";
+import { FloatingActions } from "../components/FloatingActions.jsx";
 
 const summaryCards = [
   { key: "clientes", label: "Clientes", endpoint: "/clientes", icon: Building2 },
@@ -74,10 +75,7 @@ export function DashboardPage() {
           <span className="eyebrow">Visão geral</span>
           <h1>Dashboard</h1>
         </div>
-        <button className="secondary-button" type="button" onClick={loadSummary} disabled={loading} title="Atualizar">
-          <RefreshCw size={18} />
-          Atualizar
-        </button>
+        <FloatingActions onRefresh={loadSummary} loading={loading} />
       </header>
 
       {error ? (
