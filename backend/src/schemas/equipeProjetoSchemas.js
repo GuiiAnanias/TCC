@@ -11,6 +11,7 @@ export const equipeProjetoCreateSchema = z.object({
 export const equipeProjetoUpdateSchema = z
   .object({
     papel: z.enum(papeisProjeto, { message: "Papel do colaborador inválido." }).optional(),
+    dataVigencia: z.coerce.date().optional(),
     dataEntrada: z.coerce.date().optional(),
     dataSaida: z.coerce.date().nullable().optional()
   })

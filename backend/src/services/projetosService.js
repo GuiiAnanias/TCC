@@ -122,12 +122,24 @@ export const projetosService = {
     ensureProjetoAtivo(projeto);
 
     const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId);
+    if (data.papel && data.papel !== vinculo.papel) {
+      if (vinculo.dataSaida) throw new HttpError(400, "O papel de uma participação encerrada não pode ser alterado.");
+      if (!data.dataVigencia) throw new HttpError(400, "Informe a data de vigência do novo papel.");
+      if (data.dataEntrada !== undefined || data.dataSaida !== undefined) throw new HttpError(400, "Altere o papel separadamente das datas de participação.");
+      const day = new Date(data.dataVigencia.toISOString().slice(0, 10));
+      if (day <= new Date(vinculo.dataEntrada.toISOString().slice(0, 10))) {
+        throw new HttpError(400, "A vigência do novo papel deve começar após a entrada do vínculo atual.");
+      }
+      return projetosRepository.changeTeamRole(vinculo, data.papel, day);
+    }
     const nextDataEntrada = data.dataEntrada ?? vinculo.dataEntrada;
     const nextDataSaida = data.dataSaida === undefined ? vinculo.dataSaida : data.dataSaida;
 
     ensurePeriodoValido(nextDataEntrada, nextDataSaida);
 
-    return projetosRepository.updateTeamMember(vinculoId, data);
+    const { dataVigencia, ...changes } = data;
+    if (!Object.keys(changes).length) throw new HttpError(400, "Informe uma alteração no vínculo.");
+    return projetosRepository.updateTeamMember(vinculoId, changes);
   },
 
   async removeTeamMember(projetoId, vinculoId) {

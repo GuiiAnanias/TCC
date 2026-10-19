@@ -109,6 +109,18 @@ model ItemTabelaRemuneracao {
   @@map("itens_tabela_remuneracao")
 }
 
+model BonificacaoPapel {
+  id          Int       @id @default(autoincrement())
+  papel       String
+  percentual  Decimal   @db.Decimal(10, 2)
+  dataInicio  DateTime  @db.Date
+  dataFim     DateTime? @db.Date
+  createdAt   DateTime  @default(now())
+
+  @@index([papel, dataInicio])
+  @@map("bonificacoes_papeis")
+}
+
 model ConfiguracaoFinanceira {
   id              Int                     @id @default(autoincrement())
   colaboradorId   Int

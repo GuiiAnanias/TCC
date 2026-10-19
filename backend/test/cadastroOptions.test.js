@@ -4,6 +4,7 @@ import { cargosTi, niveisRemuneracao, papeisProjeto } from "../src/schemas/cadas
 import { colaboradorCreateSchema } from "../src/schemas/colaboradoresSchemas.js";
 import { remuneracaoCreateSchema, remuneracaoUpdateSchema } from "../src/schemas/remuneracoesSchemas.js";
 import { equipeProjetoCreateSchema } from "../src/schemas/equipeProjetoSchemas.js";
+import { bonificacaoPapelCreateSchema } from "../src/schemas/bonificacoesPapeisSchemas.js";
 import { remuneracoesService } from "../src/services/remuneracoesService.js";
 import { remuneracoesRepository } from "../src/repositories/remuneracoesRepository.js";
 
@@ -16,10 +17,12 @@ test("cargo, remuneration level and project role accept their own domain values"
   for (const valorHora of [0, 0.001, Infinity, 100000000]) assert.equal(remuneracaoCreateSchema.safeParse({ ...rate, valorHora }).success, false);
   assert.equal(equipeProjetoCreateSchema.parse(member).papel, "Scrum Master");
   assert.equal(equipeProjetoCreateSchema.parse({ ...member, papel: "Dev" }).papel, "Dev");
+  assert.equal(bonificacaoPapelCreateSchema.parse({ papel: "Dev", percentual: 10, dataInicio: "2026-09-01" }).papel, "Dev");
   for (const nivel of ["QA", "Product Owner", "Desenvolvedor Front-end"]) assert.equal(remuneracaoCreateSchema.safeParse({ ...rate, nivel }).success, false);
   assert.equal(colaboradorCreateSchema.safeParse({ ...person, cargo: "Júnior II" }).success, false);
   assert.equal(colaboradorCreateSchema.safeParse({ ...person, cargo: "Dev" }).success, false);
   assert.equal(equipeProjetoCreateSchema.safeParse({ ...member, papel: "Júnior II" }).success, false);
+  assert.equal(bonificacaoPapelCreateSchema.safeParse({ papel: "Júnior II", percentual: 10, dataInicio: "2026-09-01" }).success, false);
   assert.notEqual(cargosTi, papeisProjeto);
   assert.equal(niveisRemuneracao.length, 20);
   assert.ok(niveisRemuneracao.includes("Trainee I"));
