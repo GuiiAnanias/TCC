@@ -111,14 +111,14 @@ export const resources = [
     fields: [
       { name: "nomeCompleto", label: "Nome completo", type: "text", placeholder: "Nome do colaborador", required: true, noNumbers: true },
       { name: "email", label: "E-mail", type: "email", placeholder: "email@empresa.com", required: true },
-      { name: "cargo", label: "Cargo/Função", type: "catalog-select", catalog: "funcoes", required: true },
+      { name: "cargo", label: "Cargo", type: "catalog-select", catalog: "cargos", required: true, help: "Atuação profissional. A remuneração e o papel no projeto são definidos separadamente." },
       { name: "departamento", label: "Departamento", type: "catalog-select", catalog: "departamentos", required: true },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
       { key: "nomeCompleto", label: "Nome" },
       { key: "email", label: "E-mail" },
-      { key: "cargo", label: "Cargo/Função" },
+      { key: "cargo", label: "Cargo" },
       { key: "departamento", label: "Departamento" },
       { key: "configuracaoFinanceira", label: "Remuneração vigente", render: currentRemuneration },
       { key: "status", label: "Status", render: (item) => <StatusBadge status={item.status} /> }
@@ -131,14 +131,14 @@ export const resources = [
     endpoint: "/remuneracoes",
     icon: WalletCards,
     fields: [
-      { name: "nivel", label: "Nível/Faixa", type: "catalog-select", catalog: "funcoes", required: true },
-      { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0", required: true },
+      { name: "nivel", label: "Nível de remuneração", type: "catalog-select", catalog: "niveisRemuneracao", required: true, help: "Faixa de carreira, como Júnior II ou Pleno I. O valor/hora é informado abaixo." },
+      { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0.01", required: true },
       { name: "bonificacao", label: "Bonificação", type: "number", step: "0.01", min: "0", defaultValue: 0 },
       { name: "tipoBonificacao", label: "Tipo de bonificação", type: "select", options: tipoBonificacaoOptions, defaultValue: "NENHUMA" },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
-      { key: "nivel", label: "Nível/Faixa" },
+      { key: "nivel", label: "Nível de remuneração" },
       { key: "valorHora", label: "Valor hora", render: (item) => currency(item.valorHora) },
       { key: "bonificacao", label: "Bonificação", render: (item) => decimal(item.bonificacao) },
       { key: "tipoBonificacao", label: "Tipo" },

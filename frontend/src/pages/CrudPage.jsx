@@ -73,7 +73,7 @@ export function CrudPage({ config }) {
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
   const [colaboradores, setColaboradores] = useState([]);
-  const [catalog, setCatalog] = useState({ funcoes: [], departamentos: [] });
+  const [catalog, setCatalog] = useState({ cargos: [], niveisRemuneracao: [], departamentos: [] });
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
@@ -414,12 +414,12 @@ export function CrudPage({ config }) {
 
     if (field.type === "catalog-select") {
       const options = catalog[field.catalog] || [];
-      const selected = String(formData[field.name] ?? "");
-      const legacy = selected && !options.includes(selected) ? [selected] : [];
+      const original = isEditing ? String(originalRecord?.[field.name] ?? "") : "";
+      const legacy = original && !options.includes(original) ? [original] : [];
       return (
-        <select {...commonProps} disabled={options.length === 0 && !legacy.length}>
+        <select {...commonProps} disabled={commonProps.disabled || (options.length === 0 && !legacy.length)}>
           <option value="">Selecione...</option>
-          {legacy.map((option) => <option key={option} value={option}>{option} (registro antigo)</option>)}
+          {legacy.map((option) => <option key={option} value={option}>{option}</option>)}
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
       );

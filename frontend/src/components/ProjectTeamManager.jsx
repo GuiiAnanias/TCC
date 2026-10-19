@@ -87,10 +87,6 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         Object.fromEntries(teamResponse.data.map((member) => [member.id, member.papel]))
       );
 
-      setFormData((current) => ({
-        ...current,
-        papel: current.papel || rolesResponse.data[0] || ""
-      }));
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.");
     } finally {
@@ -127,7 +123,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       setMessage("Colaborador vinculado ao projeto.");
       setFormData({
         colaboradorId: "",
-        papel: roles[0] || "",
+        papel: "",
         dataEntrada: today()
       });
       await loadTeam();

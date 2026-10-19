@@ -1,7 +1,6 @@
 import { z } from "zod";
-import { funcoesTi } from "./cadastroOptions.js";
-
-export const papeisProjeto = funcoesTi;
+import { papeisProjeto } from "./cadastroOptions.js";
+export { papeisProjeto } from "./cadastroOptions.js";
 
 export const equipeProjetoCreateSchema = z.object({
   colaboradorId: z.coerce.number().int().positive("Colaborador é obrigatório."),
