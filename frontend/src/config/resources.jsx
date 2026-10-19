@@ -8,12 +8,6 @@ const statusOptions = [
   { label: "Inativo", value: "INATIVO" }
 ];
 
-const tipoBonificacaoOptions = [
-  { label: "Nenhuma", value: "NENHUMA" },
-  { label: "Valor fixo", value: "VALOR_FIXO" },
-  { label: "Percentual", value: "PERCENTUAL" }
-];
-
 const tipoContratoOptions = [
   { label: "Fixo", value: "FIXO" },
   { label: "Horas", value: "HORAS" },
@@ -133,15 +127,11 @@ export const resources = [
     fields: [
       { name: "nivel", label: "Nível de remuneração", type: "catalog-select", catalog: "niveisRemuneracao", required: true, help: "Faixa de carreira, como Júnior II ou Pleno I. O valor/hora é informado abaixo." },
       { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0.01", required: true },
-      { name: "bonificacao", label: "Bonificação", type: "number", step: "0.01", min: "0", defaultValue: 0 },
-      { name: "tipoBonificacao", label: "Tipo de bonificação", type: "select", options: tipoBonificacaoOptions, defaultValue: "NENHUMA" },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
       { key: "nivel", label: "Nível de remuneração" },
       { key: "valorHora", label: "Valor hora", render: (item) => currency(item.valorHora) },
-      { key: "bonificacao", label: "Bonificação", render: (item) => decimal(item.bonificacao) },
-      { key: "tipoBonificacao", label: "Tipo" },
       { key: "status", label: "Status", render: (item) => <StatusBadge status={item.status} /> }
     ]
   },

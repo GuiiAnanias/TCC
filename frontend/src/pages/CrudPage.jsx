@@ -6,6 +6,7 @@ import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceMan
 import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
+import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -661,6 +662,7 @@ export function CrudPage({ config }) {
         </div>
       </div>
 
+      {config.key === "remuneracoes" && <RoleBonusManager />}
       {config.teamManager && selectedRecord ? (
         <ProjectTeamManager
           project={selectedRecord}

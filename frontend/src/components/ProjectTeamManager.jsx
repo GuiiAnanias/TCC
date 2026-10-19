@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
 import { api } from "../api/client.js";
+import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 
 function today() {
@@ -37,6 +38,8 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
     dataEntrada: today()
   });
   const [editingRoles, setEditingRoles] = useState({});
+  const [editingEntryDates, setEditingEntryDates] = useState({});
+  const [roleEffectiveDate, setRoleEffectiveDate] = useState(today());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [teamStatusFilter, setTeamStatusFilter] = useState("");
@@ -86,6 +89,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       setEditingRoles(
         Object.fromEntries(teamResponse.data.map((member) => [member.id, member.papel]))
       );
+      setEditingEntryDates(Object.fromEntries(teamResponse.data.map((member) => [member.id, toInputDate(member.dataEntrada)])));
 
     } catch (requestError) {
       setError(requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.");
@@ -147,9 +151,11 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
 
     try {
       await api.put(`/projetos/${project.id}/equipe/${member.id}`, {
-        papel: editingRoles[member.id]
+        ...(editingRoles[member.id] !== member.papel
+          ? { papel: editingRoles[member.id], dataVigencia: roleEffectiveDate }
+          : { dataEntrada: editingEntryDates[member.id] })
       });
-      setMessage("Papel atualizado.");
+      setMessage("Vínculo atualizado. Trocas de papel preservam o histórico.");
       await loadTeam();
       await onChanged?.();
     } catch (requestError) {
@@ -184,7 +190,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       <header className="team-header">
         <div>
           <span className="eyebrow">Equipe vinculada</span>
-          <h2>{project.nome}</h2>
+          <div className="dashboard-title-row"><h2>{project.nome}</h2><HelpDialog title="Ajuda — Equipe do projeto"><section><h3>Papel no projeto</h3><p>O papel descreve a atuação neste projeto e pode ter bonificação própria. Ele não altera o cargo nem a faixa de remuneração do colaborador.</p></section><section><h3>Participação e histórico</h3><p>Selecione o colaborador, o papel e a data de entrada para vincular à equipe. Para trocar um papel, defina a data no campo Vigência ao alterar um papel e salve o vínculo. A troca preserva o histórico anterior.</p><p>Encerrar participação mantém o vínculo no histórico. Use o filtro para consultar vínculos ativos ou inativos.</p></section></HelpDialog></div>
         </div>
         <div className="team-header-actions">
           <span className="team-count">
@@ -280,6 +286,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       </form>
 
       <div className="team-table-toolbar">
+        <label className="field"><span>Vigência ao alterar um papel</span><input type="date" required value={roleEffectiveDate} onChange={(event) => setRoleEffectiveDate(event.target.value)} disabled={isInactive} /></label>
         <select
           value={teamStatusFilter}
           onChange={(event) => setTeamStatusFilter(event.target.value)}
@@ -296,7 +303,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           <thead>
             <tr>
               <th>Colaborador</th>
-              <th>Cargo/Função</th>
+              <th>Cargo</th>
               <th>Papel no projeto</th>
               <th>Entrada</th>
               <th>Saída</th>
@@ -330,6 +337,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                           }))
                         }
                       >
+                        {!roles.includes(member.papel) && <option value={member.papel}>{member.papel}</option>}
                         {roles.map((role) => (
                           <option key={role} value={role}>
                             {role}
@@ -338,7 +346,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                       </select>
                     )}
                   </td>
-                  <td>{formatDate(member.dataEntrada)}</td>
+                  <td>{!member.dataSaida && !isInactive ? <input type="date" aria-label={`Entrada de ${memberName(member)}`} value={editingEntryDates[member.id] || toInputDate(member.dataEntrada)} onChange={(event) => setEditingEntryDates((current) => ({ ...current, [member.id]: event.target.value }))} /> : formatDate(member.dataEntrada)}</td>
                   <td>{formatDate(member.dataSaida)}</td>
                   <td>
                     <StatusBadge status={member.dataSaida ? "INATIVO" : "ATIVO"} />
@@ -351,7 +359,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                             type="button"
                             className="icon-button"
                             onClick={() => updateRole(member)}
-                            title="Salvar papel"
+                            title="Salvar vínculo"
                           >
                             <Save size={17} />
                           </button>
