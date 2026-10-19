@@ -81,16 +81,7 @@ export const configuracoesFinanceirasService = {
     await ensureColaboradorAtivo(colaboradorId);
     const configuracao = await ensureConfiguracaoDoColaborador(colaboradorId, configuracaoId);
 
-    if (data.itemTabelaId) {
-      await ensureItemTabelaAtivo(data.itemTabelaId);
-    }
-
-    const nextDataInicio = data.dataInicio ?? configuracao.dataInicio;
-    const nextDataFim = data.dataFim === undefined ? configuracao.dataFim : data.dataFim;
-
-    ensurePeriodoValido(nextDataInicio, nextDataFim);
-
-    return configuracoesFinanceirasRepository.update(configuracaoId, data);
+    throw new HttpError(409, "A configuração financeira é histórica. Cadastre uma nova vigência para alterar os valores.");
   },
 
   async closeForColaborador(colaboradorId, configuracaoId) {

@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { previousFinanceDay } from "../utils/financeDates.js";
 
 const configuracaoFinanceiraInclude = {
   colaborador: true,
@@ -34,6 +35,7 @@ export const configuracoesFinanceirasRepository = {
 
   replaceActive(data) {
     return prisma.$transaction(async (transaction) => {
+      const itemTabela = await transaction.itemTabelaRemuneracao.findUnique({ where: { id: data.itemTabelaId } });
       const activeConfig = await transaction.configuracaoFinanceira.findFirst({
         where: {
           colaboradorId: data.colaboradorId,
@@ -46,13 +48,13 @@ export const configuracoesFinanceirasRepository = {
         await transaction.configuracaoFinanceira.update({
           where: { id: activeConfig.id },
           data: {
-            dataFim: data.dataInicio
+            dataFim: previousFinanceDay(data.dataInicio)
           }
         });
       }
 
       return transaction.configuracaoFinanceira.create({
-        data,
+        data: { ...data, valorHoraAplicado: itemTabela.valorHora, nivelAplicado: itemTabela.nivel, anteriorId: activeConfig?.id ?? null },
         include: configuracaoFinanceiraInclude
       });
     });
