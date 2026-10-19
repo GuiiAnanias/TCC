@@ -601,7 +601,7 @@ export function CrudPage({ config }) {
         </div>
 
         <div className="table-wrap">
-          <table>
+          <table className={isClient ? "clients-table" : undefined}>
             <thead>
               <tr>
                 {config.columns.map((column) => (
