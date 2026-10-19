@@ -33,3 +33,13 @@ test("financial versions freeze rate and level and close the predecessor on the 
     assert.equal(first.valorHoraAplicado, 45);
   } finally { prisma.$transaction = original; }
 });
+
+test("financial writes retry serialization conflicts and return a conflict after three attempts", async () => {
+  const original = prisma.$transaction;
+  let attempts = 0;
+  prisma.$transaction = async () => { attempts++; throw Object.assign(new Error("serialization"), { code: "P2034" }); };
+  try {
+    await assert.rejects(repository.replaceActive({ colaboradorId: 1, itemTabelaId: 1, beneficios: 0, dataInicio: new Date("2026-09-01") }), { statusCode: 409 });
+    assert.equal(attempts, 3);
+  } finally { prisma.$transaction = original; }
+});
