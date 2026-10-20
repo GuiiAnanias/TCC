@@ -31,6 +31,29 @@ test("zero is valid with a population; absent population stays null and unclassi
   assert.equal(operationalIndicators([project([], [entry(1, null, 1)])]).indicadores.percentualCorrecoes, null);
 });
 
+test("period comparisons exclude partial task hours and undated conclusions but retain tasks with activity", () => {
+  const tasks = [task(1, 120, [entry(1, 1, 1, "2026-09-30"), entry(2, 1, 1)]), task(2, 60, [entry(3, 2, 1)]), task(3, 60, [], { dataConclusao: null }), task(4, null, [], { status: "PLANEJADA", dataInicio: null, dataConclusao: null })];
+  const filters = { dataInicio: new Date("2026-10-01"), dataFim: new Date("2026-10-03") };
+  const { indicadores: result, tarefas } = operationalIndicators([project(tasks, [entry(2, 1, 1), entry(3, 2, 1)])], filters);
+  assert.equal(result.tarefas, 3);
+  assert.equal(result.tarefasConcluidas, 2);
+  assert.equal(result.tarefasComparaveis, 1);
+  assert.equal(result.assertividadeEstimativas, 100);
+  assert.equal(result.tarefasSemHoras, 0);
+  assert.equal(tarefas.find((task) => task.id === 1).horasTotais, 2);
+  assert.equal(tarefas.find((task) => task.id === 1).horasNoRecorte, 1);
+});
+
+test("individual tasks retain shared context while personal hours are never duplicated or estimated by division", () => {
+  const tasks = [task(1, 600, [entry(1, 1, 2), entry(2, 1, 8, "2026-10-02", 2)])];
+  const result = operationalIndicators([project(tasks, [entry(1, 1, 2)])], { colaboradorId: 1 });
+  assert.equal(result.indicadores.assertividadeEstimativas, null);
+  assert.equal(result.indicadores.assertividadeTarefasContexto, 100);
+  assert.equal(result.tarefas[0].horasNoRecorte, 2);
+  assert.equal(result.tarefas[0].horasTotais, 10);
+  assert.equal(result.indicadores.horasEstimadasComparaveis, 10);
+});
+
 test("canceled tasks are excluded from planning counts; archived history and hours remain", () => {
   const tasks = [task(1, null, [entry(1, 1, 1)], { status: "CANCELADA", correcao: true }), task(2, 60, [entry(2, 2, 1)], { statusRegistro: "INATIVO" })];
   const result = operationalIndicators([project(tasks)]);
