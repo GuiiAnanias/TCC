@@ -1,3 +1,4 @@
+import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
 import { TasksPage } from "./pages/TasksPage.jsx";
 import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
@@ -22,6 +23,8 @@ function AppRoutes() {
     <Route element={<ProtectedLayout />}>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/dashboard/projetos/:id" element={<EntityDashboardPage type="projetos" />} />
+      <Route path="/dashboard/colaboradores/:id" element={<EntityDashboardPage type="colaboradores" />} />
       <Route path="/tarefas" element={<TasksPage />} />
       {resources.map((resource) => <Route key={resource.key} path={`/${resource.key}`} element={<CrudPage config={resource} />} />)}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

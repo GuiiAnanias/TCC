@@ -1169,3 +1169,16 @@ tbody tr:hover {
 @media (prefers-reduced-motion: reduce) {
   .dashboard-page .client-form-reveal, .dashboard-section-button > svg:last-child { transition: none; }
 }
+
+.entity-dashboard .page-header > div { min-width: 0; }
+.entity-dashboard h1 { overflow-wrap: anywhere; }
+.entity-dashboard .dashboard-title-row { align-items: flex-start; }
+.entity-dashboard-links, .entity-dashboard-tabs { display: flex; gap: 14px; flex-wrap: wrap; }
+.entity-dashboard-links { margin: 0 0 20px; }
+.entity-dashboard-tabs { margin-top: 24px; }
+.entity-picker { max-width: 600px; margin-bottom: 18px; }
+.entity-dashboard select { width: 100%; min-width: 0; }
+.entity-dashboard-filters { grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 1fr); }
+.entity-memberships { margin-top: 24px; }
+
+@media (max-width: 650px) { .entity-dashboard-filters { grid-template-columns: 1fr; } }

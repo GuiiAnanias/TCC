@@ -35,3 +35,8 @@ export function AuditTable({ occurrences = [] }) {
   </div>;
 }
 
+export function IndicatorTasksTable({ tasks = [], individual = false }) {
+  return <div className="dashboard-table"><table><caption>{tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no recorte · canceladas não entram nas contagens de tarefas; horas efetivamente registradas são preservadas.</caption><thead><tr><th>Tarefa</th><th>Projeto / sprint</th><th>Responsáveis</th><th>Status</th><th>Estimativa da tarefa</th><th>{individual ? "Horas da pessoa no recorte" : "Horas no recorte"}</th><th>Horas totais da tarefa</th><th>Estimativa comparável</th></tr></thead>
+    <tbody>{!tasks.length ? <tr><td className="empty-cell" colSpan={8}>Nenhuma tarefa neste recorte.</td></tr> : tasks.map((task) => <tr key={task.id}><td><Link to={taskUrl(task)}>{task.titulo}</Link>{task.correcao && <small className="dashboard-detail-note">Correção</small>}{task.statusRegistro === "INATIVO" && <small className="dashboard-detail-note">Arquivada</small>}</td><td>{task.projeto}<small className="dashboard-detail-note">{task.sprint || "Sem sprint"}</small></td><td>{task.responsaveis.map((person) => person.nome).join(", ") || "Sem responsáveis"}</td><td>{taskStatus[task.status]}</td><td>{task.minutosEstimados == null ? "Sem estimativa" : `${Math.floor(task.minutosEstimados / 60)}h ${task.minutosEstimados % 60}min`}</td><td>{number(task.horasNoRecorte)} h</td><td>{number(task.horasTotais)} h</td><td>{task.comparavel ? "Sim" : "Não"}{task.semHoras && <small className="dashboard-detail-note">Concluída sem horas</small>}</td></tr>)}</tbody>
+  </table></div>;
+}

@@ -56,6 +56,8 @@ export const dashboardRepository = {
     });
     return projetos;
   },
+  findProject(id) { return prisma.projeto.findUnique({ where: { id }, include: { cliente: { select: { nome: true } }, sprints: { orderBy: { dataInicio: "asc" } } } }); },
+  findCollaborator(id) { return prisma.colaborador.findUnique({ where: { id }, select: { id: true, nomeCompleto: true, cargo: true, departamento: true, status: true } }); },
   async options() {
     const [clientes, departamentos, projetos, colaboradores] = await Promise.all([
       prisma.cliente.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
