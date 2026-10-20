@@ -19,7 +19,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
   const login = (body) => fetch(`${base}/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   try {
     assert.equal((await fetch(`${base}/health`)).status, 200);
-    for (const resource of ["bonificacoes-papeis", "clientes", "colaboradores", "remuneracoes", "projetos", "apontamentos", "opcoes-cadastro", "projetos/papeis", "projetos/1/equipe", "colaboradores/1/configuracoes-financeiras"]) {
+    for (const resource of ["tarefas", "sprints", "bonificacoes-papeis", "clientes", "colaboradores", "remuneracoes", "projetos", "apontamentos", "opcoes-cadastro", "projetos/papeis", "projetos/1/equipe", "colaboradores/1/configuracoes-financeiras"]) {
       for (const method of ["GET", "POST", "PUT", "DELETE"]) {
         assert.equal((await fetch(`${base}/${resource}`, { method })).status, 401, `${method} ${resource}`);
       }

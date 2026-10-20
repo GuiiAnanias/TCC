@@ -1,3 +1,4 @@
+import { tarefasRoutes, sprintsRoutes } from "./tarefasRoutes.js";
 import { Router } from "express";
 import { clientesRoutes } from "./clientesRoutes.js";
 import { colaboradoresRoutes } from "./colaboradoresRoutes.js";
@@ -30,3 +31,6 @@ routes.use("/colaboradores", colaboradoresRoutes);
 routes.use("/remuneracoes", remuneracoesRoutes);
 routes.use("/projetos", projetosRoutes);
 routes.use("/apontamentos", apontamentosRoutes);
+
+routes.use("/tarefas", tarefasRoutes);
+routes.use("/sprints", sprintsRoutes);
