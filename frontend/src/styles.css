@@ -72,6 +72,9 @@
 }
 
 .dashboard-title-row { display: flex; align-items: center; gap: 10px; }
+.finance-history-panel > h3, .finance-history-panel > .field-help { margin: 0; }
+.finance-history-panel caption { text-align: left; padding-bottom: 12px; color: var(--text-secondary); }
+.finance-history-reason { display: block; margin-top: 6px; color: var(--muted); }
 .dashboard-title-row h1, .dashboard-title-row h2 { margin: 0; }
 .dashboard-help-trigger { flex: 0 0 auto; color: var(--primary); }
 body:has(.dashboard-help-dialog[open]) { overflow: hidden; }

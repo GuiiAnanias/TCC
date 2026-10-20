@@ -76,32 +76,7 @@ async function main() {
     });
   }
 
-  for (const [legacyName, target, collaboratorId, legacyValue, legacyBonus, legacyType] of [
-    ["Junior", junior, bruno.id, "45", "0", "NENHUMA"],
-    ["Pleno", pleno, ana.id, "85", "8", "PERCENTUAL"]
-  ]) {
-    const legacy = await prisma.itemTabelaRemuneracao.findUnique({ where: { nivel: legacyName } });
-    if (!legacy || Number(legacy.valorHora) !== Number(legacyValue) ||
-        Number(legacy.bonificacao) !== Number(legacyBonus) ||
-        legacy.tipoBonificacao !== legacyType) continue;
-
-    // Outras configurações podem depender da faixa antiga; nesse caso não a alteramos.
-    const otherUses = await prisma.configuracaoFinanceira.count({
-      where: { itemTabelaId: legacy.id, colaboradorId: { not: collaboratorId } }
-    });
-    if (otherUses) continue;
-
-    await prisma.configuracaoFinanceira.updateMany({
-      where: { colaboradorId: collaboratorId, itemTabelaId: legacy.id, dataFim: null },
-      data: { itemTabelaId: target.id }
-    });
-    if (legacy.status === "ATIVO") {
-      await prisma.itemTabelaRemuneracao.update({
-        where: { id: legacy.id },
-        data: { status: "INATIVO" }
-      });
-    }
-  }
+  // Configurações financeiras existentes são históricas e não são remapeadas pelo seed.
 
   const projects = [
     {
@@ -138,7 +113,13 @@ async function main() {
     const existing = await prisma.configuracaoFinanceira.findFirst({
       where: { colaboradorId: data.colaboradorId }
     });
-    if (!existing) await prisma.configuracaoFinanceira.create({ data });
+    if (!existing) {
+      const itemTabela = [junior, pleno].find((item) => item.id === data.itemTabelaId);
+      await prisma.configuracaoFinanceira.create({ data: {
+        ...data, valorHoraAplicado: itemTabela.valorHora, nivelAplicado: itemTabela.nivel,
+        motivo: "Configuração inicial de demonstração"
+      } });
+    }
   }
 
   const team = [

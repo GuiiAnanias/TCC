@@ -1,19 +1,19 @@
 import prisma from "../config/prisma.js";
+import { todayFinanceDate } from "../utils/financeDates.js";
 
-const colaboradorInclude = {
+const colaboradorInclude = () => ({
   configuracoesFinanceiras: {
     where: {
-      dataFim: null
+      dataInicio: { lt: new Date(todayFinanceDate().getTime() + 86400000) },
+      OR: [{ dataFim: null }, { dataFim: { gte: todayFinanceDate() } }]
     },
     include: {
       itemTabela: true
     },
-    orderBy: {
-      dataInicio: "desc"
-    },
+    orderBy: [{ dataInicio: "desc" }, { id: "desc" }],
     take: 1
   }
-};
+});
 
 export const colaboradoresRepository = {
   findAll({ busca, status } = {}) {
@@ -31,7 +31,7 @@ export const colaboradoresRepository = {
             }
           : {})
       },
-      include: colaboradorInclude,
+      include: colaboradorInclude(),
       orderBy: [{ status: "asc" }, { nomeCompleto: "asc" }]
     });
   },
@@ -39,7 +39,7 @@ export const colaboradoresRepository = {
   findById(id) {
     return prisma.colaborador.findUnique({
       where: { id },
-      include: colaboradorInclude
+      include: colaboradorInclude()
     });
   },
 
@@ -50,7 +50,7 @@ export const colaboradoresRepository = {
   create(data) {
     return prisma.colaborador.create({
       data,
-      include: colaboradorInclude
+      include: colaboradorInclude()
     });
   },
 
@@ -58,7 +58,7 @@ export const colaboradoresRepository = {
     return prisma.colaborador.update({
       where: { id },
       data,
-      include: colaboradorInclude
+      include: colaboradorInclude()
     });
   }
 };
