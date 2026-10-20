@@ -1086,3 +1086,14 @@ tbody tr:hover {
 .field > .cep-input > input:hover:not(:disabled) {
   border-color: var(--line-hover);
 }
+
+.tasks-tabs { display: flex; gap: 12px; flex-wrap: wrap; }
+.tasks-form-fields { padding: 0; margin: 0; border: 0; min-width: 0; }
+.tasks-estimate { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.tasks-responsibles { margin: 20px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; display: flex; flex-wrap: wrap; gap: 14px; }
+.tasks-responsibles legend { padding: 0 8px; }
+.tasks-check { display: flex; align-items: center; gap: 9px; align-self: center; cursor: pointer; }
+.tasks-check input { width: 18px; height: 18px; padding: 0; flex: 0 0 auto; accent-color: var(--primary); }
+.tasks-detail { display: block; color: var(--muted); margin-top: 6px; max-width: 320px; white-space: normal; overflow-wrap: anywhere; }
+.tasks-filters { flex-wrap: wrap; }
+.tasks-page textarea { width: 100%; resize: vertical; padding: 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--input-bg, var(--surface)); color: var(--text); font: inherit; }
