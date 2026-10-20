@@ -1,3 +1,4 @@
+import { HelpDialog } from "../components/HelpDialog.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -559,7 +560,14 @@ export function CrudPage({ config }) {
       <header className="page-header">
         <div>
           <span className="eyebrow">Cadastro</span>
-          <h1>{config.title}</h1>
+          <div className="dashboard-title-row"><h1>{config.title}</h1><HelpDialog title={`Ajuda — ${config.title}`}>
+            {config.fields.filter((field) => field.help).map((field) => <section key={field.name}><h3>{field.label}</h3><p>{field.help}</p></section>)}
+            {isClient && <section><h3>Cadastro de clientes</h3><p>Escolha Pessoa Física ou Pessoa Jurídica para abrir o cadastro. Para empresas, informe o CNPJ e consulte para preencher os dados, ou preencha manualmente. Confira os dados antes de salvar.</p><p>E-mail e telefone não podem se repetir entre pessoas físicas. Contatos sem preenchimento continuam opcionais.</p></section>}
+            {config.financeManager && <section><h3>Configuração financeira</h3><p>Use a ação Financeiro na lista para definir o nível, valor/hora e benefícios de cada colaborador. Cargo e papel no projeto são definidos separadamente. A ajuda do painel financeiro explica as vigências e o histórico.</p></section>}
+            {config.teamManager && <section><h3>Equipe do projeto</h3><p>Use a ação Equipe na lista para vincular colaboradores, definir o papel e as datas de participação. A ajuda do painel de equipe explica as alterações de papel.</p></section>}
+            {config.key === "remuneracoes" && <section><h3>Bonificação por papel</h3><p>Os percentuais são definidos na seção Bonificação por papel no projeto, que possui sua própria ajuda.</p></section>}
+            {!isClient && <section><h3>Cadastro e consulta</h3><p>Preencha os campos e clique em Salvar. Use a busca e o filtro de status para localizar registros; a ação Editar carrega os dados no formulário.</p></section>}
+          </HelpDialog></div>
         </div>
         <FloatingActions onRefresh={loadRecords} loading={loading} />
       </header>
@@ -598,7 +606,6 @@ export function CrudPage({ config }) {
         {formSections ? formSections.map((section) => (
           <fieldset className="company-section" key={section} disabled={consultingCnpj || saving}>
             <legend>{section}</legend>
-            {section === "Dados da empresa" && <p className="company-help">Informe o CNPJ e consulte para preencher os dados da empresa, ou preencha manualmente.</p>}
             <div className="form-grid">{visibleFields.filter((field) => field.section === section).map((field) => (
               <div key={field.name} className={`field ${field.name === "cnpj" ? "field-wide" : ""}`}><label htmlFor={field.name}><span>{field.label}{(field.required || (field.requiredOnCreate && !isEditing)) ? " *" : ""}</span></label>{renderField(field)}</div>
             ))}</div>
