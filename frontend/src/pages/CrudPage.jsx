@@ -73,6 +73,9 @@ export function CrudPage({ config }) {
   const [records, setRecords] = useState([]);
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
+  const [tarefas, setTarefas] = useState([]);
+  const [loadingTarefas, setLoadingTarefas] = useState(false);
+  const [taskLoadError, setTaskLoadError] = useState("");
   const [colaboradores, setColaboradores] = useState([]);
   const [catalog, setCatalog] = useState({ cargos: [], niveisRemuneracao: [], departamentos: [] });
   const [filters, setFilters] = useState({ busca: "", status: "" });
@@ -92,6 +95,18 @@ export function CrudPage({ config }) {
   useEffect(() => () => { cnpjRequest.current?.abort(); cepRequest.current?.abort(); }, [config]);
 
   const isEditing = Boolean(editingId);
+
+  useEffect(() => {
+    setTarefas([]); setTaskLoadError("");
+    if (config.key !== "apontamentos" || !formData.projetoId) { setLoadingTarefas(false); return; }
+    const controller = new AbortController();
+    setLoadingTarefas(true);
+    api.get("/tarefas", { params: { projetoId: formData.projetoId }, signal: controller.signal })
+      .then(({ data }) => { if (!controller.signal.aborted) setTarefas(data); })
+      .catch((err) => { if (!controller.signal.aborted) setTaskLoadError(err.response?.data?.message || "Não foi possível carregar as tarefas do projeto. Atualize a página para tentar novamente."); })
+      .finally(() => { if (!controller.signal.aborted) setLoadingTarefas(false); });
+    return () => controller.abort();
+  }, [config.key, formData.projetoId]);
 
   const visibleFields = useMemo(
     () => formFields.filter((field) => !field.hiddenOnCreate || isEditing),
@@ -453,6 +468,7 @@ export function CrudPage({ config }) {
           onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
           placeholder="Buscar cliente..."
           required={field.required}
+          disabled={saving}
         />
       );
     }
@@ -462,6 +478,7 @@ export function CrudPage({ config }) {
         value: String(projeto.id),
         label: projeto.nome
       }));
+      if (originalRecord?.projetoId && !projetoOptions.some((option) => option.value === String(originalRecord.projetoId))) projetoOptions.push({ value: String(originalRecord.projetoId), label: originalRecord.projeto?.nome || "Projeto do registro" });
 
       return (
         <SearchableSelect
@@ -469,11 +486,19 @@ export function CrudPage({ config }) {
           name={field.name}
           options={projetoOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
+          onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value, tarefaId: "" }))}
           placeholder="Buscar projeto..."
           required={field.required}
+          disabled={saving}
         />
       );
+    }
+
+    if (field.type === "tarefa") {
+      return <select {...commonProps} disabled={saving || loadingTarefas || !formData.projetoId || Boolean(taskLoadError)}>
+        <option value="">{loadingTarefas ? "Carregando tarefas…" : "Sem tarefa"}</option>
+        {tarefas.filter((task) => task.statusRegistro === "ATIVO" || task.id === originalRecord?.tarefaId).map((task) => <option key={task.id} value={task.id}>{task.titulo}{task.statusRegistro === "INATIVO" ? " (arquivada)" : ""}</option>)}
+      </select>;
     }
 
     if (field.type === "colaborador") {
@@ -481,6 +506,7 @@ export function CrudPage({ config }) {
         value: String(colaborador.id),
         label: colaborador.nomeCompleto
       }));
+      if (originalRecord?.colaboradorId && !colaboradorOptions.some((option) => option.value === String(originalRecord.colaboradorId))) colaboradorOptions.push({ value: String(originalRecord.colaboradorId), label: originalRecord.colaborador?.nomeCompleto || "Colaborador do registro" });
 
       return (
         <SearchableSelect
@@ -491,6 +517,7 @@ export function CrudPage({ config }) {
           onChange={(event) => setFormData((current) => ({ ...current, [field.name]: event.target.value }))}
           placeholder="Buscar colaborador..."
           required={field.required}
+          disabled={saving}
         />
       );
     }
@@ -530,6 +557,7 @@ export function CrudPage({ config }) {
             {error}
           </div>
         ) : null}
+        {taskLoadError && <div className="feedback error" role="alert">{taskLoadError}</div>}
       </div>
 
       {isClient && <div className={`client-type-picker ${formOpen ? "is-open" : ""}`} aria-label="Tipo de cliente">
@@ -565,7 +593,7 @@ export function CrudPage({ config }) {
         </div>}
 
         <div className="actions-row">
-          <button className="primary-button" type="submit" disabled={saving || consultingCnpj || consultingCep} title="Salvar">
+          <button className="primary-button" type="submit" disabled={saving || consultingCnpj || consultingCep || loadingTarefas || Boolean(taskLoadError)} title="Salvar">
             <Save size={18} />
             {saving ? "Salvando" : "Salvar"}
           </button>

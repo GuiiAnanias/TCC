@@ -182,14 +182,16 @@ export const resources = [
     fields: [
       { name: "colaboradorId", label: "Colaborador", type: "colaborador", required: true },
       { name: "projetoId", label: "Projeto", type: "projeto", required: true },
+      { name: "tarefaId", label: "Tarefa (opcional)", type: "tarefa", clearable: true, help: "Selecione uma tarefa do mesmo projeto ou mantenha Sem tarefa. Vincular um apontamento existente não cria novas horas. Cada registro mantém seu colaborador; os responsáveis da tarefa não recebem cópias dessas horas." },
       { name: "data", label: "Data", type: "date", required: true },
-      { name: "horas", label: "Horas trabalhadas", type: "number", step: "0.5", min: "0", required: true },
+      { name: "horas", label: "Horas trabalhadas", type: "number", step: "0.01", min: "0.01", required: true },
       { name: 'status', label: 'Status', type: 'select', defaultValue: 'PENDENTE', options: [ { value: 'PENDENTE', label: 'Pendente' }, { value: 'APROVADO', label: 'Aprovado' }, { value: 'FATURADO', label: 'Faturado' },],},
       { name: "descricao", label: "Descrição da atividade", type: "text", required: true }
     ],
     columns: [
       { key: "colaborador", label: "Colaborador", render: (item) => item.colaborador?.nomeCompleto || "-" },
       { key: "projeto", label: "Projeto", render: (item) => item.projeto?.nome || "-" },
+      { key: "tarefa", label: "Tarefa", render: (item) => item.tarefa?.titulo || "Sem tarefa" },
       { key: "data", label: "Data", render: (item) => date(item.data) },
       { key: "horas", label: "Horas", render: (item) => decimal(item.horas) },
       { key: 'status', label: 'Status', render: (val) => (typeof val === 'string' ? val : val?.status || 'PENDENTE')},
