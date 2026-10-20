@@ -105,6 +105,73 @@ export async function seedDemo(prisma) {
       if (!await tx.projetoColaborador.findFirst({ where })) await tx.projetoColaborador.create({ data: { ...where, dataSaida: end ? date(end) : null } });
     }
 
-    return { clientes: Object.keys(clients).length, colaboradores: Object.keys(people).length, faixas: Object.keys(rates).length, projetos: Object.keys(projects).length };
+    const sprints = {};
+    for (const [key, project, nome, start, end, statusRegistro = "ATIVO"] of [
+      ["portal-set", "portal", "Sprint Setembro (demo)", "2026-09-01", "2026-09-15"],
+      ["portal-out", "portal", "Sprint Outubro (demo)", "2026-10-01", "2026-10-15"],
+      ["mobile-out", "mobile", "Sprint Mobile (demo)", "2026-10-01", "2026-10-15"],
+      ["dados-set", "integracao", "Sprint Integração (demo)", "2026-09-01", "2026-09-15"],
+      ["auditoria-out", "auditoria", "Sprint Auditoria (demo)", "2026-10-01", "2026-10-15"],
+      ["futura", "planejamento", "Sprint Planejada (demo)", "2026-11-01", "2026-11-15"],
+      ["historica", "historico", "Sprint Encerrada (demo)", "2026-09-01", "2026-09-15", "INATIVO"]
+    ]) {
+      const where = { projetoId_origem_externalId: { projetoId: projects[project].id, origem: "DEMO", externalId: key } };
+      sprints[key] = await tx.sprint.upsert({ where, update: {}, create: { projetoId: projects[project].id, origem: "DEMO", externalId: key, nome, dataInicio: date(start), dataFim: date(end), statusRegistro } });
+    }
+
+    const tasks = {};
+    // key, projeto, sprint, título, status, minutos estimados, correção, responsáveis,
+    // início, conclusão, cadastro. Horas são cadastradas separadamente, por pessoa.
+    for (const [key, project, sprint, titulo, status, minutosEstimados, correcao, owners, start, end, statusRegistro = "ATIVO"] of [
+      ["portal-login", "portal", "portal-set", "Tela de login", "CONCLUIDA", 480, false, ["ana", "carla"], "2026-09-10", "2026-09-12"],
+      ["portal-bug", "portal", "portal-out", "Corrigir validação do formulário", "CONCLUIDA", 120, true, ["ana", "carla"], "2026-10-05", "2026-10-06"],
+      ["portal-perfil", "portal", "portal-out", "Página de perfil", "EM_ANDAMENTO", 360, false, ["ana"], "2026-10-05", null],
+      ["portal-sem-horas", "portal", "portal-out", "Revisar acessibilidade", "CONCLUIDA", 60, false, ["carla"], "2026-10-07", "2026-10-07"],
+      ["portal-sem-estimativa", "portal", null, "Documentar componentes", "PLANEJADA", null, false, ["ana"], null, null],
+      ["mobile-api", "mobile", "mobile-out", "Integração com API", "CONCLUIDA", 240, false, ["bruno", "carla"], "2026-10-02", "2026-10-03"],
+      ["mobile-correcao", "mobile", "mobile-out", "Corrigir autenticação mobile", "CONCLUIDA", 120, true, ["bruno", "carla"], "2026-10-04", "2026-10-04"],
+      ["mobile-cancelada", "mobile", "mobile-out", "Login por rede social", "CANCELADA", 180, false, [], null, null, "INATIVO"],
+      ["dados-auditoria", "integracao", "dados-set", "Auditar carga de dados", "CONCLUIDA", 300, false, ["diego"], "2026-09-15", "2026-09-15"],
+      ["dados-carga", "integracao", null, "Implementar carga incremental", "CONCLUIDA", 300, false, ["diego"], "2026-10-06", "2026-10-06"],
+      ["dados-design", "integracao", null, "Desenhar painel de importação", "CONCLUIDA", 240, false, ["iris"], "2026-10-06", "2026-10-06"],
+      ["auditoria-sem-estimativa", "auditoria", "auditoria-out", "Ajustar comportamento sem estimativa", "EM_ANDAMENTO", null, true, ["eva"], "2026-10-08", null],
+      ["auditoria-qa", "auditoria", "auditoria-out", "Validar cenário sem remuneração", "CONCLUIDA", 300, false, ["felipe"], "2026-10-09", "2026-10-09"],
+      ["auditoria-sem-horas", "auditoria", "auditoria-out", "Concluir checklist sem registrar horas", "CONCLUIDA", null, false, [], "2026-10-10", "2026-10-10"],
+      ["futura-backlog", "planejamento", "futura", "Planejar entrega inicial", "PLANEJADA", 480, false, ["ana"], null, null],
+      ["futura-descoberta", "planejamento", null, "Detalhar requisitos", "PLANEJADA", null, false, [], null, null],
+      ["historica-entrega", "historico", "historica", "Entrega final do projeto", "CONCLUIDA", 240, false, ["helena"], "2026-09-03", "2026-09-03", "INATIVO"]
+    ]) {
+      const projetoId = projects[project].id;
+      tasks[key] = await tx.tarefa.upsert({
+        where: { projetoId_origem_externalId: { projetoId, origem: "DEMO", externalId: key } }, update: {},
+        create: { projetoId, sprintId: sprint ? sprints[sprint].id : null, origem: "DEMO", externalId: key, titulo, descricao: "Cenário fictício para validação manual dos indicadores.", status, minutosEstimados, correcao, dataInicio: start ? date(start) : null, dataConclusao: end ? date(end) : null, statusRegistro,
+          responsaveis: { create: owners.map((person) => ({ colaboradorId: people[person].id })) }
+        }
+      });
+    }
+
+    for (const [key, project, person, task, day, horas, status] of [
+      ["portal-login-dev", "portal", "ana", "portal-login", "2026-09-10", 8, "FATURADO"],
+      ["portal-login-qa", "portal", "carla", "portal-login", "2026-09-12", 6, "APROVADO"],
+      ["portal-bug-dev", "portal", "ana", "portal-bug", "2026-10-05", 2, "APROVADO"],
+      ["portal-bug-qa", "portal", "carla", "portal-bug", "2026-10-06", 2, "APROVADO"],
+      ["portal-perfil-dev", "portal", "ana", "portal-perfil", "2026-10-05", 4, "PENDENTE"],
+      ["mobile-api-dev", "mobile", "bruno", "mobile-api", "2026-10-02", 6, "FATURADO"],
+      ["mobile-api-qa", "mobile", "carla", "mobile-api", "2026-10-03", 4, "APROVADO"],
+      ["mobile-correcao-dev", "mobile", "bruno", "mobile-correcao", "2026-10-04", 2, "APROVADO"],
+      ["mobile-correcao-qa", "mobile", "carla", "mobile-correcao", "2026-10-04", 2, "PENDENTE"],
+      ["dados-qa", "integracao", "diego", "dados-auditoria", "2026-09-15", 5, "FATURADO"],
+      ["dados-dev", "integracao", "diego", "dados-carga", "2026-10-06", 5, "APROVADO"],
+      ["dados-design", "integracao", "iris", "dados-design", "2026-10-06", 4, "APROVADO"],
+      ["pendencia-estimativa", "auditoria", "eva", "auditoria-sem-estimativa", "2026-10-08", 8, "PENDENTE"],
+      ["pendencia-remuneracao", "auditoria", "felipe", "auditoria-qa", "2026-10-09", 5, "APROVADO"],
+      ["pendencia-equipe", "auditoria", "gustavo", null, "2026-10-10", 2, "PENDENTE"],
+      ["historica-entrega", "historico", "helena", "historica-entrega", "2026-09-03", 4, "FATURADO"]
+    ]) {
+      const descricao = `Demonstração: ${key}`;
+      const projetoId = projects[project].id, colaboradorId = people[person].id;
+      if (!await tx.apontamentoHora.findFirst({ where: { projetoId, colaboradorId, descricao } })) await tx.apontamentoHora.create({ data: { projetoId, colaboradorId, tarefaId: task ? tasks[task].id : null, data: date(day), horas, status, descricao } });
+    }
+    return { clientes: Object.keys(clients).length, colaboradores: Object.keys(people).length, faixas: Object.keys(rates).length, projetos: Object.keys(projects).length, sprints: Object.keys(sprints).length, tarefas: Object.keys(tasks).length, apontamentos: 16 };
   }, { timeout: 30000, maxWait: 10000 });
 }

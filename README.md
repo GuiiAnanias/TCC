@@ -218,7 +218,7 @@ sistema-indicadores/
 | `usuarios` | Contas de acesso e recuperação de senha |
 | `clientes` | Empresas ou contratantes atendidos |
 | `colaboradores` | Profissionais internos ou alocados |
-| `itens_tabela_remuneracao` | Faixas de remuneração e bonificação |
+| `itens_tabela_remuneracao` | Faixas de remuneração e valor/hora |
 | `configuracoes_financeiras` | Configuração financeira vigente por colaborador |
 | `projetos` | Projetos contratados por cliente |
 | `projetos_colaboradores` | Relação entre projeto, colaborador, papel e período |
@@ -226,7 +226,7 @@ sistema-indicadores/
 Regras importantes:
 
 - Registros principais são inativados por `status`, sem exclusão física.
-- A bonificação pertence à faixa de remuneração, não ao cadastro principal do colaborador.
+- A bonificação usada nos custos é definida por papel no projeto e por vigência, separadamente da faixa de remuneração.
 - O colaborador recebe a regra financeira ao ser vinculado a uma faixa em `configuracoes_financeiras`.
 - Ao aplicar uma nova configuração financeira, a configuração vigente anterior é encerrada com `dataFim`.
 - A equipe do projeto preserva histórico: encerrar uma participação preenche `dataSaida`.
@@ -543,3 +543,118 @@ style: ajuste visual
 refactor: reorganização interna
 chore: configuração ou manutenção
 ```
+
+## Dados de demonstração e conferência dos indicadores
+
+Com o PostgreSQL iniciado e o `.env` configurado, execute na pasta `backend`:
+
+```powershell
+corepack pnpm run prisma:migrate
+corepack pnpm run prisma:generate
+corepack pnpm run seed
+```
+
+O seed acrescenta cenários sem apagar dados, redefinir a senha de contas existentes
+ou sobrescrever registros já encontrados. Em uma base nova, o acesso inicial é
+`admin` / `admin123`. Os cenários usam datas fixas entre setembro e novembro de
+2026 e valores financeiros fictícios, sem depender do dia da execução.
+
+Os clientes com CNPJ usam os dados públicos preservados em
+`backend/prisma/seed-companies.js`, consultados na ReceitaWS em 17/10/2026:
+CAIXA ESCOLAR DA ESCOLA ESTADUAL DE ENSINO FUNDAMENTAL JOSEFINA JACQUES NORONHA
+(11.222.333/0001-81) e Z R DE BRITO EMPREITEIRA (11.444.777/0001-61).
+O seed utiliza esse snapshot sem consultar a internet. Projetos, pessoas, valores,
+horas e vínculos são exemplos fictícios; não representam relações reais dessas empresas.
+
+### Conteúdo inicial
+
+| Cadastro | Quantidade |
+| --- | ---: |
+| Usuário administrador | 1 |
+| Clientes PF/PJ | 4 |
+| Colaboradores | 9 |
+| Faixas de remuneração | 9 |
+| Configurações financeiras | 10 |
+| Bonificações por papel e vigência | 5 |
+| Projetos | 6 |
+| Participações de equipe | 12 |
+| Sprints | 7 |
+| Tarefas | 17 |
+| Associações de responsáveis | 18 |
+| Apontamentos de horas | 16 |
+
+Há reajustes financeiros, troca de papel, bônus com vigências, uma configuração
+futura, pessoas e projetos inativos, tarefas compartilhadas, correções, tarefas sem
+estimativa ou sem horas e um apontamento sem tarefa. As horas de uma tarefa não são
+multiplicadas pela quantidade de responsáveis. Esta entrega não inclui exemplos de premiação.
+
+### Resultados esperados no Dashboard Geral
+
+Os números abaixo pressupõem uma base inicialmente vazia, sem edições manuais,
+e o dashboard sem filtros, incluindo projetos ativos e inativos.
+
+| Projeto | Orçamento | Horas | Custo | Assertividade do orçamento |
+| --- | ---: | ---: | ---: | ---: |
+| Portal do Cliente (demo) | R$ 2.424,00 | 22 | R$ 1.212,00 | 200% |
+| Aplicativo Mobile (demo) | R$ 539,50 | 14 | R$ 1.079,00 | 50% |
+| Integração de Dados (demo) | R$ 560,00 | 14 | R$ 560,00 | 100% |
+| Projeto com pendências (demo) | R$ 1.000,00 | 15 | R$ 300,00 parcial | Indisponível |
+| Projeto em planejamento (demo) | R$ 5.000,00 | 0 | R$ 0,00 | Indisponível |
+| Projeto encerrado (demo) | R$ 680,00 | 4 | R$ 340,00 | 200% |
+
+Totais: **69 horas**, **R$ 3.491,00 de custo parcial**, incluindo R$ 281,00 de
+bonificação. Há 5 horas sem remuneração e um apontamento sem vínculo de equipe.
+A média da assertividade dos quatro projetos elegíveis é 137,5%.
+A fórmula por projeto é `orçamento / custo realizado × 100`.
+
+Indicadores operacionais iniciais: correções por horas 23,19%; assertividade das
+estimativas 70,91%; tarefas concluídas sem horas 18,18%; tarefas sem estimativa 25%.
+A classificação de correções é parcial porque existem horas sem tarefa. As explicações,
+bases e motivos de indisponibilidade podem ser consultados no botão de ajuda das telas.
+
+### Alterações manuais para observar os resultados
+
+1. Mude o orçamento do Aplicativo Mobile de R$ 539,50 para R$ 1.079: a assertividade
+   passa de 50% para 100%.
+2. No apontamento `Demonstração: portal-login-dev`, mude 8h para 10h: o custo do
+   Portal sobe R$ 105, para R$ 1.317; sua assertividade passa a 184,05%. Sem outras
+   mudanças de custo, o total geral passa a R$ 3.596.
+3. Cadastre a primeira configuração financeira de Felipe com início em 01/09/2026,
+   usando Júnior III de R$ 45/h: suas 5h passam a custar R$ 247,50 com bônus QA,
+   removendo a pendência de remuneração.
+4. Vincule Gustavo à equipe do projeto com pendências como Dev, desde 01/09/2026:
+   suas 2h passam de R$ 80 para R$ 88 e o aviso de participação desaparece.
+5. Edite estimativas, marque correções ou registre horas na tarefa concluída sem
+   horas e atualize os indicadores. Os dashboards individuais permitem conferir
+   os apontamentos e a composição do resultado.
+
+Editar apenas a tabela de remuneração não altera as taxas preservadas nas configurações
+financeiras anteriores. Para testar outro valor/hora, crie uma nova vigência e lance
+horas cobertas por ela. A comparação com orçamento integral fica indisponível com
+recortes de período, equipe, pessoa ou sprint.
+
+### Reexecução e verificações
+
+O seed mantém edições nos registros que encontra. Tarefas e sprints têm origem `DEMO`
+e identificadores estáveis. Clientes usam CNPJ ou e-mail/tipo; colaboradores usam
+e-mail; faixas usam nível; projetos usam nome/cliente; participações usam
+projeto/pessoa/papel/entrada; apontamentos usam projeto/pessoa/descrição.
+Alterar essas chaves pode fazer uma nova execução acrescentar o exemplo original.
+O fluxo recomendado é popular uma base limpa e depois experimentar as alterações manualmente.
+
+Na pasta `backend`, os comandos abaixo usam um schema temporário no PostgreSQL local,
+aplicam as migrações e removem somente o schema de teste ao terminar:
+
+```powershell
+corepack pnpm test
+corepack pnpm run test:seed-db
+corepack pnpm run test:dashboard-db
+corepack pnpm run test:tasks-db
+```
+
+As verificações de integração exigem PostgreSQL local em execução e `DATABASE_URL`
+configurada. Elas conferem cenários, preservação de ajustes e reexecução sem duplicatas;
+não executam reset no banco utilizado pela interface.
+
+O Docker persiste o banco em um volume: recriar o contêiner ou a imagem não limpa
+os dados. O seed também não realiza essa limpeza.

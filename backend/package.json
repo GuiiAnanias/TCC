@@ -12,7 +12,10 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test:seed-db": "node scripts/verify-seed.mjs",
+    "test:dashboard-db": "node scripts/verify-dashboard.mjs",
+    "test:tasks-db": "node scripts/verify-tasks.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
