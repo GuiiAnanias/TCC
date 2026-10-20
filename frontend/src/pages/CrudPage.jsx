@@ -1,6 +1,7 @@
+import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Building2, UserRound, Check, Edit3, Plus, RotateCcw, Save, Search, Trash2, UsersRound, WalletCards, X } from "lucide-react";
+import { Building2, UserRound, Check, Edit3, Plus, RotateCcw, Save, Search, Trash2, UsersRound, WalletCards, X, BarChart3 } from "lucide-react";
 import { api } from "../api/client.js";
 import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceManager.jsx";
 import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
@@ -64,6 +65,9 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 
 export function CrudPage({ config }) {
   const isClient = config.key === "clientes";
+  const [query] = useSearchParams();
+  const handledNavigation = useRef("");
+  const detailRegion = useRef(null);
   const [clientKind, setClientKind] = useState("PJ");
   const [formOpen, setFormOpen] = useState(false);
   const clientDrafts = useRef({});
@@ -534,6 +538,22 @@ export function CrudPage({ config }) {
     );
   }
 
+  useEffect(() => {
+    const action = query.has("editar") ? "editar" : config.financeManager && query.has("financeiro") ? "financeiro" : config.teamManager && query.has("equipe") ? "equipe" : null;
+    if (!action) return;
+    const target = query.get(action);
+    const key = `${config.key}:${action}:${target}`;
+    if (handledNavigation.current === key) return;
+    const record = records.find((row) => String(row.id) === target);
+    if (!record) return;
+    handledNavigation.current = key;
+    if (action === "editar") handleEdit(record);
+    else {
+      setSelectedRecord(record);
+      requestAnimationFrame(() => detailRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  }, [records, query, config]);
+
   return (
     <section className="content-panel">
       <header className="page-header">
@@ -654,6 +674,7 @@ export function CrudPage({ config }) {
                     ))}
                     <td>
                       <div className="row-actions">
+                        {(config.key === "projetos" || config.key === "colaboradores") && <Link className="icon-button" to={`/dashboard/${config.key}/${record.id}`} title="Dashboard" aria-label={`Dashboard de ${record.nome || record.nomeCompleto}`}><BarChart3 size={17} /></Link>}
                         <button type="button" className="icon-button" onClick={() => handleEdit(record)} title="Editar">
                           <Edit3 size={17} />
                         </button>
@@ -691,6 +712,7 @@ export function CrudPage({ config }) {
       </div>
 
       {config.key === "remuneracoes" && <RoleBonusManager />}
+      <div ref={detailRegion}>
       {config.teamManager && selectedRecord ? (
         <ProjectTeamManager
           project={selectedRecord}
@@ -706,6 +728,7 @@ export function CrudPage({ config }) {
           onClose={() => setSelectedRecord(null)}
         />
       ) : null}
+      </div>
     </section>
   );
 }

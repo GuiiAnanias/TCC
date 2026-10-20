@@ -29,8 +29,8 @@ export function AuditTable({ occurrences = [] }) {
     <div className="dashboard-table"><table><caption>{visible.length} {visible.length === 1 ? "ocorrência" : "ocorrências"} · uma tarefa ou apontamento pode ter mais de uma pendência.</caption><thead><tr><th>Ocorrência</th><th>Projeto</th><th>Registro</th><th>Data</th><th>Conferir</th></tr></thead>
       <tbody>{!visible.length ? <tr><td colSpan={5} className="empty-cell">Nenhuma ocorrência neste recorte.</td></tr> : visible.map((row) => <tr key={row.chave}>
         <td>{issueLabels[row.tipo]}<small className="dashboard-detail-note">{row.descricao}</small></td>
-        <td>{row.projeto}</td><td>{row.tarefa || row.colaborador || "Apontamento"}</td><td>{date(row.data)}</td>
-        <td><Link to={row.tipo === "SEM_REMUNERACAO" ? "/colaboradores" : row.tipo === "SEM_VINCULO" ? "/projetos" : row.tarefaId ? taskUrl(row) : "/apontamentos"}>{row.tipo === "SEM_REMUNERACAO" ? "Financeiro" : row.tipo === "SEM_VINCULO" ? "Equipe e datas" : row.tarefaId ? "Conferir tarefa" : "Conferir horas"}</Link></td>
+        <td><Link to={`/dashboard/projetos/${row.projetoId}`}>{row.projeto}</Link></td><td>{row.tarefa || row.colaborador || "Apontamento"}</td><td>{date(row.data)}</td>
+        <td><Link to={row.tipo === "SEM_REMUNERACAO" ? `/colaboradores?financeiro=${row.colaboradorId}` : row.tipo === "SEM_VINCULO" ? `/projetos?equipe=${row.projetoId}` : row.tarefaId ? taskUrl(row) : `/apontamentos?editar=${row.apontamentoId}`}>{row.tipo === "SEM_REMUNERACAO" ? "Financeiro" : row.tipo === "SEM_VINCULO" ? "Equipe e datas" : row.tarefaId ? "Conferir tarefa" : "Conferir horas"}</Link></td>
       </tr>)}</tbody></table></div>
   </div>;
 }
