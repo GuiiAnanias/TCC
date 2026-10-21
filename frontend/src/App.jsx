@@ -72,9 +72,9 @@ function ProtectedLayout() {
         </div>
 
         <nav className="nav-list" id="sidebar-navigation" aria-label="Menu principal">
-          <NavLink to="/dashboard" className="nav-link" title="Dashboard" aria-label="Dashboard">
+          <NavLink to="/dashboard" className="nav-link" title="Dashboard Geral" aria-label="Dashboard Geral">
             <LayoutDashboard size={19} aria-hidden="true" />
-            <span className="sidebar-label">Dashboard</span>
+            <span className="sidebar-label">Dashboard Geral</span>
           </NavLink>
           {resources.map((resource) => {
             const Icon = resource.icon;

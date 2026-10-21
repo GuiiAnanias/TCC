@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { operationalIndicators } from "../src/services/operationalIndicators.js";
+import { entryCost } from "../src/services/dashboardCosts.js";
 
 const entry = (id, tarefaId, horas, data = "2026-10-02", person = 1) => ({ id, tarefaId, horas, data: new Date(data), colaboradorId: person, colaborador: { departamento: person === 1 ? "Dev" : "QA" } });
 const task = (id, minutes, entries, extra = {}) => ({ id, titulo: `Tarefa ${id}`, status: "CONCLUIDA", statusRegistro: "ATIVO", minutosEstimados: minutes, correcao: false, apontamentos: entries, responsaveis: [{ colaboradorId: 1, colaborador: { departamento: "Dev" } }], dataInicio: new Date("2026-10-01"), dataConclusao: new Date("2026-10-03"), ...extra });
@@ -61,4 +62,13 @@ test("canceled tasks are excluded from planning counts; archived history and hou
   assert.equal(result.indicadores.percentualTarefasSemEstimativa, 0);
   assert.equal(result.indicadores.percentualCorrecoes, 50);
   assert.equal(result.indicadores.assertividadeEstimativas, 100);
+});
+
+test("cost components round by entry so contributor and project totals reconcile in cents", () => {
+  const row = entry(1, 1, 0.03);
+  row.colaborador.configuracoesFinanceiras = [{ dataInicio: new Date("2026-01-01"), valorHoraAplicado: 0.17, nivelAplicado: "Teste" }];
+  const cost = entryCost(row, { equipe: [{ colaboradorId: 1, papel: "Dev", dataEntrada: new Date("2026-01-01") }] }, [{ papel: "Dev", percentual: 7.5, dataInicio: new Date("2026-01-01") }]);
+  assert.equal(cost.custoBase, 0.01);
+  assert.equal(cost.bonificacao, 0);
+  assert.equal(cost.custo, cost.custoBase + cost.bonificacao);
 });

@@ -1,3 +1,4 @@
+import { dashboardRoutes } from "./dashboardRoutes.js";
 import { tarefasRoutes, sprintsRoutes } from "./tarefasRoutes.js";
 import { Router } from "express";
 import { clientesRoutes } from "./clientesRoutes.js";
@@ -21,6 +22,7 @@ routes.get("/health", (request, response) => {
 
 routes.use("/auth", authRoutes);
 routes.use(authenticate);
+routes.use("/dashboard", dashboardRoutes);
 routes.use("/bonificacoes-papeis", bonificacoesPapeisRoutes);
 routes.get("/opcoes-cadastro", (request, response) => {
   // `funcoes` é apenas um alias de compatibilidade para clientes antigos da API.
