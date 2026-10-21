@@ -55,6 +55,9 @@ model Usuario {
 
   configuracoesCriadas ConfiguracaoFinanceira[] @relation("AutorConfiguracaoFinanceira")
   configuracoesEncerradas ConfiguracaoFinanceira[] @relation("AutorEncerramentoFinanceiro")
+  regrasPremiacao RegraPremiacao[]
+  avaliacoesCriadas AvaliacaoPremiacao[] @relation("AutorAvaliacao")
+  avaliacoesConcluidas AvaliacaoPremiacao[] @relation("ConclusaoAvaliacao")
 
   @@map("usuarios")
 }
@@ -102,6 +105,7 @@ model Colaborador {
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
   tarefasResponsaveis TarefaResponsavel[]
+  avaliacoesPremiacao         AvaliacaoPremiacao[]
 
   @@map("colaboradores")
 }
@@ -280,4 +284,43 @@ model TarefaResponsavel {
   @@id([tarefaId, colaboradorId])
   @@index([colaboradorId])
   @@map("tarefas_responsaveis")
+}
+
+
+model RegraPremiacao {
+  id Int @id @default(autoincrement())
+  nome String
+  categoria String
+  definicao Json
+  criadoPorId Int
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt DateTime @default(now())
+  avaliacoes AvaliacaoPremiacao[]
+  @@map("regras_premiacao")
+}
+
+model AvaliacaoPremiacao {
+  id Int @id @default(autoincrement())
+  colaboradorId Int
+  competencia String
+  categoria String
+  versao Int @default(1)
+  revisao Int @default(1)
+  status String @default("RASCUNHO")
+  regraId Int
+  conteudo Json
+  criadoPorId Int
+  concluidoPorId Int?
+  concluidoEm DateTime?
+  anteriorId Int? @unique
+  anterior AvaliacaoPremiacao? @relation("RevisoesPremiacao", fields: [anteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  proxima AvaliacaoPremiacao? @relation("RevisoesPremiacao")
+  colaborador Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  regra RegraPremiacao @relation(fields: [regraId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  criadoPor Usuario @relation("AutorAvaliacao", fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  concluidoPor Usuario? @relation("ConclusaoAvaliacao", fields: [concluidoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([colaboradorId, competencia, categoria, versao])
+  @@map("avaliacoes_premiacao")
 }
