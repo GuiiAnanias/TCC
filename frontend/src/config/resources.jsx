@@ -48,7 +48,7 @@ function currentRemuneration(item) {
     return "-";
   }
 
-  return `${activeConfig.itemTabela.nivel} - ${currency(activeConfig.itemTabela.valorHora)}/h`;
+  return `${activeConfig.nivelAplicado} - ${currency(activeConfig.valorHoraAplicado)}/h`;
 }
 
 export const resources = [
@@ -126,7 +126,7 @@ export const resources = [
     icon: WalletCards,
     fields: [
       { name: "nivel", label: "Nível de remuneração", type: "catalog-select", catalog: "niveisRemuneracao", required: true, help: "Faixa de carreira, como Júnior II ou Pleno I. O valor/hora é informado abaixo." },
-      { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0.01", required: true },
+      { name: "valorHora", label: "Valor hora", type: "number", step: "0.01", min: "0.01", required: true, help: "Usado em novas vigências. Configurações financeiras existentes mantêm o valor/hora preservado." },
       { name: "status", label: "Status", type: "select", options: statusOptions, defaultValue: "ATIVO" }
     ],
     columns: [
