@@ -8,6 +8,7 @@ try {
   console.log("Seed de demonstração concluído (registros existentes e edições preservados):", summary);
   console.log("Cenários: abaixo/acima/no orçamento, pendências, planejamento e histórico inativo.");
   console.log("Valores financeiros são fictícios. Indicadores operacionais e dashboards individuais disponíveis.");
+  console.log("Premiação: regras sem faixas presumidas, rascunho Dev e exemplo PO/SM com percentuais fictícios informados.");
 } catch (error) {
   console.error(error);
   process.exitCode = 1;

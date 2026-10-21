@@ -48,8 +48,8 @@ try {
   const { tarefasRepository } = await import("../src/repositories/tarefasRepository.js");
   const { cargosTi, departamentosTi, niveisRemuneracao, papeisProjeto } = await import("../src/schemas/cadastroOptions.js");
   const summary = await seedDemo(client);
-  assert.deepEqual(summary, { clientes: 4, colaboradores: 9, faixas: 9, projetos: 6, sprints: 7, tarefas: 17, apontamentos: 16 });
-  const models = ["usuario", "cliente", "colaborador", "itemTabelaRemuneracao", "configuracaoFinanceira", "bonificacaoPapel", "projeto", "projetoColaborador", "sprint", "tarefa", "tarefaResponsavel", "apontamentoHora"];
+  assert.deepEqual(summary, { clientes: 4, colaboradores: 9, faixas: 9, projetos: 6, sprints: 7, tarefas: 17, apontamentos: 16, avaliacoes: 2 });
+  const models = ["usuario", "cliente", "colaborador", "itemTabelaRemuneracao", "configuracaoFinanceira", "bonificacaoPapel", "projeto", "projetoColaborador", "sprint", "tarefa", "tarefaResponsavel", "apontamentoHora", "regraPremiacao", "avaliacaoPremiacao"];
   const snapshot = async () => Object.fromEntries(await Promise.all(models.map(async (model) => [model, await client[model].findMany({ orderBy: model === "tarefaResponsavel" ? [{ tarefaId: "asc" }, { colaboradorId: "asc" }] : { id: "asc" } })])));
   const initial = await snapshot();
   for (const { data } of seedCompanies) {
@@ -58,7 +58,7 @@ try {
     for (const [field, value] of Object.entries(data)) assert.equal(saved[field], value, `${data.cnpj}: ${field}`);
   }
   for (const model of models) assert.ok(initial[model].length, `Tabela sem dados: ${model}`);
-  const counts = { usuario: 1, cliente: 4, colaborador: 9, itemTabelaRemuneracao: 9, configuracaoFinanceira: 10, bonificacaoPapel: 5, projeto: 6, projetoColaborador: 12, sprint: 7, tarefa: 17, tarefaResponsavel: 18, apontamentoHora: 16 };
+  const counts = { usuario: 1, cliente: 4, colaborador: 9, itemTabelaRemuneracao: 9, configuracaoFinanceira: 10, bonificacaoPapel: 5, projeto: 6, projetoColaborador: 12, sprint: 7, tarefa: 17, tarefaResponsavel: 18, apontamentoHora: 16, regraPremiacao: 2, avaliacaoPremiacao: 2 };
   for (const [model, expected] of Object.entries(counts)) assert.equal(initial[model].length, expected, model);
   assert.equal(initial.configuracaoFinanceira.length, 10);
   assert.equal(initial.bonificacaoPapel.length, 5);

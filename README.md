@@ -582,11 +582,13 @@ horas e vínculos são exemplos fictícios; não representam relações reais de
 | Tarefas | 17 |
 | Associações de responsáveis | 18 |
 | Apontamentos de horas | 16 |
+| Regras de premiação sem faixas presumidas | 2 |
+| Avaliações de premiação | 2 |
 
 Há reajustes financeiros, troca de papel, bônus com vigências, uma configuração
 futura, pessoas e projetos inativos, tarefas compartilhadas, correções, tarefas sem
 estimativa ou sem horas e um apontamento sem tarefa. As horas de uma tarefa não são
-multiplicadas pela quantidade de responsáveis. Esta entrega não inclui exemplos de premiação.
+multiplicadas pela quantidade de responsáveis. O seed também inclui os exemplos de premiação descritos abaixo.
 
 ### Resultados esperados no Dashboard Geral
 
@@ -658,3 +660,37 @@ não executam reset no banco utilizado pela interface.
 
 O Docker persiste o banco em um volume: recriar o contêiner ou a imagem não limpa
 os dados. O seed também não realiza essa limpeza.
+
+## Avaliação de premiação e exemplos do seed
+
+A tela **Premiação** permite publicar regras e avaliar uma pessoa por competência
+mensal e categoria Dev ou PO/SM. A pontuação começa em 10 nos modelos da planilha;
+cada critério com ocorrência desconta sua dedução uma vez no período. Ocorrência e
+Não aplicável exigem evidência/justificativa. Os indicadores servem para conferência,
+sem inferir automaticamente notificações, atrasos ou responsabilidade por erro.
+
+As faixas de nota não estão disponíveis na planilha fornecida e começam vazias.
+Configure faixas sem sobreposição ou informe elegibilidade manual com justificativa.
+O percentual final é `percentual-base × elegibilidade / 100`: base 5% e elegibilidade
+80% resultam em 4%. Não há cálculo em reais nem inclusão automática no custo por papel.
+Nota conferida pode ser concluída mesmo com percentual indisponível.
+
+Salvar o rascunho atualiza e preserva a base de tarefas/indicadores do mês e do
+contexto selecionado. Concluir bloqueia edições; Reavaliar cria outra versão com
+nova conferência, mantendo a anterior no histórico. Regras publicadas também não
+são sobrescritas. A ajuda completa fica no “?” junto ao título da página.
+
+API autenticada: `GET /api/premiacoes/modelos`, `GET/POST /api/premiacoes/regras`,
+`GET/POST /api/premiacoes`, `GET/PUT /api/premiacoes/:id` e
+`POST /api/premiacoes/:id/concluir`. Listagem aceita colaboradorId, competencia
+(AAAA-MM), categoria (DEV/PO_SM) e status (RASCUNHO/CONCLUIDA).
+
+Depois de aplicar as migrações, o seed completo inclui os exemplos de avaliação.
+Em uma base demo já existente, `node scripts/seed-awards-local.mjs` acrescenta apenas
+os exemplos do passo 6. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
+`corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
+As integrações criam e removem somente schemas temporários no PostgreSQL local.
+
+Próximas etapas: importação ClickUp e histórico (7), depois relatórios (8).
+A integração utiliza apenas um schema temporário local e testa as alterações manuais
+sem modificar a base utilizada pela interface.

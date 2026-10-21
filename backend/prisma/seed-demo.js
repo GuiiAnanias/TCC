@@ -1,5 +1,6 @@
 import bcrypt from "bcrypt";
 import { seedCompanies } from "./seed-companies.js";
+import { seedAwards } from "./seed-awards.js";
 
 const date = (day) => new Date(`${day}T00:00:00Z`);
 
@@ -172,6 +173,7 @@ export async function seedDemo(prisma) {
       const projetoId = projects[project].id, colaboradorId = people[person].id;
       if (!await tx.apontamentoHora.findFirst({ where: { projetoId, colaboradorId, descricao } })) await tx.apontamentoHora.create({ data: { projetoId, colaboradorId, tarefaId: task ? tasks[task].id : null, data: date(day), horas, status, descricao } });
     }
-    return { clientes: Object.keys(clients).length, colaboradores: Object.keys(people).length, faixas: Object.keys(rates).length, projetos: Object.keys(projects).length, sprints: Object.keys(sprints).length, tarefas: Object.keys(tasks).length, apontamentos: 16 };
+    await seedAwards(tx, { admin, people, projects });
+    return { clientes: Object.keys(clients).length, colaboradores: Object.keys(people).length, faixas: Object.keys(rates).length, projetos: Object.keys(projects).length, sprints: Object.keys(sprints).length, tarefas: Object.keys(tasks).length, apontamentos: 16, avaliacoes: 2 };
   }, { timeout: 30000, maxWait: 10000 });
 }
