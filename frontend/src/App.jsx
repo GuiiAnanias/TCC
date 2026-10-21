@@ -1,7 +1,9 @@
+import { AwardsPage } from "./pages/AwardsPage.jsx";
+import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
 import { TasksPage } from "./pages/TasksPage.jsx";
 import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
-import { DatabaseZap, LayoutDashboard, PanelLeftClose, PanelLeftOpen, LogOut, ListTodo } from "lucide-react";
+import { DatabaseZap, LayoutDashboard, PanelLeftClose, PanelLeftOpen, LogOut, ListTodo, Award } from "lucide-react";
 import { resources } from "./config/resources.jsx";
 import { CrudPage } from "./pages/CrudPage.jsx";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
@@ -22,6 +24,9 @@ function AppRoutes() {
     <Route element={<ProtectedLayout />}>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/dashboard/projetos/:id" element={<EntityDashboardPage type="projetos" />} />
+      <Route path="/dashboard/colaboradores/:id" element={<EntityDashboardPage type="colaboradores" />} />
+      <Route path="/premiacao" element={<AwardsPage />} />
       <Route path="/tarefas" element={<TasksPage />} />
       {resources.map((resource) => <Route key={resource.key} path={`/${resource.key}`} element={<CrudPage config={resource} />} />)}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -87,6 +92,7 @@ function ProtectedLayout() {
             );
           })}
           <NavLink to="/tarefas" className="nav-link" title="Tarefas e sprints" aria-label="Tarefas e sprints"><ListTodo size={19} aria-hidden="true" /><span className="sidebar-label">Tarefas e sprints</span></NavLink>
+          <NavLink to="/premiacao" className="nav-link" title="Premiação" aria-label="Premiação"><Award size={19} aria-hidden="true" /><span className="sidebar-label">Premiação</span></NavLink>
         </nav>
         <div className="sidebar-actions-slot" aria-hidden="true" />
         <div className="session-panel">

@@ -1,3 +1,4 @@
+import { premiacaoRoutes } from "./premiacaoRoutes.js";
 import { dashboardRoutes } from "./dashboardRoutes.js";
 import { tarefasRoutes, sprintsRoutes } from "./tarefasRoutes.js";
 import { Router } from "express";
@@ -36,3 +37,5 @@ routes.use("/apontamentos", apontamentosRoutes);
 
 routes.use("/tarefas", tarefasRoutes);
 routes.use("/sprints", sprintsRoutes);
+
+routes.use("/premiacoes", premiacaoRoutes);

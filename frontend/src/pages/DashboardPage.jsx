@@ -1,10 +1,10 @@
-import { Link } from "react-router-dom";
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, BarChart3, BriefcaseBusiness, Building2, ChevronDown, Clock3, Filter, RotateCcw, ShieldCheck, Target, WalletCards } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { AuditTable, OperationalMetrics } from "../components/OperationalDashboard.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
+import { Link } from "react-router-dom";
 
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
 
@@ -151,11 +151,11 @@ export function DashboardPage() {
                 {openSection === key && <Suspense fallback={<p role="status">Carregando gráfico…</p>}><DashboardProjectChart projects={data.projetos} /></Suspense>}
               </div>
               <div className="dashboard-table"><table><caption>Custo e horas por projeto</caption><thead><tr><th>Projeto</th><th>Cliente</th><th>Status</th><th>Horas</th><th>Custo base</th><th>Bonificação</th><th>Custo total</th></tr></thead>
-                <tbody>{data.projetos.map((row) => <tr key={row.id}><td>{row.nome}</td><td>{row.cliente}</td><td>{row.status === "ATIVO" ? "Ativo" : "Inativo"}</td><td>{number(row.horas)} h</td><td>{money(row.custoBase)}</td><td><Bonus row={row} /></td><td><Cost row={row} /></td></tr>)}</tbody></table></div>
+                <tbody>{data.projetos.map((row) => <tr key={row.id}><td><Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link></td><td>{row.cliente}</td><td>{row.status === "ATIVO" ? "Ativo" : "Inativo"}</td><td>{number(row.horas)} h</td><td>{money(row.custoBase)}</td><td><Bonus row={row} /></td><td><Cost row={row} /></td></tr>)}</tbody></table></div>
             </>}
             {key === "auditoria" && <>
               <AuditTable occurrences={data.ocorrencias} />
-              <div className="dashboard-table"><table><caption>Projetos da menor para a maior assertividade do orçamento; sem base de cálculo ao final.</caption><thead><tr><th>Projeto</th><th>Orçamento</th><th>Bonificação</th><th>Custo total</th><th>Assertividade do orçamento</th><th>Pendências de cálculo</th><th>Horas sem custo</th></tr></thead><tbody>{data.auditoria.map((row) => <tr key={row.id}><td>{row.nome}</td><td>{money(row.orcamento)}</td><td><Bonus row={row} /></td><td><Cost row={row} /></td><td>{percent(row.assertividade)}</td><td>{row.inconsistencias}</td><td>{number(row.horasSemCusto)} h</td></tr>)}</tbody></table></div>
+              <div className="dashboard-table"><table><caption>Projetos da menor para a maior assertividade do orçamento; sem base de cálculo ao final.</caption><thead><tr><th>Projeto</th><th>Orçamento</th><th>Bonificação</th><th>Custo total</th><th>Assertividade do orçamento</th><th>Pendências de cálculo</th><th>Horas sem custo</th></tr></thead><tbody>{data.auditoria.map((row) => <tr key={row.id}><td><Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link></td><td>{money(row.orcamento)}</td><td><Bonus row={row} /></td><td><Cost row={row} /></td><td>{percent(row.assertividade)}</td><td>{row.inconsistencias}</td><td>{number(row.horasSemCusto)} h</td></tr>)}</tbody></table></div>
             </>}
             {key === "clientes" && <div className="dashboard-table"><table><caption>Consolidação dos projetos por cliente</caption><thead><tr><th>Cliente</th><th>Projetos</th><th>Horas trabalhadas</th><th>Custo base</th><th>Bonificação</th><th>Custo total</th></tr></thead><tbody>{data.clientes.map((row) => <tr key={row.id}><td>{row.nome}</td><td>{row.projetos}</td><td>{number(row.horas)} h</td><td>{money(row.custoBase)}</td><td><Bonus row={row} /></td><td><Cost row={row} /></td></tr>)}</tbody></table></div>}
           </>}

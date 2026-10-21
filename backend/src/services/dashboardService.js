@@ -3,6 +3,7 @@ import { bonificacoesPapeisRepository } from "../repositories/bonificacoesPapeis
 
 import { round, operationalIndicators, taskInScope } from "./operationalIndicators.js";
 import { entryCost } from "./dashboardCosts.js";
+import { HttpError } from "../utils/HttpError.js";
 const sum = (rows, key) => round(rows.reduce((total, row) => total + Number(row[key]), 0));
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 
@@ -89,5 +90,49 @@ export const dashboardService = {
     const [projects, bonuses] = await Promise.all([dashboardRepository.load(filters), bonificacoesPapeisRepository.findAll()]);
     return summarizeDashboard(projects, filters, bonuses);
   },
+  async project(id, filters = {}) {
+    const project = await dashboardRepository.findProject(id);
+    if (!project) throw new HttpError(404, "Projeto não encontrado.");
+    const scoped = { ...filters, projetoId: id };
+    const [projects, bonuses] = await Promise.all([dashboardRepository.load(scoped), bonificacoesPapeisRepository.findAll()]);
+    const dashboard = summarizeDashboard(projects, scoped, bonuses);
+    return { ...dashboard, tipo: "projeto", projeto: project, ...detailRows(projects, scoped, bonuses) };
+  },
+  async collaborator(id, filters = {}) {
+    const collaborator = await dashboardRepository.findCollaborator(id);
+    if (!collaborator) throw new HttpError(404, "Colaborador não encontrado.");
+    const scoped = { ...filters, colaboradorId: id };
+    const [projects, bonuses] = await Promise.all([dashboardRepository.load(scoped), bonificacoesPapeisRepository.findAll()]);
+    const dashboard = summarizeDashboard(projects, scoped, bonuses);
+    return { ...dashboard, tipo: "colaborador", colaborador: collaborator, ...detailRows(projects, scoped, bonuses) };
+  },
   options() { return dashboardRepository.options(); }
 };
+
+
+function detailRows(projects, filters, bonuses) {
+  const entries = projects.flatMap((project) => project.apontamentos.map((entry) => ({
+    id: entry.id, projetoId: project.id, projeto: project.nome,
+    colaboradorId: entry.colaboradorId, colaborador: entry.colaborador.nomeCompleto,
+    tarefaId: entry.tarefaId, tarefa: project.tarefas?.find((task) => task.id === entry.tarefaId)?.titulo ?? null,
+    data: entry.data, horas: Number(entry.horas), status: entry.status, descricao: entry.descricao,
+    ...entryCost(entry, project, bonuses)
+  }))).sort((a, b) => new Date(b.data) - new Date(a.data) || b.id - a.id);
+  const contributors = new Map();
+  for (const entry of entries) {
+    if (!contributors.has(entry.colaboradorId)) contributors.set(entry.colaboradorId, { id: entry.colaboradorId, nome: entry.colaborador, horas: 0, custoBase: 0, bonificacao: 0, custo: 0, horasSemCusto: 0 });
+    const person = contributors.get(entry.colaboradorId);
+    for (const key of ["horas", "custoBase", "bonificacao", "custo"]) person[key] = round(person[key] + entry[key]);
+    if (entry.semCusto) person.horasSemCusto = round(person.horasSemCusto + entry.horas);
+  }
+  const team = projects.flatMap((project) => (project.equipe ?? []).filter((member) => (!filters.colaboradorId || member.colaboradorId === filters.colaboradorId) &&
+    (!filters.equipe || member.colaborador?.departamento === filters.equipe) &&
+    (!filters.dataInicio || !member.dataSaida || dayOf(member.dataSaida) >= dayOf(filters.dataInicio)) &&
+    (!filters.dataFim || dayOf(member.dataEntrada) <= dayOf(filters.dataFim))).map((member) => ({
+    id: member.id, projetoId: project.id, projeto: project.nome, colaboradorId: member.colaboradorId,
+    nome: member.colaborador?.nomeCompleto ?? "Colaborador", cargo: member.colaborador?.cargo,
+    departamento: member.colaborador?.departamento, papel: member.papel,
+    dataEntrada: member.dataEntrada, dataSaida: member.dataSaida
+  })));
+  return { apontamentos: entries, colaboradores: [...contributors.values()], equipe: team };
+}

@@ -29,9 +29,14 @@ export function AuditTable({ occurrences = [] }) {
     <div className="dashboard-table"><table><caption>{visible.length} {visible.length === 1 ? "ocorrência" : "ocorrências"} · uma tarefa ou apontamento pode ter mais de uma pendência.</caption><thead><tr><th>Ocorrência</th><th>Projeto</th><th>Registro</th><th>Data</th><th>Conferir</th></tr></thead>
       <tbody>{!visible.length ? <tr><td colSpan={5} className="empty-cell">Nenhuma ocorrência neste recorte.</td></tr> : visible.map((row) => <tr key={row.chave}>
         <td>{issueLabels[row.tipo]}<small className="dashboard-detail-note">{row.descricao}</small></td>
-        <td>{row.projeto}</td><td>{row.tarefa || row.colaborador || "Apontamento"}</td><td>{date(row.data)}</td>
-        <td><Link to={row.tipo === "SEM_REMUNERACAO" ? "/colaboradores" : row.tipo === "SEM_VINCULO" ? "/projetos" : row.tarefaId ? taskUrl(row) : "/apontamentos"}>{row.tipo === "SEM_REMUNERACAO" ? "Financeiro" : row.tipo === "SEM_VINCULO" ? "Equipe e datas" : row.tarefaId ? "Conferir tarefa" : "Conferir horas"}</Link></td>
+        <td><Link to={`/dashboard/projetos/${row.projetoId}`}>{row.projeto}</Link></td><td>{row.tarefa || row.colaborador || "Apontamento"}</td><td>{date(row.data)}</td>
+        <td><Link to={row.tipo === "SEM_REMUNERACAO" ? `/colaboradores?financeiro=${row.colaboradorId}` : row.tipo === "SEM_VINCULO" ? `/projetos?equipe=${row.projetoId}` : row.tarefaId ? taskUrl(row) : `/apontamentos?editar=${row.apontamentoId}`}>{row.tipo === "SEM_REMUNERACAO" ? "Financeiro" : row.tipo === "SEM_VINCULO" ? "Equipe e datas" : row.tarefaId ? "Conferir tarefa" : "Conferir horas"}</Link></td>
       </tr>)}</tbody></table></div>
   </div>;
 }
 
+export function IndicatorTasksTable({ tasks = [], individual = false }) {
+  return <div className="dashboard-table"><table><caption>{tasks.length} {tasks.length === 1 ? "tarefa" : "tarefas"} no recorte · canceladas não entram nas contagens de tarefas; horas efetivamente registradas são preservadas.</caption><thead><tr><th>Tarefa</th><th>Projeto / sprint</th><th>Responsáveis</th><th>Status</th><th>Estimativa da tarefa</th><th>{individual ? "Horas da pessoa no recorte" : "Horas no recorte"}</th><th>Horas totais da tarefa</th><th>Estimativa comparável</th></tr></thead>
+    <tbody>{!tasks.length ? <tr><td className="empty-cell" colSpan={8}>Nenhuma tarefa neste recorte.</td></tr> : tasks.map((task) => <tr key={task.id}><td><Link to={taskUrl(task)}>{task.titulo}</Link>{task.correcao && <small className="dashboard-detail-note">Correção</small>}{task.statusRegistro === "INATIVO" && <small className="dashboard-detail-note">Arquivada</small>}</td><td>{task.projeto}<small className="dashboard-detail-note">{task.sprint || "Sem sprint"}</small></td><td>{task.responsaveis.map((person) => person.nome).join(", ") || "Sem responsáveis"}</td><td>{taskStatus[task.status]}</td><td>{task.minutosEstimados == null ? "Sem estimativa" : `${Math.floor(task.minutosEstimados / 60)}h ${task.minutosEstimados % 60}min`}</td><td>{number(task.horasNoRecorte)} h</td><td>{number(task.horasTotais)} h</td><td>{task.comparavel ? "Sim" : "Não"}{task.semHoras && <small className="dashboard-detail-note">Concluída sem horas</small>}</td></tr>)}</tbody>
+  </table></div>;
+}
