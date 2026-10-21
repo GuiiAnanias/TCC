@@ -11,6 +11,15 @@ async function ensureClienteExists(id) {
   return cliente;
 }
 
+async function ensureUniqueIndividualContacts(data, excludeId) {
+  if (data.email && await clientesRepository.findIndividualByEmail(data.email, excludeId)) {
+    throw new HttpError(409, "Já existe uma pessoa física com este e-mail.");
+  }
+  if (data.telefone && await clientesRepository.findIndividualByTelefone(data.telefone, excludeId)) {
+    throw new HttpError(409, "Já existe uma pessoa física com este telefone.");
+  }
+}
+
 export const clientesService = {
   list(filters) {
     return clientesRepository.findAll(filters);
@@ -23,6 +32,7 @@ export const clientesService = {
   async create(data) {
     if (data.cpf && await clientesRepository.findByCpf(data.cpf)) throw new HttpError(409, "Já existe um cliente com este CPF.");
     if (data.cnpj && await clientesRepository.findByCnpj(data.cnpj)) throw new HttpError(409, "Já existe um cliente com este CNPJ.");
+    if (data.tipoPessoa === "PF") await ensureUniqueIndividualContacts(data);
     const cliente = data.tipoPessoa === "PF" ? null : await clientesRepository.findByNome(data.nome);
 
     if (cliente) {
@@ -44,6 +54,7 @@ export const clientesService = {
         const duplicate = await clientesRepository.findByCpf(data.cpf);
         if (duplicate && duplicate.id !== id) throw new HttpError(409, "Já existe um cliente com este CPF.");
       }
+      await ensureUniqueIndividualContacts(data, id);
     }
     if (data.cnpj) {
       const duplicate = await clientesRepository.findByCnpj(data.cnpj);

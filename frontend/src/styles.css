@@ -761,6 +761,21 @@ table {
   border-collapse: collapse;
 }
 
+.clients-table { table-layout: fixed; min-width: 960px; }
+.clients-table th:nth-child(1) { width: 28%; }
+.clients-table th:nth-child(2) { width: 170px; }
+.clients-table th:nth-child(3) { width: 17%; }
+.clients-table th:nth-child(5) { width: 100px; }
+.clients-table th:nth-child(6) { width: 112px; }
+.clients-table .company-name, .clients-table .company-contact {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+.clients-table td:nth-child(3) { white-space: normal; overflow-wrap: anywhere; }
+
 th,
 td {
   padding: 13px 14px;
