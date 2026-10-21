@@ -19,6 +19,7 @@ export const apontamentosRepository = {
       include: {
         colaborador: { select: { nomeCompleto: true, cargo: true } },
         projeto: { select: { nome: true } },
+        tarefa: { select: { titulo: true } },
       },
       orderBy: [{ data: "desc" }],
     });
@@ -30,6 +31,7 @@ export const apontamentosRepository = {
       include: {
         colaborador: { select: { nomeCompleto: true } },
         projeto: { select: { nome: true } },
+        tarefa: { select: { titulo: true } },
       },
     });
   },

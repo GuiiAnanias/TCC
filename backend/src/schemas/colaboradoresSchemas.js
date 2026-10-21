@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
-import { departamentosTi, funcoesTi } from "./cadastroOptions.js";
+import { departamentosTi, cargosTi } from "./cadastroOptions.js";
 
 export const colaboradorQuerySchema = paginationQuerySchema;
 
@@ -9,7 +9,7 @@ export const colaboradorCreateSchema = z.object({
     (nome) => !/\p{N}/u.test(nome), "Nome não pode conter números."
   ),
   email: z.email("E-mail inválido.").trim().toLowerCase(),
-  cargo: z.enum(funcoesTi, { message: "Selecione uma função de TI válida." }),
+  cargo: z.enum(cargosTi, { message: "Selecione um cargo válido." }),
   departamento: z.enum(departamentosTi, { message: "Selecione um departamento válido." }),
   status: optionalStatusSchema
 });

@@ -19,7 +19,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
   const login = (body) => fetch(`${base}/auth/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
   try {
     assert.equal((await fetch(`${base}/health`)).status, 200);
-    for (const resource of ["clientes", "colaboradores", "remuneracoes", "projetos", "apontamentos", "opcoes-cadastro", "projetos/papeis", "projetos/1/equipe", "colaboradores/1/configuracoes-financeiras"]) {
+    for (const resource of ["tarefas", "sprints", "bonificacoes-papeis", "clientes", "colaboradores", "remuneracoes", "projetos", "apontamentos", "opcoes-cadastro", "projetos/papeis", "projetos/1/equipe", "colaboradores/1/configuracoes-financeiras"]) {
       for (const method of ["GET", "POST", "PUT", "DELETE"]) {
         assert.equal((await fetch(`${base}/${resource}`, { method })).status, 401, `${method} ${resource}`);
       }
@@ -41,7 +41,17 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
       assert.equal(profile.senhaHash, undefined);
       assert.equal(profile.resetToken, undefined);
     }
-    assert.equal((await fetch(`${base}/opcoes-cadastro`, { headers: { Authorization: `Bearer ${validToken}` } })).status, 200);
+    const optionsResponse = await fetch(`${base}/opcoes-cadastro`, { headers: { Authorization: `Bearer ${validToken}` } });
+    assert.equal(optionsResponse.status, 200);
+    const options = await optionsResponse.json();
+    assert.ok(options.cargos.includes("Desenvolvedor Front-end"));
+    assert.ok(options.niveisRemuneracao.includes("Júnior II"));
+    assert.ok(options.papeisProjeto.includes("Dev"));
+    assert.equal(options.niveisRemuneracao.includes("QA"), false);
+    assert.deepEqual(options.funcoes, options.cargos);
+    const rolesResponse = await fetch(`${base}/projetos/papeis`, { headers: { Authorization: `Bearer ${validToken}` } });
+    assert.equal(rolesResponse.status, 200);
+    assert.deepEqual(await rolesResponse.json(), options.papeisProjeto);
     for (const token of ["invalid", jwt.sign({}, "wrong-secret", { subject: "1" }), jwt.sign({}, process.env.JWT_SECRET, { subject: "1", expiresIn: -1 }), jwt.sign({}, process.env.JWT_SECRET, { subject: "999" }), jwt.sign({}, process.env.JWT_SECRET, { subject: "bad" })]) {
       assert.equal((await fetch(`${base}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })).status, 401);
       assert.equal((await fetch(`${base}/clientes`, { headers: { Authorization: `Bearer ${token}` } })).status, 401);

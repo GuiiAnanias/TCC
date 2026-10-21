@@ -1,5 +1,6 @@
 import { remuneracoesRepository } from "../repositories/remuneracoesRepository.js";
 import { HttpError } from "../utils/HttpError.js";
+import { niveisRemuneracao } from "../schemas/cadastroOptions.js";
 
 async function ensureRemuneracaoExists(id) {
   const remuneracao = await remuneracoesRepository.findById(id);
@@ -31,9 +32,12 @@ export const remuneracoesService = {
   },
 
   async update(id, data) {
-    await ensureRemuneracaoExists(id);
+    const current = await ensureRemuneracaoExists(id);
 
     if (data.nivel) {
+      if (data.nivel !== current.nivel && !niveisRemuneracao.includes(data.nivel)) {
+        throw new HttpError(400, "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.");
+      }
       const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
       if (remuneracao && remuneracao.id !== id) {
