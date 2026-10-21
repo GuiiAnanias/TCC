@@ -1,4 +1,5 @@
-import { Prisma } from "@prisma/client";
+import prismaPackage from "@prisma/client";
+const { Prisma } = prismaPackage;
 import { ZodError } from "zod";
 import { env } from "../../config/env.js";
 
