@@ -31,6 +31,24 @@ export const clientesRepository = {
   findByCnpj(cnpj) {
     return prisma.cliente.findUnique({ where: { cnpj } });
   },
+  async findIndividualByEmail(email, excludeId = 0) {
+    const rows = await prisma.$queryRaw`
+      SELECT id FROM clientes
+      WHERE "tipoPessoa" = 'PF' AND id <> ${excludeId}
+        AND lower(btrim(email)) = lower(btrim(${email}))
+      LIMIT 1
+    `;
+    return rows[0] || null;
+  },
+  async findIndividualByTelefone(telefone, excludeId = 0) {
+    const rows = await prisma.$queryRaw`
+      SELECT id FROM clientes
+      WHERE "tipoPessoa" = 'PF' AND id <> ${excludeId}
+        AND regexp_replace(telefone, '[^0-9]', '', 'g') = ${telefone.replace(/\D/g, "")}
+      LIMIT 1
+    `;
+    return rows[0] || null;
+  },
 
   create(data) {
     return prisma.cliente.create({ data });
