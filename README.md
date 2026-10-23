@@ -233,6 +233,7 @@ Regras importantes:
 - Um colaborador não pode ficar ativo duas vezes no mesmo projeto ao mesmo tempo.
 - Colaboradores inativos não podem ser vinculados a novos projetos.
 - Projetos inativos ficam disponíveis para consulta, mas não permitem alterações na equipe.
+- Apontamentos com status FATURADO não podem ser editados nem excluídos, porque as horas já foram cobradas do cliente. Para corrigir, volte o status para APROVADO, salve e depois edite.
 
 ---
 
