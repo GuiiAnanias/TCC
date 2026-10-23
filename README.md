@@ -66,6 +66,16 @@ Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie
 
 Para testar a autenticação e a proteção da API com banco simulado, execute `corepack pnpm test` na pasta `backend`.
 
+#### Esqueci minha senha
+
+O sistema não envia e-mail. Para redefinir uma senha, quem administra o servidor gera um link de uso único na pasta `backend`, informando o usuário ou o e-mail:
+
+```powershell
+corepack pnpm run senha:link admin
+```
+
+O comando imprime um link para a tela `/redefinir-senha`, válido por 30 minutos e de uso único. O endereço do front vem de `FRONTEND_URL` no `.env` (padrão `http://localhost:5173`). Só o hash do token fica salvo em `usuarios.resetToken`, e gerar um novo link invalida o anterior.
+
 ### 5. Abrir o banco em interface visual
 
 Em outro terminal, com o banco e o back-end configurados:
@@ -159,7 +169,6 @@ Prisma ORM
 Zod
 JWT
 bcrypt
-Nodemailer
 ```
 
 Banco e ferramentas:
@@ -407,9 +416,7 @@ DATABASE_URL="postgresql://postgres:postgres@localhost:5432/sistema_indicadores"
 PORT=3333
 JWT_SECRET="dev-secret"
 JWT_EXPIRATION="1d"
-SMTP_HOST=""
-SMTP_USER=""
-SMTP_PASS=""
+FRONTEND_URL="http://localhost:5173"
 ```
 
 Front-end:
@@ -493,6 +500,7 @@ corepack pnpm run prisma:generate
 corepack pnpm run prisma:migrate
 corepack pnpm run prisma:studio
 corepack pnpm run seed
+corepack pnpm run senha:link admin
 ```
 
 Front-end:

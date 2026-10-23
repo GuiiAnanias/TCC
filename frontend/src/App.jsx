@@ -9,6 +9,7 @@ import { CrudPage } from "./pages/CrudPage.jsx";
 import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
+import { RedefinirSenhaPage } from "./pages/RedefinirSenhaPage.jsx";
 import { ThemeProvider } from "./ThemeContext.jsx";
 
 export function App() {
@@ -21,6 +22,7 @@ function AppRoutes() {
   if (auth.error) return <main className="login-page"><div className="login-card"><p role="alert">{auth.error}</p><button className="primary-button" onClick={() => auth.restore()}>Tentar novamente</button><button className="secondary-button" onClick={auth.logout}>Voltar ao login</button></div></main>;
   return <Routes>
     <Route path="/login" element={<LoginPage />} />
+    <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
     <Route element={<ProtectedLayout />}>
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="/dashboard" element={<DashboardPage />} />
