@@ -19,6 +19,7 @@ export const apontamentosRepository = {
       include: {
         colaborador: { select: { nomeCompleto: true, cargo: true } },
         projeto: { select: { nome: true } },
+        tarefa: { select: { titulo: true } },
       },
       orderBy: [{ data: "desc" }],
     });
@@ -30,8 +31,17 @@ export const apontamentosRepository = {
       include: {
         colaborador: { select: { nomeCompleto: true } },
         projeto: { select: { nome: true } },
+        tarefa: { select: { titulo: true } },
       },
     });
+  },
+
+  async sumHorasNoDia(colaboradorId, data, excetoId) {
+    const result = await prisma.apontamentoHora.aggregate({
+      _sum: { horas: true },
+      where: { colaboradorId, data, ...(excetoId ? { id: { not: excetoId } } : {}) },
+    });
+    return Number(result._sum.horas ?? 0);
   },
 
   create(data) {

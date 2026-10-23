@@ -103,5 +103,19 @@ export const projetosRepository = {
         colaborador: true
       }
     });
+  },
+
+  changeTeamRole(member, papel, dataVigencia) {
+    return prisma.$transaction(async (tx) => {
+      const closed = await tx.projetoColaborador.updateMany({
+        where: { id: member.id, dataSaida: null, papel: member.papel },
+        data: { dataSaida: dataVigencia }
+      });
+      if (closed.count !== 1) throw new Error("O vínculo foi alterado. Atualize a equipe e tente novamente.");
+      return tx.projetoColaborador.create({
+        data: { projetoId: member.projetoId, colaboradorId: member.colaboradorId, papel, dataEntrada: dataVigencia },
+        include: { colaborador: true }
+      });
+    });
   }
 };

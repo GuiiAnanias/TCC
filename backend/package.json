@@ -6,12 +6,17 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
+    "test:finance-db": "node scripts/verify-finance-history.mjs",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "test:seed-db": "node scripts/verify-seed.mjs",
+    "test:dashboard-db": "node scripts/verify-dashboard.mjs",
+    "test:tasks-db": "node scripts/verify-tasks.mjs",
+    "test:awards-db": "node scripts/verify-awards.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",

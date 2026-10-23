@@ -12,6 +12,11 @@ enum Status {
   INATIVO
 }
 
+enum TipoPessoa {
+  PF
+  PJ
+}
+
 enum TipoContrato {
   FIXO
   HORAS
@@ -30,6 +35,13 @@ enum StatusApontamento {
   FATURADO
 }
 
+enum StatusTarefa {
+  PLANEJADA
+  EM_ANDAMENTO
+  CONCLUIDA
+  CANCELADA
+}
+
 model Usuario {
   id                  Int       @id @default(autoincrement())
   nomeUsuario         String    @unique
@@ -41,12 +53,20 @@ model Usuario {
   createdAt           DateTime  @default(now())
   updatedAt           DateTime  @updatedAt
 
+  configuracoesCriadas ConfiguracaoFinanceira[] @relation("AutorConfiguracaoFinanceira")
+  configuracoesEncerradas ConfiguracaoFinanceira[] @relation("AutorEncerramentoFinanceiro")
+  regrasPremiacao RegraPremiacao[]
+  avaliacoesCriadas AvaliacaoPremiacao[] @relation("AutorAvaliacao")
+  avaliacoesConcluidas AvaliacaoPremiacao[] @relation("ConclusaoAvaliacao")
+
   @@map("usuarios")
 }
 
 model Cliente {
   id        Int       @id @default(autoincrement())
-  nome      String    @unique
+  nome      String
+  tipoPessoa TipoPessoa @default(PJ)
+  cpf       String?   @unique
   cnpj      String?   @unique
   nomeFantasia String?
   email String?
@@ -84,6 +104,8 @@ model Colaborador {
   apontamentos               ApontamentoHora[]
   createdAt                  DateTime                  @default(now())
   updatedAt                  DateTime                  @updatedAt
+  tarefasResponsaveis TarefaResponsavel[]
+  avaliacoesPremiacao         AvaliacaoPremiacao[]
 
   @@map("colaboradores")
 }
@@ -102,11 +124,34 @@ model ItemTabelaRemuneracao {
   @@map("itens_tabela_remuneracao")
 }
 
+model BonificacaoPapel {
+  id          Int       @id @default(autoincrement())
+  papel       String
+  percentual  Decimal   @db.Decimal(10, 2)
+  dataInicio  DateTime  @db.Date
+  dataFim     DateTime? @db.Date
+  createdAt   DateTime  @default(now())
+
+  @@index([papel, dataInicio])
+  @@map("bonificacoes_papeis")
+}
+
 model ConfiguracaoFinanceira {
   id              Int                     @id @default(autoincrement())
   colaboradorId   Int
   itemTabelaId    Int
   beneficios      Decimal                 @default(0) @db.Decimal(10, 2)
+  valorHoraAplicado Decimal                @db.Decimal(10, 2)
+  nivelAplicado   String
+  origemValorHora String                  @default("VINCULO")
+  motivo          String                  @default("Nova vigência")
+  anteriorId      Int?                    @unique
+  anterior        ConfiguracaoFinanceira? @relation("VersoesFinanceiras", fields: [anteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "financeiro_anterior_fkey")
+  proxima         ConfiguracaoFinanceira? @relation("VersoesFinanceiras")
+  criadoPorId     Int?
+  criadoPor       Usuario?                @relation("AutorConfiguracaoFinanceira", fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "financeiro_autor_fkey")
+  encerradoPorId  Int?
+  encerradoPor    Usuario?                @relation("AutorEncerramentoFinanceiro", fields: [encerradoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction, map: "financeiro_encerrado_por_fkey")
   dataInicio      DateTime
   dataFim         DateTime?
   colaborador     Colaborador             @relation(fields: [colaboradorId], references: [id])
@@ -134,6 +179,9 @@ model Projeto {
   updatedAt         DateTime               @updatedAt
 
   @@index([clienteId])
+  sprints Sprint[]
+  tarefas Tarefa[]
+
   @@map("projetos")
 }
 
@@ -158,6 +206,7 @@ model ApontamentoHora {
   id             Int                @id @default(autoincrement())
   colaboradorId  Int
   projetoId      Int
+  tarefaId       Int?
   data           DateTime           @db.Date
   horas          Decimal            @db.Decimal(5, 2)
   status         StatusApontamento  @default(PENDENTE)
@@ -165,11 +214,113 @@ model ApontamentoHora {
 
   colaborador    Colaborador        @relation(fields: [colaboradorId], references: [id])
   projeto        Projeto            @relation(fields: [projetoId], references: [id])
+  tarefa         Tarefa?            @relation(fields: [tarefaId, projetoId], references: [id, projetoId], onDelete: Restrict, onUpdate: NoAction)
 
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
   @@index([colaboradorId])
   @@index([projetoId])
+  @@index([tarefaId, projetoId])
   @@map("apontamentos_horas")
+}
+
+
+model Sprint {
+  id            Int       @id @default(autoincrement())
+  projetoId     Int
+  nome          String
+  dataInicio    DateTime? @db.Date
+  dataFim       DateTime? @db.Date
+  statusRegistro Status   @default(ATIVO)
+  origem        String    @default("MANUAL")
+  externalId    String?
+  projeto       Projeto   @relation(fields: [projetoId], references: [id], onDelete: Restrict)
+  tarefas       Tarefa[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([id, projetoId])
+  @@unique([projetoId, origem, externalId])
+  @@index([projetoId, statusRegistro])
+  @@map("sprints")
+}
+
+model Tarefa {
+  id               Int          @id @default(autoincrement())
+  projetoId        Int
+  sprintId         Int?
+  titulo           String
+  descricao        String?
+  status           StatusTarefa @default(PLANEJADA)
+  statusOrigem     String?
+  minutosEstimados Int?
+  correcao         Boolean      @default(false)
+  dataInicio       DateTime?    @db.Date
+  dataConclusao    DateTime?    @db.Date
+  statusRegistro   Status       @default(ATIVO)
+  origem           String       @default("MANUAL")
+  externalId       String?
+  projeto          Projeto      @relation(fields: [projetoId], references: [id], onDelete: Restrict)
+  sprint           Sprint?      @relation(fields: [sprintId, projetoId], references: [id, projetoId], onDelete: Restrict, onUpdate: NoAction)
+  responsaveis     TarefaResponsavel[]
+  apontamentos     ApontamentoHora[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  @@unique([id, projetoId])
+  @@unique([projetoId, origem, externalId])
+  @@index([projetoId, statusRegistro, status])
+  @@index([sprintId, projetoId])
+  @@map("tarefas")
+}
+
+model TarefaResponsavel {
+  tarefaId      Int
+  colaboradorId Int
+  tarefa        Tarefa      @relation(fields: [tarefaId], references: [id], onDelete: Restrict)
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Restrict)
+
+  @@id([tarefaId, colaboradorId])
+  @@index([colaboradorId])
+  @@map("tarefas_responsaveis")
+}
+
+
+model RegraPremiacao {
+  id Int @id @default(autoincrement())
+  nome String
+  categoria String
+  definicao Json
+  criadoPorId Int
+  criadoPor Usuario @relation(fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt DateTime @default(now())
+  avaliacoes AvaliacaoPremiacao[]
+  @@map("regras_premiacao")
+}
+
+model AvaliacaoPremiacao {
+  id Int @id @default(autoincrement())
+  colaboradorId Int
+  competencia String
+  categoria String
+  versao Int @default(1)
+  revisao Int @default(1)
+  status String @default("RASCUNHO")
+  regraId Int
+  conteudo Json
+  criadoPorId Int
+  concluidoPorId Int?
+  concluidoEm DateTime?
+  anteriorId Int? @unique
+  anterior AvaliacaoPremiacao? @relation("RevisoesPremiacao", fields: [anteriorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  proxima AvaliacaoPremiacao? @relation("RevisoesPremiacao")
+  colaborador Colaborador @relation(fields: [colaboradorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  regra RegraPremiacao @relation(fields: [regraId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  criadoPor Usuario @relation("AutorAvaliacao", fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  concluidoPor Usuario? @relation("ConclusaoAvaliacao", fields: [concluidoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([colaboradorId, competencia, categoria, versao])
+  @@map("avaliacoes_premiacao")
 }

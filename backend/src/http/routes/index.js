@@ -1,12 +1,16 @@
+import { premiacaoRoutes } from "./premiacaoRoutes.js";
+import { dashboardRoutes } from "./dashboardRoutes.js";
+import { tarefasRoutes, sprintsRoutes } from "./tarefasRoutes.js";
 import { Router } from "express";
 import { clientesRoutes } from "./clientesRoutes.js";
 import { colaboradoresRoutes } from "./colaboradoresRoutes.js";
 import { remuneracoesRoutes } from "./remuneracoesRoutes.js";
 import { projetosRoutes } from "./projetosRoutes.js";
 import { apontamentosRoutes } from "./apontamentosRoutes.js";
-import { departamentosTi, funcoesTi } from "../../schemas/cadastroOptions.js";
+import { departamentosTi, cargosTi, niveisRemuneracao, papeisProjeto } from "../../schemas/cadastroOptions.js";
 import { authRoutes } from "./authRoutes.js";
 import { authenticate } from "../middlewares/authenticate.js";
+import { bonificacoesPapeisRoutes } from "./bonificacoesPapeisRoutes.js";
 
 export const routes = Router();
 
@@ -19,11 +23,19 @@ routes.get("/health", (request, response) => {
 
 routes.use("/auth", authRoutes);
 routes.use(authenticate);
+routes.use("/dashboard", dashboardRoutes);
+routes.use("/bonificacoes-papeis", bonificacoesPapeisRoutes);
 routes.get("/opcoes-cadastro", (request, response) => {
-  response.json({ funcoes: funcoesTi, departamentos: departamentosTi });
+  // `funcoes` é apenas um alias de compatibilidade para clientes antigos da API.
+  response.json({ cargos: cargosTi, niveisRemuneracao, papeisProjeto, departamentos: departamentosTi, funcoes: cargosTi });
 });
 routes.use("/clientes", clientesRoutes);
 routes.use("/colaboradores", colaboradoresRoutes);
 routes.use("/remuneracoes", remuneracoesRoutes);
 routes.use("/projetos", projetosRoutes);
 routes.use("/apontamentos", apontamentosRoutes);
+
+routes.use("/tarefas", tarefasRoutes);
+routes.use("/sprints", sprintsRoutes);
+
+routes.use("/premiacoes", premiacaoRoutes);
