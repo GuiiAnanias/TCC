@@ -258,12 +258,12 @@ A tabela de remuneração define as faixas financeiras do sistema:
 ```txt
 Nível/Faixa
 Valor hora
-Bonificação
-Tipo de bonificação
 Status
 ```
 
-O colaborador não recebe a bonificação diretamente no cadastro principal. Ele é vinculado a uma faixa por meio da configuração financeira:
+A bonificação usada nos custos não fica na faixa: ela é definida por papel no projeto, com vigência. As colunas `bonificacao` e `tipoBonificacao` de `itens_tabela_remuneracao` são legadas: continuam no banco, mas não aparecem na tela, não são aceitas pela API e não entram no custo.
+
+O colaborador é vinculado a uma faixa por meio da configuração financeira:
 
 ```txt
 Colaborador
