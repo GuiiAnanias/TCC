@@ -36,6 +36,14 @@ export const apontamentosRepository = {
     });
   },
 
+  async sumHorasNoDia(colaboradorId, data, excetoId) {
+    const result = await prisma.apontamentoHora.aggregate({
+      _sum: { horas: true },
+      where: { colaboradorId, data, ...(excetoId ? { id: { not: excetoId } } : {}) },
+    });
+    return Number(result._sum.horas ?? 0);
+  },
+
   create(data) {
     return prisma.apontamentoHora.create({ data });
   },

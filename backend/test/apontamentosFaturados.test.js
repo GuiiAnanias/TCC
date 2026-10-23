@@ -15,6 +15,7 @@ async function withRepository(record, run) {
   apontamentosRepository.findById = async () => ({ ...record });
   apontamentosRepository.update = async (id, data) => { writes.push(data); return { ...record, ...data }; };
   apontamentosRepository.delete = async (id) => { deleted.push(id); return { ...record }; };
+  apontamentosRepository.sumHorasNoDia = async () => 0;
   try { await run({ writes, deleted }); } finally { Object.assign(apontamentosRepository, original); }
 }
 

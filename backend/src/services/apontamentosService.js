@@ -3,6 +3,7 @@ import { HttpError } from "../utils/HttpError.js";
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../repositories/projetosRepository.js";
 import { tarefasRepository } from "../repositories/tarefasRepository.js";
+import { financeDay, financeDate, todayFinanceDate } from "../utils/financeDates.js";
 
 async function ensureApontamentoExists(id) {
   const record = await apontamentosRepository.findById(id);
@@ -48,14 +49,41 @@ function ensureExcluivel(registro) {
   }
 }
 
+// Apontamento registra hora já trabalhada: data futura é erro de digitação e trava
+// novas vigências financeiras do colaborador até aquela data.
+const LIMITE_HORAS_DIA = 24;
+const dataBr = (value) => financeDay(value).split("-").reverse().join("/");
+const centesimos = (value) => Math.round(Number(value) * 100);
+
+async function validateDiaEHoras(data, previous = {}) {
+  const merged = { ...previous, ...data };
+  const dataMudou = data.data !== undefined && (!previous.data || !mesmoDia(data.data, previous.data));
+  if (dataMudou && financeDay(data.data) > financeDay(todayFinanceDate())) {
+    throw new HttpError(400, `A data do apontamento não pode ser depois de hoje (${dataBr(todayFinanceDate())}).`);
+  }
+  const somaMudou = dataMudou
+    || (data.colaboradorId !== undefined && data.colaboradorId !== previous.colaboradorId)
+    || (data.horas !== undefined && centesimos(data.horas) !== centesimos(previous.horas ?? 0));
+  if (!somaMudou) return;
+  const outras = await apontamentosRepository.sumHorasNoDia(merged.colaboradorId, financeDate(merged.data), previous.id);
+  if (centesimos(outras) + centesimos(merged.horas) > LIMITE_HORAS_DIA * 100) {
+    throw new HttpError(400, `O colaborador passaria de ${LIMITE_HORAS_DIA} h em ${dataBr(merged.data)}: já existem ${Number(outras)} h lançadas nesse dia.`);
+  }
+}
+
 export const apontamentosService = {
   list(filters) { return apontamentosRepository.findAll(filters); },
   getById: ensureApontamentoExists,
-  async create(data) { await validate(data); return apontamentosRepository.create(data); },
+  async create(data) {
+    await validate(data);
+    await validateDiaEHoras(data);
+    return apontamentosRepository.create(data);
+  },
   async update(id, data) {
     const previous = await ensureApontamentoExists(id);
     ensureEditavel(previous, data);
     await validate(data, previous);
+    await validateDiaEHoras(data, previous);
     return apontamentosRepository.update(id, data);
   },
   async remove(id) {
