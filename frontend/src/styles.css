@@ -148,6 +148,10 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .login-form input { width: 100%; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: 8px; }
 .login-form input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .login-form button { margin-top: 8px; }
+.login-link { display: inline-block; margin-top: 16px; padding: 0; border: 0; background: none; color: var(--primary); font: inherit; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.login-link:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.login-help { margin: 8px 0 0; }
+.login-card .feedback { margin-top: 16px; }
 .session-panel { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line); }
 .session-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .logout-button { flex: 0 0 auto; }

@@ -11,6 +11,7 @@ export function LoginPage() {
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const from = location.state?.from;
   const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : "/dashboard";
   if (auth.user) return <Navigate to={destination} replace />;
@@ -31,5 +32,7 @@ export function LoginPage() {
       {error && <div className="feedback error" role="alert">{error}</div>}
       <button className="primary-button" type="submit" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</button>
     </form>
+    <button type="button" className="login-link" aria-expanded={showHelp} onClick={() => setShowHelp((value) => !value)}>Esqueci minha senha</button>
+    {showHelp && <p className="login-help" role="note">Peça ao administrador do sistema um link para redefinir sua senha. O link vale por 30 minutos e só pode ser usado uma vez.</p>}
   </section></main>;
 }
