@@ -534,11 +534,26 @@ corepack pnpm run preview
 feature/... -> develop -> main
 ```
 
+- `main`: só versões estáveis, prontas para apresentação. Ninguém trabalha direto nela e ela só recebe Pull Request vindo da `develop`.
+- `develop`: integração do time. Toda alteração chega aqui por Pull Request.
+- `feature/<assunto>`: uma branch por funcionalidade ou correção, criada a partir da `develop` atualizada. Exemplos: `feature/exportacao-xlsx`, `feature/redefinicao-senha`.
+
+No GitHub ficam só `main` e `develop` de forma permanente. A branch `feature/...` é apagada automaticamente quando o Pull Request é mergeado.
+
+Rotina:
+
+```powershell
+git switch develop
+git pull
+git switch -c feature/nome-da-funcionalidade
+# commits
+git push -u origin feature/nome-da-funcionalidade
+```
+
+Ao abrir o Pull Request, confira se a base é `develop`. O GitHub sugere `main` por padrão.
+
 Recomendações:
 
-- Trabalhar em branches `feature/...`.
-- Integrar alterações por Pull Request.
-- Manter `main` apenas com versões estáveis.
 - Rodar migrations, API e build do front-end antes de integrar alterações.
 - Não editar migrations já compartilhadas com o time.
 
