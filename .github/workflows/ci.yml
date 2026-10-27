@@ -1,0 +1,89 @@
+# Roda a cada Pull Request para develop ou main e a cada push nessas branches.
+# Se algum passo falhar, o PR fica marcado com X vermelho e não deve ser mergeado.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  backend:
+    name: Backend (testes e migrations)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: sistema_indicadores
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/sistema_indicadores
+      JWT_SECRET: segredo-somente-para-o-ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Habilitar pnpm
+        run: corepack enable
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+      - name: Gerar Prisma Client
+        run: pnpm run prisma:generate
+      - name: Testes unitários
+        run: pnpm test
+      - name: Migrations em banco limpo
+        run: pnpm exec prisma migrate deploy
+      - name: Testes de integração com banco (seed)
+        run: pnpm run test:seed-db
+      - name: Testes de integração com banco (dashboard)
+        run: pnpm run test:dashboard-db
+      - name: Testes de integração com banco (tarefas)
+        run: pnpm run test:tasks-db
+      - name: Testes de integração com banco (premiação)
+        run: pnpm run test:awards-db
+      - name: Testes de integração com banco (histórico financeiro)
+        run: pnpm run test:finance-db
+
+  frontend:
+    name: Frontend (build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Habilitar pnpm
+        run: corepack enable
+      - name: Instalar dependências
+        run: pnpm install --frozen-lockfile
+      - name: Build de produção
+        run: pnpm run build
