@@ -64,6 +64,8 @@ jobs:
         run: pnpm run test:dashboard-db
       - name: Testes de integração com banco (tarefas)
         run: pnpm run test:tasks-db
+      - name: Testes de integração com banco (concorrência de apontamentos)
+        run: pnpm run test:hours-db
       - name: Testes de integração com banco (premiação)
         run: pnpm run test:awards-db
       - name: Testes de integração com banco (histórico financeiro)
