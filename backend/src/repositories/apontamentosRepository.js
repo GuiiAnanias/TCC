@@ -1,5 +1,20 @@
 import prisma from "../config/prisma.js";
+import { HttpError } from "../utils/HttpError.js";
+
 export const apontamentosRepository = {
+  async transaction(operation) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        // A leitura da soma e a escrita precisam compartilhar o mesmo snapshot.
+        // Serializable protege inclusive o primeiro lançamento de um dia vazio.
+        return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
+      } catch (error) {
+        if (error.code !== "P2034") throw error;
+        if (attempt === 2) throw new HttpError(409, "Os apontamentos foram alterados em outra operação. Atualize e tente novamente.");
+      }
+    }
+  },
+
   findAll({ busca, colaboradorId, projetoId, dataInicio, dataFim, status } = {}) {
     return prisma.apontamentoHora.findMany({
       where: {
@@ -25,8 +40,8 @@ export const apontamentosRepository = {
     });
   },
 
-  findById(id) {
-    return prisma.apontamentoHora.findUnique({
+  findById(id, db = prisma) {
+    return db.apontamentoHora.findUnique({
       where: { id },
       include: {
         colaborador: { select: { nomeCompleto: true } },
@@ -36,23 +51,23 @@ export const apontamentosRepository = {
     });
   },
 
-  async sumHorasNoDia(colaboradorId, data, excetoId) {
-    const result = await prisma.apontamentoHora.aggregate({
+  async sumHorasNoDia(colaboradorId, data, excetoId, db = prisma) {
+    const result = await db.apontamentoHora.aggregate({
       _sum: { horas: true },
       where: { colaboradorId, data, ...(excetoId ? { id: { not: excetoId } } : {}) },
     });
     return Number(result._sum.horas ?? 0);
   },
 
-  create(data) {
-    return prisma.apontamentoHora.create({ data });
+  create(data, db = prisma) {
+    return db.apontamentoHora.create({ data });
   },
 
-  update(id, data) {
-    return prisma.apontamentoHora.update({ where: { id }, data });
+  update(id, data, db = prisma) {
+    return db.apontamentoHora.update({ where: { id }, data });
   },
 
-  delete(id) {
-    return prisma.apontamentoHora.delete({ where: { id } });
+  delete(id, db = prisma) {
+    return db.apontamentoHora.delete({ where: { id } });
   },
 };

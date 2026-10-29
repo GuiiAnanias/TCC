@@ -12,6 +12,7 @@ const existente = { id: 9, colaboradorId: 2, projetoId: 1, tarefaId: null, data:
 async function withRepositories({ horasNoDia = 0, record = existente } = {}, run) {
   const originals = [apontamentosRepository, colaboradoresRepository, projetosRepository].map((repo) => ({ ...repo }));
   const calls = { sums: [], writes: [] };
+  apontamentosRepository.transaction = async (operation) => operation();
   apontamentosRepository.findById = async () => ({ ...record });
   apontamentosRepository.sumHorasNoDia = async (...args) => { calls.sums.push(args); return horasNoDia; };
   apontamentosRepository.create = async (data) => { calls.writes.push(data); return { id: 10, ...data }; };

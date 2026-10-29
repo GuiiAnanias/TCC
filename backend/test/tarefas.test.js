@@ -34,6 +34,7 @@ test("time entries can remain unlinked or detach a task; finite decimal hours re
 test("linking existing time checks the merged project and task, and updates once without creating hours", async () => {
   const originals = [apontamentosRepository, tarefasRepository, projetosRepository, colaboradoresRepository].map((repo) => ({ ...repo }));
   const writes = [];
+  apontamentosRepository.transaction = async (operation) => operation();
   apontamentosRepository.findById = async () => ({ id: 8, projetoId: 1, colaboradorId: 2, tarefaId: 4, horas: 8 });
   apontamentosRepository.update = async (id, data) => { writes.push(data); return { id, ...data }; };
   apontamentosRepository.create = async () => { throw new Error("Não pode duplicar apontamentos"); };

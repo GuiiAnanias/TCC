@@ -5,8 +5,8 @@ import { projetosRepository } from "../repositories/projetosRepository.js";
 import { tarefasRepository } from "../repositories/tarefasRepository.js";
 import { financeDay, financeDate, todayFinanceDate } from "../utils/financeDates.js";
 
-async function ensureApontamentoExists(id) {
-  const record = await apontamentosRepository.findById(id);
+async function ensureApontamentoExists(id, db) {
+  const record = await apontamentosRepository.findById(id, db);
   if (!record) throw new HttpError(404, "Apontamento não encontrado.");
   return record;
 }
@@ -55,7 +55,7 @@ const LIMITE_HORAS_DIA = 24;
 const dataBr = (value) => financeDay(value).split("-").reverse().join("/");
 const centesimos = (value) => Math.round(Number(value) * 100);
 
-async function validateDiaEHoras(data, previous = {}) {
+async function validateDiaEHoras(data, previous = {}, db) {
   const merged = { ...previous, ...data };
   const dataMudou = data.data !== undefined && (!previous.data || !mesmoDia(data.data, previous.data));
   if (dataMudou && financeDay(data.data) > financeDay(todayFinanceDate())) {
@@ -65,7 +65,7 @@ async function validateDiaEHoras(data, previous = {}) {
     || (data.colaboradorId !== undefined && data.colaboradorId !== previous.colaboradorId)
     || (data.horas !== undefined && centesimos(data.horas) !== centesimos(previous.horas ?? 0));
   if (!somaMudou) return;
-  const outras = await apontamentosRepository.sumHorasNoDia(merged.colaboradorId, financeDate(merged.data), previous.id);
+  const outras = await apontamentosRepository.sumHorasNoDia(merged.colaboradorId, financeDate(merged.data), previous.id, db);
   if (centesimos(outras) + centesimos(merged.horas) > LIMITE_HORAS_DIA * 100) {
     throw new HttpError(400, `O colaborador passaria de ${LIMITE_HORAS_DIA} h em ${dataBr(merged.data)}: já existem ${Number(outras)} h lançadas nesse dia.`);
   }
@@ -76,19 +76,25 @@ export const apontamentosService = {
   getById: ensureApontamentoExists,
   async create(data) {
     await validate(data);
-    await validateDiaEHoras(data);
-    return apontamentosRepository.create(data);
+    return apontamentosRepository.transaction(async (db) => {
+      await validateDiaEHoras(data, {}, db);
+      return apontamentosRepository.create(data, db);
+    });
   },
   async update(id, data) {
-    const previous = await ensureApontamentoExists(id);
-    ensureEditavel(previous, data);
-    await validate(data, previous);
-    await validateDiaEHoras(data, previous);
-    return apontamentosRepository.update(id, data);
+    return apontamentosRepository.transaction(async (db) => {
+      const previous = await ensureApontamentoExists(id, db);
+      ensureEditavel(previous, data);
+      await validate(data, previous);
+      await validateDiaEHoras(data, previous, db);
+      return apontamentosRepository.update(id, data, db);
+    });
   },
   async remove(id) {
-    const registro = await ensureApontamentoExists(id);
-    ensureExcluivel(registro);
-    return apontamentosRepository.delete(id);
+    return apontamentosRepository.transaction(async (db) => {
+      const registro = await ensureApontamentoExists(id, db);
+      ensureExcluivel(registro);
+      return apontamentosRepository.delete(id, db);
+    });
   }
 };

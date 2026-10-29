@@ -12,6 +12,7 @@ async function withRepository(record, run) {
   const original = { ...apontamentosRepository };
   const writes = [];
   const deleted = [];
+  apontamentosRepository.transaction = async (operation) => operation();
   apontamentosRepository.findById = async () => ({ ...record });
   apontamentosRepository.update = async (id, data) => { writes.push(data); return { ...record, ...data }; };
   apontamentosRepository.delete = async (id) => { deleted.push(id); return { ...record }; };
