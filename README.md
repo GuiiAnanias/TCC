@@ -502,6 +502,9 @@ corepack pnpm run prisma:migrate
 corepack pnpm run prisma:studio
 corepack pnpm run seed
 corepack pnpm run senha:link admin
+corepack pnpm test
+corepack pnpm run format
+corepack pnpm run lint
 ```
 
 Front-end:
@@ -510,6 +513,8 @@ Front-end:
 corepack pnpm run dev
 corepack pnpm run build
 corepack pnpm run preview
+corepack pnpm run format
+corepack pnpm run lint
 ```
 
 ---
@@ -550,12 +555,27 @@ git switch -c feature/nome-da-funcionalidade
 git push -u origin feature/nome-da-funcionalidade
 ```
 
-Ao abrir o Pull Request, confira se a base é `develop`. O GitHub sugere `main` por padrão.
+A `develop` é a branch padrão do GitHub, então o Pull Request já abre com base nela. Confira mesmo assim antes de criar.
 
 Recomendações:
 
 - Rodar migrations, API e build do front-end antes de integrar alterações.
 - Não editar migrations já compartilhadas com o time.
+
+### Padrão de código e CI
+
+O código segue o Prettier (formatação) e o ESLint (erros comuns). Antes de commitar, rode na pasta que você alterou (`backend` ou `frontend`):
+
+```powershell
+corepack pnpm run format
+corepack pnpm run lint
+```
+
+O `format` arruma a formatação sozinho. O `lint` lista o que precisa de correção: erro bloqueia, aviso não. No VS Code, a extensão Prettier com "Format On Save" faz o `format` a cada salvamento.
+
+A cada Pull Request e a cada push na `develop` ou na `main`, o GitHub Actions confere a formatação, o lint, os testes, as migrations num banco limpo e o build do front-end. Se algum passo falhar, o PR fica com X vermelho e não deve ser mergeado.
+
+O `.gitattributes` mantém a quebra de linha em LF para todo o time, inclusive no Windows.
 
 Padrão sugerido de commits:
 
