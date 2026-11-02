@@ -1,7 +1,7 @@
 import {
   colaboradorCreateSchema,
   colaboradorQuerySchema,
-  colaboradorUpdateSchema
+  colaboradorUpdateSchema,
 } from "../../schemas/colaboradoresSchemas.js";
 import { colaboradoresService } from "../../services/colaboradoresService.js";
 import { parseId } from "../../utils/parseId.js";
@@ -36,5 +36,5 @@ export const colaboradoresController = {
     const id = parseId(request.params.id, "colaborador");
     const colaborador = await colaboradoresService.inactivate(id);
     return response.json(colaborador);
-  }
+  },
 };

@@ -5,38 +5,39 @@ import { env } from "../../config/env.js";
 
 export function notFoundHandler(request, response) {
   response.status(404).json({
-    message: "Rota não encontrada."
+    message: "Rota não encontrada.",
   });
 }
 
-export function errorHandler(error, request, response, next) {
+export function errorHandler(error, request, response, _next) {
   if (error instanceof ZodError) {
     return response.status(400).json({
       message: "Dados inválidos.",
       errors: error.issues.map((issue) => ({
         path: issue.path.join("."),
-        message: issue.message
-      }))
+        message: issue.message,
+      })),
     });
   }
 
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     if (error.code === "P2002") {
       return response.status(409).json({
-        message: "Já existe um registro com estes dados."
+        message: "Já existe um registro com estes dados.",
       });
     }
 
     if (error.code === "P2025") {
       return response.status(404).json({
-        message: "Registro não encontrado."
+        message: "Registro não encontrado.",
       });
     }
   }
 
   if (error.name === "PrismaClientInitializationError") {
     return response.status(503).json({
-      message: "Banco de dados indisponível. Verifique se o PostgreSQL está rodando em localhost:5432."
+      message:
+        "Banco de dados indisponível. Verifique se o PostgreSQL está rodando em localhost:5432.",
     });
   }
 
@@ -45,6 +46,6 @@ export function errorHandler(error, request, response, next) {
   return response.status(statusCode).json({
     message: error.message || "Erro interno do servidor.",
     details: error.details || undefined,
-    stack: env.nodeEnv === "development" ? error.stack : undefined
+    stack: env.nodeEnv === "development" ? error.stack : undefined,
   });
 }

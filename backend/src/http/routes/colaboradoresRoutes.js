@@ -6,15 +6,21 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 export const colaboradoresRoutes = Router();
 
 colaboradoresRoutes.get("/", asyncHandler(colaboradoresController.index));
-colaboradoresRoutes.get("/:id/configuracoes-financeiras", asyncHandler(configuracoesFinanceirasController.index));
-colaboradoresRoutes.post("/:id/configuracoes-financeiras", asyncHandler(configuracoesFinanceirasController.store));
+colaboradoresRoutes.get(
+  "/:id/configuracoes-financeiras",
+  asyncHandler(configuracoesFinanceirasController.index),
+);
+colaboradoresRoutes.post(
+  "/:id/configuracoes-financeiras",
+  asyncHandler(configuracoesFinanceirasController.store),
+);
 colaboradoresRoutes.put(
   "/:id/configuracoes-financeiras/:configuracaoId",
-  asyncHandler(configuracoesFinanceirasController.update)
+  asyncHandler(configuracoesFinanceirasController.update),
 );
 colaboradoresRoutes.delete(
   "/:id/configuracoes-financeiras/:configuracaoId",
-  asyncHandler(configuracoesFinanceirasController.destroy)
+  asyncHandler(configuracoesFinanceirasController.destroy),
 );
 colaboradoresRoutes.get("/:id", asyncHandler(colaboradoresController.show));
 colaboradoresRoutes.post("/", asyncHandler(colaboradoresController.store));

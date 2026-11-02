@@ -6,11 +6,11 @@ const projectListInclude = {
     select: {
       equipe: {
         where: {
-          dataSaida: null
-        }
-      }
-    }
-  }
+          dataSaida: null,
+        },
+      },
+    },
+  },
 };
 
 export const projetosRepository = {
@@ -19,10 +19,10 @@ export const projetosRepository = {
       where: {
         ...(status ? { status } : {}),
         ...(clienteId ? { clienteId } : {}),
-        ...(busca ? { nome: { contains: busca, mode: "insensitive" } } : {})
+        ...(busca ? { nome: { contains: busca, mode: "insensitive" } } : {}),
       },
       include: projectListInclude,
-      orderBy: [{ status: "asc" }, { nome: "asc" }]
+      orderBy: [{ status: "asc" }, { nome: "asc" }],
     });
   },
 
@@ -33,18 +33,18 @@ export const projetosRepository = {
         cliente: true,
         equipe: {
           include: {
-            colaborador: true
+            colaborador: true,
           },
-          orderBy: [{ dataSaida: "desc" }, { dataEntrada: "desc" }]
-        }
-      }
+          orderBy: [{ dataSaida: "desc" }, { dataEntrada: "desc" }],
+        },
+      },
     });
   },
 
   create(data) {
     return prisma.projeto.create({
       data,
-      include: projectListInclude
+      include: projectListInclude,
     });
   },
 
@@ -52,7 +52,7 @@ export const projetosRepository = {
     return prisma.projeto.update({
       where: { id },
       data,
-      include: projectListInclude
+      include: projectListInclude,
     });
   },
 
@@ -60,9 +60,9 @@ export const projetosRepository = {
     return prisma.projetoColaborador.findMany({
       where: { projetoId },
       include: {
-        colaborador: true
+        colaborador: true,
       },
-      orderBy: [{ dataSaida: "desc" }, { dataEntrada: "desc" }]
+      orderBy: [{ dataSaida: "desc" }, { dataEntrada: "desc" }],
     });
   },
 
@@ -71,8 +71,8 @@ export const projetosRepository = {
       where: { id },
       include: {
         colaborador: true,
-        projeto: true
-      }
+        projeto: true,
+      },
     });
   },
 
@@ -81,8 +81,8 @@ export const projetosRepository = {
       where: {
         projetoId,
         colaboradorId,
-        dataSaida: null
-      }
+        dataSaida: null,
+      },
     });
   },
 
@@ -90,8 +90,8 @@ export const projetosRepository = {
     return prisma.projetoColaborador.create({
       data,
       include: {
-        colaborador: true
-      }
+        colaborador: true,
+      },
     });
   },
 
@@ -100,8 +100,8 @@ export const projetosRepository = {
       where: { id },
       data,
       include: {
-        colaborador: true
-      }
+        colaborador: true,
+      },
     });
   },
 
@@ -109,13 +109,19 @@ export const projetosRepository = {
     return prisma.$transaction(async (tx) => {
       const closed = await tx.projetoColaborador.updateMany({
         where: { id: member.id, dataSaida: null, papel: member.papel },
-        data: { dataSaida: dataVigencia }
+        data: { dataSaida: dataVigencia },
       });
-      if (closed.count !== 1) throw new Error("O vínculo foi alterado. Atualize a equipe e tente novamente.");
+      if (closed.count !== 1)
+        throw new Error("O vínculo foi alterado. Atualize a equipe e tente novamente.");
       return tx.projetoColaborador.create({
-        data: { projetoId: member.projetoId, colaboradorId: member.colaboradorId, papel, dataEntrada: dataVigencia },
-        include: { colaborador: true }
+        data: {
+          projetoId: member.projetoId,
+          colaboradorId: member.colaboradorId,
+          papel,
+          dataEntrada: dataVigencia,
+        },
+        include: { colaborador: true },
       });
     });
-  }
+  },
 };

@@ -5,16 +5,25 @@ export const clientesRepository = {
     return prisma.cliente.findMany({
       where: {
         ...(status ? { status } : {}),
-        ...(busca ? { OR: [
-          { nome: { contains: busca, mode: "insensitive" } },
-          { nomeFantasia: { contains: busca, mode: "insensitive" } },
-          { cnpj: { contains: busca.toUpperCase().replace(/[.\/\-\s]/g, "") || busca, mode: "insensitive" } },
-          { cpf: { contains: busca.replace(/[.\-\s]/g, "") || busca } },
-          { cidade: { contains: busca, mode: "insensitive" } },
-          { email: { contains: busca, mode: "insensitive" } }
-        ] } : {})
+        ...(busca
+          ? {
+              OR: [
+                { nome: { contains: busca, mode: "insensitive" } },
+                { nomeFantasia: { contains: busca, mode: "insensitive" } },
+                {
+                  cnpj: {
+                    contains: busca.toUpperCase().replace(/[./\-\s]/g, "") || busca,
+                    mode: "insensitive",
+                  },
+                },
+                { cpf: { contains: busca.replace(/[.\-\s]/g, "") || busca } },
+                { cidade: { contains: busca, mode: "insensitive" } },
+                { email: { contains: busca, mode: "insensitive" } },
+              ],
+            }
+          : {}),
       },
-      orderBy: [{ status: "asc" }, { nome: "asc" }]
+      orderBy: [{ status: "asc" }, { nome: "asc" }],
     });
   },
 
@@ -57,7 +66,7 @@ export const clientesRepository = {
   update(id, data) {
     return prisma.cliente.update({
       where: { id },
-      data
+      data,
     });
-  }
+  },
 };

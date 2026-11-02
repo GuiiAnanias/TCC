@@ -5,9 +5,5 @@ export function StatusBadge({ status }) {
 
   const statusClass = status.toString().toLowerCase();
 
-  return (
-    <span className={`status status-${statusClass}`}>
-      {status}
-    </span>
-  );
+  return <span className={`status status-${statusClass}`}>{status}</span>;
 }

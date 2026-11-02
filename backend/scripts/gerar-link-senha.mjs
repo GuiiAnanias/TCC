@@ -11,9 +11,13 @@ if (!login) {
 }
 
 try {
-  const { usuario, expiraEm, link } = await senhaService.gerarLink(login, { frontendUrl: env.frontendUrl });
+  const { usuario, expiraEm, link } = await senhaService.gerarLink(login, {
+    frontendUrl: env.frontendUrl,
+  });
   const ate = expiraEm.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
-  console.log(`Link de redefinição para "${usuario}" (uso único, vale ${VALIDADE_LINK_MINUTOS} min, até ${ate}):`);
+  console.log(
+    `Link de redefinição para "${usuario}" (uso único, vale ${VALIDADE_LINK_MINUTOS} min, até ${ate}):`,
+  );
   console.log(link);
 } catch (error) {
   console.error(error.message);

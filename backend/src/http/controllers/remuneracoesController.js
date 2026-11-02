@@ -1,7 +1,7 @@
 import {
   remuneracaoCreateSchema,
   remuneracaoQuerySchema,
-  remuneracaoUpdateSchema
+  remuneracaoUpdateSchema,
 } from "../../schemas/remuneracoesSchemas.js";
 import { remuneracoesService } from "../../services/remuneracoesService.js";
 import { parseId } from "../../utils/parseId.js";
@@ -36,5 +36,5 @@ export const remuneracoesController = {
     const id = parseId(request.params.id, "item de remuneração");
     const remuneracao = await remuneracoesService.inactivate(id);
     return response.json(remuneracao);
-  }
+  },
 };

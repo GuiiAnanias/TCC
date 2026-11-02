@@ -21,7 +21,8 @@ export function AuthProvider({ children }) {
         if (sessionStorage.getItem("authToken") === token) setUser(data.user);
       }
     } catch (error) {
-      if (!signal?.aborted && error.response?.status !== 401) setError("Não foi possível verificar sua sessão. Tente novamente.");
+      if (!signal?.aborted && error.response?.status !== 401)
+        setError("Não foi possível verificar sua sessão. Tente novamente.");
     } finally {
       if (!signal?.aborted) setLoading(false);
     }
@@ -30,13 +31,20 @@ export function AuthProvider({ children }) {
     const controller = new AbortController();
     window.addEventListener("auth-expired", logout);
     restore(controller.signal);
-    return () => { controller.abort(); window.removeEventListener("auth-expired", logout); };
+    return () => {
+      controller.abort();
+      window.removeEventListener("auth-expired", logout);
+    };
   }, []);
   async function login(login, senha) {
     const { data } = await api.post("/auth/login", { login, senha });
     sessionStorage.setItem("authToken", data.token);
     setUser(data.user);
   }
-  return <AuthContext.Provider value={{ user, loading, error, restore, login, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, loading, error, restore, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 export const useAuth = () => useContext(AuthContext);

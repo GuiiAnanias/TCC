@@ -10,7 +10,10 @@ export const usuariosRepository = {
   },
 
   saveResetToken(id, tokenHash, expiraEm) {
-    return prisma.usuario.update({ where: { id }, data: { resetToken: tokenHash, resetTokenExpiraEm: expiraEm } });
+    return prisma.usuario.update({
+      where: { id },
+      data: { resetToken: tokenHash, resetTokenExpiraEm: expiraEm },
+    });
   },
 
   // Troca a senha e apaga o token numa única escrita condicional: se dois pedidos
@@ -18,8 +21,8 @@ export const usuariosRepository = {
   async consumeResetToken(id, tokenHash, senhaHash, agora) {
     const result = await prisma.usuario.updateMany({
       where: { id, resetToken: tokenHash, resetTokenExpiraEm: { gt: agora } },
-      data: { senhaHash, resetToken: null, resetTokenExpiraEm: null }
+      data: { senhaHash, resetToken: null, resetTokenExpiraEm: null },
     });
     return result.count === 1;
-  }
+  },
 };

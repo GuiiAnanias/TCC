@@ -4,9 +4,21 @@ import { bonificacaoPapelCreateSchema } from "../../schemas/bonificacoesPapeisSc
 import { bonificacoesPapeisRepository } from "../../repositories/bonificacoesPapeisRepository.js";
 
 export const bonificacoesPapeisRoutes = Router();
-bonificacoesPapeisRoutes.get("/", asyncHandler(async (request, response) => {
-  response.json(await bonificacoesPapeisRepository.findAll());
-}));
-bonificacoesPapeisRoutes.post("/", asyncHandler(async (request, response) => {
-  response.status(201).json(await bonificacoesPapeisRepository.createVersion(bonificacaoPapelCreateSchema.parse(request.body)));
-}));
+bonificacoesPapeisRoutes.get(
+  "/",
+  asyncHandler(async (request, response) => {
+    response.json(await bonificacoesPapeisRepository.findAll());
+  }),
+);
+bonificacoesPapeisRoutes.post(
+  "/",
+  asyncHandler(async (request, response) => {
+    response
+      .status(201)
+      .json(
+        await bonificacoesPapeisRepository.createVersion(
+          bonificacaoPapelCreateSchema.parse(request.body),
+        ),
+      );
+  }),
+);

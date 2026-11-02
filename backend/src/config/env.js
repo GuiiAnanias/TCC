@@ -5,5 +5,5 @@ export const env = {
   nodeEnv: process.env.NODE_ENV || "development",
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiration: process.env.JWT_EXPIRATION || "1d",
-  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173"
+  frontendUrl: process.env.FRONTEND_URL || "http://localhost:5173",
 };

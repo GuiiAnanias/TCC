@@ -15,23 +15,42 @@ test("apontamentos repetem a transação inteira após conflito de serializaçã
     return result;
   };
   try {
-    const result = await repository.transaction(async (db) => { clients.push(db.attempt); return db.attempt; });
+    const result = await repository.transaction(async (db) => {
+      clients.push(db.attempt);
+      return db.attempt;
+    });
     assert.equal(result, 3);
     assert.deepEqual(clients, [1, 2, 3]);
-  } finally { prisma.$transaction = original; }
+  } finally {
+    prisma.$transaction = original;
+  }
 });
 
 test("conflitos persistentes retornam 409 e erros de negócio não são repetidos", async () => {
   const original = prisma.$transaction;
   let attempts = 0;
   try {
-    prisma.$transaction = async () => { attempts++; throw Object.assign(new Error("serialization"), { code: "P2034" }); };
-    await assert.rejects(repository.transaction(async () => {}), { statusCode: 409 });
+    prisma.$transaction = async () => {
+      attempts++;
+      throw Object.assign(new Error("serialization"), { code: "P2034" });
+    };
+    await assert.rejects(
+      repository.transaction(async () => {}),
+      { statusCode: 409 },
+    );
     assert.equal(attempts, 3);
     attempts = 0;
     const invalid = Object.assign(new Error("Limite diário excedido"), { statusCode: 400 });
-    prisma.$transaction = async () => { attempts++; throw invalid; };
-    await assert.rejects(repository.transaction(async () => {}), (error) => error === invalid);
+    prisma.$transaction = async () => {
+      attempts++;
+      throw invalid;
+    };
+    await assert.rejects(
+      repository.transaction(async () => {}),
+      (error) => error === invalid,
+    );
     assert.equal(attempts, 1);
-  } finally { prisma.$transaction = original; }
+  } finally {
+    prisma.$transaction = original;
+  }
 });

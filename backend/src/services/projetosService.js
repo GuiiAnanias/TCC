@@ -103,7 +103,10 @@ export const projetosService = {
 
     await ensureColaboradorAtivo(data.colaboradorId);
 
-    const activeTeamMember = await projetosRepository.findActiveTeamMember(projetoId, data.colaboradorId);
+    const activeTeamMember = await projetosRepository.findActiveTeamMember(
+      projetoId,
+      data.colaboradorId,
+    );
 
     if (activeTeamMember) {
       throw new HttpError(409, "Este colaborador já está ativo na equipe do projeto.");
@@ -113,7 +116,7 @@ export const projetosService = {
       projetoId,
       colaboradorId: data.colaboradorId,
       papel: data.papel,
-      dataEntrada: data.dataEntrada
+      dataEntrada: data.dataEntrada,
     });
   },
 
@@ -123,12 +126,17 @@ export const projetosService = {
 
     const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId);
     if (data.papel && data.papel !== vinculo.papel) {
-      if (vinculo.dataSaida) throw new HttpError(400, "O papel de uma participação encerrada não pode ser alterado.");
+      if (vinculo.dataSaida)
+        throw new HttpError(400, "O papel de uma participação encerrada não pode ser alterado.");
       if (!data.dataVigencia) throw new HttpError(400, "Informe a data de vigência do novo papel.");
-      if (data.dataEntrada !== undefined || data.dataSaida !== undefined) throw new HttpError(400, "Altere o papel separadamente das datas de participação.");
+      if (data.dataEntrada !== undefined || data.dataSaida !== undefined)
+        throw new HttpError(400, "Altere o papel separadamente das datas de participação.");
       const day = new Date(data.dataVigencia.toISOString().slice(0, 10));
       if (day <= new Date(vinculo.dataEntrada.toISOString().slice(0, 10))) {
-        throw new HttpError(400, "A vigência do novo papel deve começar após a entrada do vínculo atual.");
+        throw new HttpError(
+          400,
+          "A vigência do novo papel deve começar após a entrada do vínculo atual.",
+        );
       }
       return projetosRepository.changeTeamRole(vinculo, data.papel, day);
     }
@@ -155,7 +163,7 @@ export const projetosService = {
     const dataSaida = new Date();
 
     return projetosRepository.updateTeamMember(vinculoId, {
-      dataSaida: dataSaida < vinculo.dataEntrada ? vinculo.dataEntrada : dataSaida
+      dataSaida: dataSaida < vinculo.dataEntrada ? vinculo.dataEntrada : dataSaida,
     });
-  }
+  },
 };

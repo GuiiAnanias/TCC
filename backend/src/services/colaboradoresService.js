@@ -47,5 +47,5 @@ export const colaboradoresService = {
   async inactivate(id) {
     await ensureColaboradorExists(id);
     return colaboradoresRepository.update(id, { status: "INATIVO" });
-  }
+  },
 };

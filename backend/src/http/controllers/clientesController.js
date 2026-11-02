@@ -1,4 +1,8 @@
-import { clienteCreateSchema, clienteQuerySchema, clienteUpdateSchema } from "../../schemas/clientesSchemas.js";
+import {
+  clienteCreateSchema,
+  clienteQuerySchema,
+  clienteUpdateSchema,
+} from "../../schemas/clientesSchemas.js";
 import { clientesService } from "../../services/clientesService.js";
 import { parseId } from "../../utils/parseId.js";
 import { consultarCnpj } from "../../services/cnpjService.js";
@@ -40,5 +44,5 @@ export const clientesController = {
     const id = parseId(request.params.id, "cliente");
     const cliente = await clientesService.inactivate(id);
     return response.json(cliente);
-  }
+  },
 };

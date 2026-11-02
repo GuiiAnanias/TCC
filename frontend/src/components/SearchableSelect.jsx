@@ -9,7 +9,7 @@ export function SearchableSelect({
   onChange,
   placeholder = "Selecione...",
   required = false,
-  disabled = false
+  disabled = false,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -18,7 +18,7 @@ export function SearchableSelect({
 
   const selectedOption = useMemo(
     () => options.find((option) => String(option.value) === String(value)),
-    [options, value]
+    [options, value],
   );
 
   const filteredOptions = useMemo(() => {
@@ -29,7 +29,7 @@ export function SearchableSelect({
     }
 
     return options.filter((option) =>
-      String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery)
+      String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery),
     );
   }, [options, query]);
 
@@ -55,8 +55,8 @@ export function SearchableSelect({
     onChange?.({
       target: {
         name,
-        value: String(option.value)
-      }
+        value: String(option.value),
+      },
     });
 
     setOpen(false);
@@ -71,7 +71,11 @@ export function SearchableSelect({
   }
 
   return (
-    <div className={`searchable-select${open ? " is-open" : ""}`} ref={rootRef} onKeyDown={handleKeyDown}>
+    <div
+      className={`searchable-select${open ? " is-open" : ""}`}
+      ref={rootRef}
+      onKeyDown={handleKeyDown}
+    >
       <button
         id={id || name}
         className="searchable-select__control"
@@ -82,12 +86,13 @@ export function SearchableSelect({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span className={selectedOption ? "searchable-select__value" : "searchable-select__placeholder"}>
+        <span
+          className={selectedOption ? "searchable-select__value" : "searchable-select__placeholder"}
+        >
           {selectedOption?.label || placeholder}
         </span>
         <ChevronDown className="searchable-select__chevron" size={18} aria-hidden="true" />
       </button>
-
 
       {open ? (
         <div className="searchable-select__dropdown">

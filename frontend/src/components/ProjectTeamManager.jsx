@@ -35,7 +35,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
   const [formData, setFormData] = useState({
     colaboradorId: "",
     papel: "",
-    dataEntrada: today()
+    dataEntrada: today(),
   });
   const [editingRoles, setEditingRoles] = useState({});
   const [editingEntryDates, setEditingEntryDates] = useState({});
@@ -50,7 +50,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
 
   const activeCollaborators = useMemo(() => {
     const activeMemberIds = new Set(
-      team.filter((member) => !member.dataSaida).map((member) => Number(member.colaboradorId))
+      team.filter((member) => !member.dataSaida).map((member) => Number(member.colaboradorId)),
     );
 
     return collaborators.filter((collaborator) => !activeMemberIds.has(Number(collaborator.id)));
@@ -80,19 +80,24 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       const [teamResponse, collaboratorsResponse, rolesResponse] = await Promise.all([
         api.get(`/projetos/${project.id}/equipe`),
         api.get("/colaboradores", { params: { status: "ATIVO" } }),
-        api.get("/projetos/papeis")
+        api.get("/projetos/papeis"),
       ]);
 
       setTeam(teamResponse.data);
       setCollaborators(collaboratorsResponse.data);
       setRoles(rolesResponse.data);
       setEditingRoles(
-        Object.fromEntries(teamResponse.data.map((member) => [member.id, member.papel]))
+        Object.fromEntries(teamResponse.data.map((member) => [member.id, member.papel])),
       );
-      setEditingEntryDates(Object.fromEntries(teamResponse.data.map((member) => [member.id, toInputDate(member.dataEntrada)])));
-
+      setEditingEntryDates(
+        Object.fromEntries(
+          teamResponse.data.map((member) => [member.id, toInputDate(member.dataEntrada)]),
+        ),
+      );
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.");
+      setError(
+        requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.",
+      );
     } finally {
       setLoading(false);
     }
@@ -106,7 +111,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
     setFormData({
       colaboradorId: "",
       papel: "",
-      dataEntrada: today()
+      dataEntrada: today(),
     });
     loadTeam();
   }, [loadTeam]);
@@ -128,14 +133,16 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       setFormData({
         colaboradorId: "",
         papel: "",
-        dataEntrada: today()
+        dataEntrada: today(),
       });
       await loadTeam();
       await onChanged?.();
     } catch (requestError) {
       const response = requestError.response?.data;
       const validationMessage = response?.errors?.[0]?.message;
-      setError(validationMessage || response?.message || "Não foi possível vincular o colaborador.");
+      setError(
+        validationMessage || response?.message || "Não foi possível vincular o colaborador.",
+      );
     } finally {
       setSaving(false);
     }
@@ -153,7 +160,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       await api.put(`/projetos/${project.id}/equipe/${member.id}`, {
         ...(editingRoles[member.id] !== member.papel
           ? { papel: editingRoles[member.id], dataVigencia: roleEffectiveDate }
-          : { dataEntrada: editingEntryDates[member.id] })
+          : { dataEntrada: editingEntryDates[member.id] }),
       });
       setMessage("Vínculo atualizado. Trocas de papel preservam o histórico.");
       await loadTeam();
@@ -190,7 +197,30 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       <header className="team-header">
         <div>
           <span className="eyebrow">Equipe vinculada</span>
-          <div className="dashboard-title-row"><h2>{project.nome}</h2><HelpDialog title="Ajuda — Equipe do projeto"><section><h3>Papel no projeto</h3><p>O papel descreve a atuação neste projeto e pode ter bonificação própria. Ele não altera o cargo nem a faixa de remuneração do colaborador.</p></section><section><h3>Participação e histórico</h3><p>Selecione o colaborador, o papel e a data de entrada para vincular à equipe. Para trocar um papel, defina a data no campo Vigência ao alterar um papel e salve o vínculo. A troca preserva o histórico anterior.</p><p>Encerrar participação mantém o vínculo no histórico. Use o filtro para consultar vínculos ativos ou inativos.</p></section></HelpDialog></div>
+          <div className="dashboard-title-row">
+            <h2>{project.nome}</h2>
+            <HelpDialog title="Ajuda — Equipe do projeto">
+              <section>
+                <h3>Papel no projeto</h3>
+                <p>
+                  O papel descreve a atuação neste projeto e pode ter bonificação própria. Ele não
+                  altera o cargo nem a faixa de remuneração do colaborador.
+                </p>
+              </section>
+              <section>
+                <h3>Participação e histórico</h3>
+                <p>
+                  Selecione o colaborador, o papel e a data de entrada para vincular à equipe. Para
+                  trocar um papel, defina a data no campo Vigência ao alterar um papel e salve o
+                  vínculo. A troca preserva o histórico anterior.
+                </p>
+                <p>
+                  Encerrar participação mantém o vínculo no histórico. Use o filtro para consultar
+                  vínculos ativos ou inativos.
+                </p>
+              </section>
+            </HelpDialog>
+          </div>
         </div>
         <div className="team-header-actions">
           <span className="team-count">
@@ -250,7 +280,9 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             value={formData.papel}
             required
             disabled={isInactive || loading}
-            onChange={(event) => setFormData((current) => ({ ...current, papel: event.target.value }))}
+            onChange={(event) =>
+              setFormData((current) => ({ ...current, papel: event.target.value }))
+            }
           >
             <option value="">Selecione</option>
             {roles.map((role) => (
@@ -286,7 +318,16 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       </form>
 
       <div className="team-table-toolbar">
-        <label className="field"><span>Vigência ao alterar um papel</span><input type="date" required value={roleEffectiveDate} onChange={(event) => setRoleEffectiveDate(event.target.value)} disabled={isInactive} /></label>
+        <label className="field">
+          <span>Vigência ao alterar um papel</span>
+          <input
+            type="date"
+            required
+            value={roleEffectiveDate}
+            onChange={(event) => setRoleEffectiveDate(event.target.value)}
+            disabled={isInactive}
+          />
+        </label>
         <select
           value={teamStatusFilter}
           onChange={(event) => setTeamStatusFilter(event.target.value)}
@@ -333,11 +374,13 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                         onChange={(event) =>
                           setEditingRoles((current) => ({
                             ...current,
-                            [member.id]: event.target.value
+                            [member.id]: event.target.value,
                           }))
                         }
                       >
-                        {!roles.includes(member.papel) && <option value={member.papel}>{member.papel}</option>}
+                        {!roles.includes(member.papel) && (
+                          <option value={member.papel}>{member.papel}</option>
+                        )}
                         {roles.map((role) => (
                           <option key={role} value={role}>
                             {role}
@@ -346,7 +389,23 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                       </select>
                     )}
                   </td>
-                  <td>{!member.dataSaida && !isInactive ? <input type="date" aria-label={`Entrada de ${memberName(member)}`} value={editingEntryDates[member.id] || toInputDate(member.dataEntrada)} onChange={(event) => setEditingEntryDates((current) => ({ ...current, [member.id]: event.target.value }))} /> : formatDate(member.dataEntrada)}</td>
+                  <td>
+                    {!member.dataSaida && !isInactive ? (
+                      <input
+                        type="date"
+                        aria-label={`Entrada de ${memberName(member)}`}
+                        value={editingEntryDates[member.id] || toInputDate(member.dataEntrada)}
+                        onChange={(event) =>
+                          setEditingEntryDates((current) => ({
+                            ...current,
+                            [member.id]: event.target.value,
+                          }))
+                        }
+                      />
+                    ) : (
+                      formatDate(member.dataEntrada)
+                    )}
+                  </td>
                   <td>{formatDate(member.dataSaida)}</td>
                   <td>
                     <StatusBadge status={member.dataSaida ? "INATIVO" : "ATIVO"} />

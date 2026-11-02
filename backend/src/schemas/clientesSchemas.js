@@ -3,7 +3,10 @@ import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js"
 import { isValidCnpj, normalizeCnpj } from "../utils/cnpj.js";
 import { isValidCpf, normalizeCpf } from "../utils/cpf.js";
 
-export const cnpjSchema = z.string().transform(normalizeCnpj).refine(isValidCnpj, "CNPJ inválido. Confira os caracteres e os dígitos verificadores.");
+export const cnpjSchema = z
+  .string()
+  .transform(normalizeCnpj)
+  .refine(isValidCnpj, "CNPJ inválido. Confira os caracteres e os dígitos verificadores.");
 const text = (max = 255) => z.string().trim().max(max).nullable().optional();
 
 export const clienteQuerySchema = paginationQuerySchema;
@@ -12,44 +15,91 @@ const clienteBaseSchema = z.object({
   tipoPessoa: z.enum(["PF", "PJ"]).optional(),
   nome: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres.").max(255),
   cnpj: cnpjSchema.nullable().optional(),
-  cpf: z.string().transform(normalizeCpf).refine(isValidCpf, "CPF inválido. Confira os dígitos verificadores.").nullable().optional(),
+  cpf: z
+    .string()
+    .transform(normalizeCpf)
+    .refine(isValidCpf, "CPF inválido. Confira os dígitos verificadores.")
+    .nullable()
+    .optional(),
   nomeFantasia: text(),
   email: z.string().trim().email("E-mail inválido.").max(255).nullable().optional(),
-  telefone: z.string().trim().transform((value) => value.replace(/[()\s.\-]/g, "")).pipe(z.string().regex(/^[1-9]\d{9,10}$/, "Informe um telefone com DDD e 10 ou 11 dígitos.")).nullable().optional(),
+  telefone: z
+    .string()
+    .trim()
+    .transform((value) => value.replace(/[()\s.-]/g, ""))
+    .pipe(z.string().regex(/^[1-9]\d{9,10}$/, "Informe um telefone com DDD e 10 ou 11 dígitos."))
+    .nullable()
+    .optional(),
   contato: text(),
-  cep: z.string().transform((value) => value.replace(/[.\-\s]/g, "")).pipe(z.string().regex(/^\d{8}$/, "CEP deve ter 8 dígitos.")).nullable().optional(),
+  cep: z
+    .string()
+    .transform((value) => value.replace(/[.\-\s]/g, ""))
+    .pipe(z.string().regex(/^\d{8}$/, "CEP deve ter 8 dígitos."))
+    .nullable()
+    .optional(),
   logradouro: text(),
   numero: text(30),
   complemento: text(),
   bairro: text(),
   cidade: text(150),
-  estado: z.string().trim().toUpperCase().regex(/^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/, "Selecione uma UF válida.").nullable().optional(),
+  estado: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .regex(
+      /^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/,
+      "Selecione uma UF válida.",
+    )
+    .nullable()
+    .optional(),
   situacaoCadastral: text(80),
   abertura: text(30),
   porte: text(100),
   naturezaJuridica: text(),
   atividadePrincipal: text(),
-  status: optionalStatusSchema
+  status: optionalStatusSchema,
 });
 
-const companyFields = ["cnpj", "nomeFantasia", "contato", "situacaoCadastral", "abertura", "porte", "naturezaJuridica", "atividadePrincipal"];
+const companyFields = [
+  "cnpj",
+  "nomeFantasia",
+  "contato",
+  "situacaoCadastral",
+  "abertura",
+  "porte",
+  "naturezaJuridica",
+  "atividadePrincipal",
+];
 
 function validatePersonFields(data, ctx) {
   if (data.tipoPessoa === "PF") {
     for (const field of companyFields) {
-      if (data[field]) ctx.addIssue({ code: "custom", path: [field], message: "Este campo pertence a uma pessoa jurídica." });
+      if (data[field])
+        ctx.addIssue({
+          code: "custom",
+          path: [field],
+          message: "Este campo pertence a uma pessoa jurídica.",
+        });
     }
   }
-  if (data.tipoPessoa === "PJ" && data.cpf) ctx.addIssue({ code: "custom", path: ["cpf"], message: "CPF pertence a uma pessoa física." });
+  if (data.tipoPessoa === "PJ" && data.cpf)
+    ctx.addIssue({ code: "custom", path: ["cpf"], message: "CPF pertence a uma pessoa física." });
 }
 
-export const clienteCreateSchema = clienteBaseSchema.extend({ tipoPessoa: z.enum(["PF", "PJ"]).default("PJ") }).superRefine((data, ctx) => {
-  const document = data.tipoPessoa === "PF" ? "cpf" : "cnpj";
-  if (!data[document]) ctx.addIssue({ code: "custom", path: [document], message: `Informe o ${document.toUpperCase()}.` });
-  validatePersonFields(data, ctx);
-});
+export const clienteCreateSchema = clienteBaseSchema
+  .extend({ tipoPessoa: z.enum(["PF", "PJ"]).default("PJ") })
+  .superRefine((data, ctx) => {
+    const document = data.tipoPessoa === "PF" ? "cpf" : "cnpj";
+    if (!data[document])
+      ctx.addIssue({
+        code: "custom",
+        path: [document],
+        message: `Informe o ${document.toUpperCase()}.`,
+      });
+    validatePersonFields(data, ctx);
+  });
 
-export const clienteUpdateSchema = clienteBaseSchema.partial().superRefine(validatePersonFields).refine(
-  (data) => Object.keys(data).length > 0,
-  "Informe ao menos um campo para atualizar."
-);
+export const clienteUpdateSchema = clienteBaseSchema
+  .partial()
+  .superRefine(validatePersonFields)
+  .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");
