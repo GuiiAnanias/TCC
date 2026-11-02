@@ -5,9 +5,9 @@ export const remuneracoesRepository = {
     return prisma.itemTabelaRemuneracao.findMany({
       where: {
         ...(status ? { status } : {}),
-        ...(busca ? { nivel: { contains: busca, mode: "insensitive" } } : {})
+        ...(busca ? { nivel: { contains: busca, mode: "insensitive" } } : {}),
       },
-      orderBy: [{ status: "asc" }, { nivel: "asc" }]
+      orderBy: [{ status: "asc" }, { nivel: "asc" }],
     });
   },
 
@@ -26,7 +26,7 @@ export const remuneracoesRepository = {
   update(id, data) {
     return prisma.itemTabelaRemuneracao.update({
       where: { id },
-      data
+      data,
     });
-  }
+  },
 };

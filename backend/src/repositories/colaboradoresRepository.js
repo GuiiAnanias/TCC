@@ -5,14 +5,14 @@ const colaboradorInclude = () => ({
   configuracoesFinanceiras: {
     where: {
       dataInicio: { lt: new Date(todayFinanceDate().getTime() + 86400000) },
-      OR: [{ dataFim: null }, { dataFim: { gte: todayFinanceDate() } }]
+      OR: [{ dataFim: null }, { dataFim: { gte: todayFinanceDate() } }],
     },
     include: {
-      itemTabela: true
+      itemTabela: true,
     },
     orderBy: [{ dataInicio: "desc" }, { id: "desc" }],
-    take: 1
-  }
+    take: 1,
+  },
 });
 
 export const colaboradoresRepository = {
@@ -26,20 +26,20 @@ export const colaboradoresRepository = {
                 { nomeCompleto: { contains: busca, mode: "insensitive" } },
                 { email: { contains: busca, mode: "insensitive" } },
                 { cargo: { contains: busca, mode: "insensitive" } },
-                { departamento: { contains: busca, mode: "insensitive" } }
-              ]
+                { departamento: { contains: busca, mode: "insensitive" } },
+              ],
             }
-          : {})
+          : {}),
       },
       include: colaboradorInclude(),
-      orderBy: [{ status: "asc" }, { nomeCompleto: "asc" }]
+      orderBy: [{ status: "asc" }, { nomeCompleto: "asc" }],
     });
   },
 
   findById(id) {
     return prisma.colaborador.findUnique({
       where: { id },
-      include: colaboradorInclude()
+      include: colaboradorInclude(),
     });
   },
 
@@ -50,7 +50,7 @@ export const colaboradoresRepository = {
   create(data) {
     return prisma.colaborador.create({
       data,
-      include: colaboradorInclude()
+      include: colaboradorInclude(),
     });
   },
 
@@ -58,7 +58,7 @@ export const colaboradoresRepository = {
     return prisma.colaborador.update({
       where: { id },
       data,
-      include: colaboradorInclude()
+      include: colaboradorInclude(),
     });
-  }
+  },
 };

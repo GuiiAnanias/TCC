@@ -1,8 +1,12 @@
-import { projetoCreateSchema, projetoQuerySchema, projetoUpdateSchema } from "../../schemas/projetosSchemas.js";
+import {
+  projetoCreateSchema,
+  projetoQuerySchema,
+  projetoUpdateSchema,
+} from "../../schemas/projetosSchemas.js";
 import {
   equipeProjetoCreateSchema,
   equipeProjetoUpdateSchema,
-  papeisProjeto
+  papeisProjeto,
 } from "../../schemas/equipeProjetoSchemas.js";
 import { projetosService } from "../../services/projetosService.js";
 import { parseId } from "../../utils/parseId.js";
@@ -69,5 +73,5 @@ export const projetosController = {
     const vinculoId = parseId(request.params.vinculoId, "vinculo de equipe");
     const vinculo = await projetosService.removeTeamMember(projetoId, vinculoId);
     return response.json(vinculo);
-  }
+  },
 };

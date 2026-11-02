@@ -14,12 +14,17 @@ export const senhaService = {
   async gerarLink(login, { frontendUrl, agora = new Date() }) {
     const usuario = await usuariosRepository.findByLogin(login);
     if (!usuario) throw new HttpError(404, `Usuário "${login}" não encontrado.`);
-    if (usuario.status !== "ATIVO") throw new HttpError(409, `O usuário "${usuario.nomeUsuario}" está inativo.`);
+    if (usuario.status !== "ATIVO")
+      throw new HttpError(409, `O usuário "${usuario.nomeUsuario}" está inativo.`);
     const token = crypto.randomBytes(32).toString("base64url");
     const expiraEm = new Date(agora.getTime() + VALIDADE_LINK_MINUTOS * 60 * 1000);
     await usuariosRepository.saveResetToken(usuario.id, hashToken(token), expiraEm);
     const base = String(frontendUrl).replace(/\/+$/, "");
-    return { usuario: usuario.nomeUsuario, expiraEm, link: `${base}/redefinir-senha?token=${token}` };
+    return {
+      usuario: usuario.nomeUsuario,
+      expiraEm,
+      link: `${base}/redefinir-senha?token=${token}`,
+    };
   },
 
   async redefinir(token, novaSenha, agora = new Date()) {
@@ -28,6 +33,7 @@ export const senhaService = {
     const expirado = !usuario?.resetTokenExpiraEm || new Date(usuario.resetTokenExpiraEm) <= agora;
     if (!usuario || usuario.status !== "ATIVO" || expirado) throw new HttpError(400, LINK_INVALIDO);
     const senhaHash = await bcrypt.hash(novaSenha, 10);
-    if (!await usuariosRepository.consumeResetToken(usuario.id, tokenHash, senhaHash, agora)) throw new HttpError(400, LINK_INVALIDO);
-  }
+    if (!(await usuariosRepository.consumeResetToken(usuario.id, tokenHash, senhaHash, agora)))
+      throw new HttpError(400, LINK_INVALIDO);
+  },
 };

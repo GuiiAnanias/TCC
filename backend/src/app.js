@@ -19,8 +19,8 @@ app.get("/", (request, response) => {
       "/api/remuneracoes",
       "/api/projetos",
       "/api/projetos/papeis",
-      "/api/projetos/:id/equipe"
-    ]
+      "/api/projetos/:id/equipe",
+    ],
   });
 });
 

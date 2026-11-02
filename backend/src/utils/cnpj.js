@@ -1,5 +1,8 @@
 export function normalizeCnpj(value) {
-  return value.trim().toUpperCase().replace(/[.\/\-\s]/g, "");
+  return value
+    .trim()
+    .toUpperCase()
+    .replace(/[./\-\s]/g, "");
 }
 
 export function isValidCnpj(value) {

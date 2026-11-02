@@ -10,7 +10,11 @@ export const apontamentosRepository = {
         return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
       } catch (error) {
         if (error.code !== "P2034") throw error;
-        if (attempt === 2) throw new HttpError(409, "Os apontamentos foram alterados em outra operação. Atualize e tente novamente.");
+        if (attempt === 2)
+          throw new HttpError(
+            409,
+            "Os apontamentos foram alterados em outra operação. Atualize e tente novamente.",
+          );
       }
     }
   },

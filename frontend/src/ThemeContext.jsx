@@ -33,7 +33,10 @@ export function ThemeProvider({ children }) {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = rect.left + rect.width / 2;
     const y = rect.top + rect.height / 2;
-    const radius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+    const radius = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y),
+    );
     transitionRunning.current = true;
     setChanging(true);
     let animation;
@@ -44,7 +47,7 @@ export function ThemeProvider({ children }) {
       await transition.ready;
       animation = document.documentElement.animate(
         { clipPath: [`circle(0px at ${x}px ${y}px)`, `circle(${radius}px at ${x}px ${y}px)`] },
-        { duration: 440, easing: "ease-in-out", pseudoElement: "::view-transition-new(root)" }
+        { duration: 440, easing: "ease-in-out", pseudoElement: "::view-transition-new(root)" },
       );
       await animation.finished;
       animation.cancel();
@@ -61,17 +64,26 @@ export function ThemeProvider({ children }) {
     }
   }
 
-  return <ThemeContext.Provider value={{ theme, toggleTheme, changing }}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={{ theme, toggleTheme, changing }}>
+      {children}
+    </ThemeContext.Provider>
+  );
 }
 
 export function ThemeToggle({ showLabel = false }) {
   const { theme, toggleTheme, changing } = useContext(ThemeContext);
   const dark = theme === "dark";
   return (
-    <button className={`icon-button theme-toggle${showLabel ? " has-label" : ""}`} type="button" onClick={toggleTheme}
-      disabled={changing} aria-busy={changing}
+    <button
+      className={`icon-button theme-toggle${showLabel ? " has-label" : ""}`}
+      type="button"
+      onClick={toggleTheme}
+      disabled={changing}
+      aria-busy={changing}
       title={dark ? "Ativar modo claro" : "Ativar modo noturno"}
-      aria-label={dark ? "Ativar modo claro" : "Ativar modo noturno"}>
+      aria-label={dark ? "Ativar modo claro" : "Ativar modo noturno"}
+    >
       {dark ? <Sun size={18} aria-hidden="true" /> : <Moon size={18} aria-hidden="true" />}
       {showLabel && <span>{dark ? "Claro" : "Escuro"}</span>}
     </button>

@@ -20,7 +20,7 @@ export const cargosTi = [
   "Engenheiro de Dados",
   "DBA",
   "Especialista em Segurança",
-  "Suporte Técnico"
+  "Suporte Técnico",
 ];
 
 // Papéis são um catálogo próprio. Especialidades já utilizadas continuam válidas
@@ -47,13 +47,14 @@ export const papeisProjeto = [
   "Engenheiro de Dados",
   "DBA",
   "Especialista em Segurança",
-  "Suporte Técnico"
+  "Suporte Técnico",
 ];
 
 // Faixas da carreira; valores/hora são cadastrados pela empresa, nunca inferidos
 // do cargo. A escolha dos nomes não atribui valores aos registros existentes.
-export const niveisRemuneracao = ["Trainee", "Júnior", "Pleno", "Sênior"]
-  .flatMap((nivel) => ["I", "II", "III", "IV", "V"].map((faixa) => `${nivel} ${faixa}`));
+export const niveisRemuneracao = ["Trainee", "Júnior", "Pleno", "Sênior"].flatMap((nivel) =>
+  ["I", "II", "III", "IV", "V"].map((faixa) => `${nivel} ${faixa}`),
+);
 
 export const departamentosTi = [
   "Tecnologia",
@@ -64,5 +65,5 @@ export const departamentosTi = [
   "Infraestrutura",
   "Segurança da Informação",
   "Suporte",
-  "Design"
+  "Design",
 ];

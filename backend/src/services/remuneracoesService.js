@@ -36,7 +36,10 @@ export const remuneracoesService = {
 
     if (data.nivel) {
       if (data.nivel !== current.nivel && !niveisRemuneracao.includes(data.nivel)) {
-        throw new HttpError(400, "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.");
+        throw new HttpError(
+          400,
+          "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.",
+        );
       }
       const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
@@ -51,5 +54,5 @@ export const remuneracoesService = {
   async inactivate(id) {
     await ensureRemuneracaoExists(id);
     return remuneracoesRepository.update(id, { status: "INATIVO" });
-  }
+  },
 };
