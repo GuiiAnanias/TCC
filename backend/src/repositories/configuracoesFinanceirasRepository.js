@@ -1,4 +1,5 @@
 import prisma from "../config/prisma.js";
+import { custoConflict } from "../utils/custoConflict.js";
 import { HttpError } from "../utils/HttpError.js";
 import {
   financeDay,
@@ -14,6 +15,8 @@ async function financialTransaction(operation) {
     try {
       return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
     } catch (error) {
+      const conflict = custoConflict(error);
+      if (conflict) throw conflict;
       if (error.code !== "P2034") throw error;
       if (attempt === 2)
         throw new HttpError(

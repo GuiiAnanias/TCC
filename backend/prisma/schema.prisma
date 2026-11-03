@@ -212,6 +212,10 @@ model ApontamentoHora {
   status         StatusApontamento  @default(PENDENTE)
   descricao      String
 
+  // Apuradas e versionadas pelo banco ao faturar, inclusive na importação Excel.
+  custoConsolidado Json?
+  historicoCustos  Json @default("[]")
+
   colaborador    Colaborador        @relation(fields: [colaboradorId], references: [id])
   projeto        Projeto            @relation(fields: [projetoId], references: [id])
   tarefa         Tarefa?            @relation(fields: [tarefaId, projetoId], references: [id, projetoId], onDelete: Restrict, onUpdate: NoAction)

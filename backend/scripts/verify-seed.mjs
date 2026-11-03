@@ -209,6 +209,8 @@ try {
   const entry = initial.apontamentoHora.find(
     (item) => item.descricao === "Demonstração: portal-login-dev",
   );
+  // Correção deliberada: desfaturar antes de editar as horas.
+  await client.apontamentoHora.update({ where: { id: entry.id }, data: { status: "APROVADO" } });
   await client.apontamentoHora.update({ where: { id: entry.id }, data: { horas: 10 } });
   await client.projeto.update({
     where: { id: rows["Aplicativo Mobile (demo)"].id },

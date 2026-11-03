@@ -2,6 +2,7 @@ import prismaPackage from "@prisma/client";
 const { Prisma } = prismaPackage;
 import { ZodError } from "zod";
 import { env } from "../../config/env.js";
+import { custoConflict } from "../../utils/custoConflict.js";
 
 export function notFoundHandler(request, response) {
   response.status(404).json({
@@ -10,6 +11,8 @@ export function notFoundHandler(request, response) {
 }
 
 export function errorHandler(error, request, response, _next) {
+  const conflict = custoConflict(error);
+  if (conflict) return response.status(conflict.statusCode).json({ message: conflict.message });
   if (error instanceof ZodError) {
     return response.status(400).json({
       message: "Dados inválidos.",

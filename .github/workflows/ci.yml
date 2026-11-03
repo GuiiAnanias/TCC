@@ -67,6 +67,8 @@ jobs:
         run: pnpm run test:seed-db
       - name: Testes de integração com banco (dashboard)
         run: pnpm run test:dashboard-db
+      - name: Testes de integração com banco (custos faturados)
+        run: pnpm run test:invoiced-costs-db
       - name: Testes de integração com banco (equipe)
         run: pnpm run test:team-db
       - name: Testes de integração com banco (tarefas)

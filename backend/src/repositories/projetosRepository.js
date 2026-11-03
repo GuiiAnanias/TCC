@@ -1,6 +1,7 @@
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 import { previousFinanceDay } from "../utils/financeDates.js";
+import { custoConflict } from "../utils/custoConflict.js";
 
 const projectListInclude = {
   cliente: true,
@@ -21,6 +22,8 @@ export const projetosRepository = {
       try {
         return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
       } catch (error) {
+        const conflict = custoConflict(error);
+        if (conflict) throw conflict;
         if (
           error.code === "P2002" ||
           error.code === "P2004" ||

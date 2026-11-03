@@ -2,6 +2,30 @@ import { round } from "./operationalIndicators.js";
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 
 export function entryCost(entry, project, bonuses) {
+  if (entry.status === "FATURADO" && entry.custoConsolidado) {
+    const {
+      custoBase,
+      bonificacao,
+      custo,
+      semCusto,
+      semVinculo,
+      valorHora,
+      nivel,
+      papel,
+      percentual,
+    } = entry.custoConsolidado;
+    return {
+      custoBase,
+      bonificacao,
+      custo,
+      semCusto,
+      semVinculo,
+      valorHora,
+      nivel,
+      papel,
+      percentual,
+    };
+  }
   const day = dayOf(entry.data);
   const config = [...(entry.colaborador.configuracoesFinanceiras ?? [])]
     .sort((a, b) => new Date(b.dataInicio) - new Date(a.dataInicio) || (b.id || 0) - (a.id || 0))

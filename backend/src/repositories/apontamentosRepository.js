@@ -1,5 +1,6 @@
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
+import { custoConflict } from "../utils/custoConflict.js";
 
 export const apontamentosRepository = {
   async transaction(operation) {
@@ -9,6 +10,8 @@ export const apontamentosRepository = {
         // Serializable protege inclusive o primeiro lançamento de um dia vazio.
         return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
       } catch (error) {
+        const conflict = custoConflict(error);
+        if (conflict) throw conflict;
         if (error.code !== "P2034") throw error;
         if (attempt === 2)
           throw new HttpError(

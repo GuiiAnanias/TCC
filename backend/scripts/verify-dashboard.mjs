@@ -174,6 +174,11 @@ try {
   const originalEntry = await client.apontamentoHora.findFirst({
     where: { descricao: "Demonstração: portal-login-dev" },
   });
+  // Correção deliberada: desfaturar antes de editar as horas.
+  await client.apontamentoHora.update({
+    where: { id: originalEntry.id },
+    data: { status: "APROVADO" },
+  });
   await client.apontamentoHora.update({ where: { id: originalEntry.id }, data: { horas: 10 } });
   assert.equal((await service.project(portal.id)).resumo.custo, 1317);
   assert.equal((await service.project(portal.id)).resumo.assertividadeEstimativas, 50);

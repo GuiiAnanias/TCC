@@ -415,6 +415,13 @@ export function conferirCustos(linhas, { equipes = [], vigencias = [] }) {
       item.avisos.push(
         "O colaborador não tem valor/hora vigente nessa data: as horas entram sem custo.",
       );
+    if (item.status === "FATURADO" && (!naEquipe || !comValorHora))
+      item.erros.push({
+        campo: "status",
+        coluna: "Status",
+        mensagem:
+          "Para importar como Faturado, é necessário valor/hora e participação na equipe na data das horas. Corrija os cadastros ou importe como Pendente/Aprovado.",
+      });
   }
   return linhas;
 }
