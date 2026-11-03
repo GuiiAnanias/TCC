@@ -16,6 +16,8 @@ import {
 import { authRoutes } from "./authRoutes.js";
 import { authenticate } from "../middlewares/authenticate.js";
 import { bonificacoesPapeisRoutes } from "./bonificacoesPapeisRoutes.js";
+import { relatoriosRoutes } from "./relatoriosRoutes.js";
+import { importacoesRoutes } from "./importacoesRoutes.js";
 
 export const routes = Router();
 
@@ -50,3 +52,5 @@ routes.use("/tarefas", tarefasRoutes);
 routes.use("/sprints", sprintsRoutes);
 
 routes.use("/premiacoes", premiacaoRoutes);
+routes.use("/relatorios", relatoriosRoutes);
+routes.use("/importacoes", importacoesRoutes);

@@ -114,6 +114,8 @@ Funcionalidades disponíveis:
 - Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios e histórico.
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
+- Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
+- Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar.
 - Consulta visual dos dados do banco pelo Prisma Studio.
 - Collection do Postman para testes da API.
 
@@ -406,6 +408,49 @@ Exemplo para aplicar uma configuração financeira ao colaborador:
 }
 ```
 
+Relatórios e importação em Excel:
+
+```txt
+GET    /relatorios/indicadores.xlsx          aceita os mesmos filtros de GET /dashboard
+GET    /importacoes/apontamentos/modelo      modelo .xlsx com listas dos cadastros ativos
+POST   /importacoes/apontamentos/validacao   corpo = arquivo .xlsx; confere sem gravar
+POST   /importacoes/apontamentos             corpo = arquivo .xlsx; grava tudo ou nada
+```
+
+---
+
+## Importação e exportação em Excel
+
+**Exportar.** No Dashboard Geral, aplique os filtros e clique em **Exportar Excel**. A planilha
+sai com o mesmo recorte da tela, em seis abas:
+
+| Aba           | Conteúdo                                                                          |
+| ------------- | --------------------------------------------------------------------------------- |
+| Resumo        | Filtros aplicados e os indicadores do topo do dashboard                           |
+| Projetos      | Orçamento, custo, horas, assertividade e inconsistências por projeto              |
+| Clientes      | Horas e custo por cliente                                                         |
+| Colaboradores | Horas e custo por colaborador                                                     |
+| Apontamentos  | Uma linha por apontamento, com valor/hora, bonificação e custo (base do Power BI) |
+| Ocorrências   | Pendências da auditoria (sem valor/hora, sem equipe, sem tarefa etc.)             |
+
+As abas de dados são Tabelas do Excel, que o Power BI reconhece direto em
+_Obter dados > Excel_. A planilha contém custos internos e valor/hora: é para uso da E/Code,
+não para enviar ao cliente.
+
+**Importar.** Em **Importar horas**, baixe o modelo, preencha uma linha por apontamento e
+envie o arquivo. O modelo já traz os colaboradores, projetos e tarefas ativos na aba Listas.
+
+- Colunas: Data, E-mail do colaborador, Projeto, Tarefa (opcional), Horas, Status (opcional) e
+  Descrição. Horas aceitam `7,5` ou `07:30`; status em branco entra como Pendente.
+- O sistema confere todas as linhas antes de gravar e mostra o erro de cada uma, com o número
+  da linha do Excel. Valem as regras do cadastro manual: data até hoje, até 24 h por
+  colaborador no dia (somando o que já está gravado) e tarefa ativa do mesmo projeto.
+- A importação é tudo ou nada e roda numa transação serializável. Linhas iguais a
+  apontamentos já gravados são recusadas, o que evita importar a mesma planilha duas vezes.
+- Avisos não bloqueiam: indicam horas que entram com custo incompleto (colaborador fora da
+  equipe do projeto na data ou sem valor/hora vigente).
+- Limite de 2.000 linhas e 5 MB por arquivo.
+
 ---
 
 ## Variáveis de Ambiente
@@ -696,6 +741,8 @@ corepack pnpm test
 corepack pnpm run test:seed-db
 corepack pnpm run test:dashboard-db
 corepack pnpm run test:tasks-db
+corepack pnpm run test:hours-db
+corepack pnpm run test:excel-db
 ```
 
 As verificações de integração exigem PostgreSQL local em execução e `DATABASE_URL`
@@ -735,6 +782,6 @@ os exemplos do passo 6. Verificação: `corepack pnpm test`, `corepack pnpm run 
 `corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
 As integrações criam e removem somente schemas temporários no PostgreSQL local.
 
-Próximas etapas: importação ClickUp e histórico (7), depois relatórios (8).
+Próximas etapas: importação ClickUp e histórico (7). Os relatórios em Excel (8) estão na seção "Importação e exportação em Excel".
 A integração utiliza apenas um schema temporário local e testa as alterações manuais
 sem modificar a base utilizada pela interface.

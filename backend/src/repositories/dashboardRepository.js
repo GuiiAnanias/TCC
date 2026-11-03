@@ -106,6 +106,7 @@ export const dashboardRepository = {
             colaborador: {
               select: {
                 nomeCompleto: true,
+                email: true,
                 cargo: true,
                 departamento: true,
                 configuracoesFinanceiras: {
@@ -126,6 +127,32 @@ export const dashboardRepository = {
       where: { id },
       include: { cliente: { select: { nome: true } }, sprints: { orderBy: { dataInicio: "asc" } } },
     });
+  },
+  // Nomes dos filtros por id, para identificar o recorte no relatório exportado.
+  async filterNames({ clienteId, projetoId, colaboradorId, sprintId } = {}) {
+    const [cliente, projeto, colaborador, sprint] = await Promise.all([
+      clienteId
+        ? prisma.cliente.findUnique({ where: { id: clienteId }, select: { nome: true } })
+        : null,
+      projetoId
+        ? prisma.projeto.findUnique({ where: { id: projetoId }, select: { nome: true } })
+        : null,
+      colaboradorId
+        ? prisma.colaborador.findUnique({
+            where: { id: colaboradorId },
+            select: { nomeCompleto: true },
+          })
+        : null,
+      sprintId
+        ? prisma.sprint.findUnique({ where: { id: sprintId }, select: { nome: true } })
+        : null,
+    ]);
+    return {
+      cliente: cliente?.nome ?? null,
+      projeto: projeto?.nome ?? null,
+      colaborador: colaborador?.nomeCompleto ?? null,
+      sprint: sprint?.nome ?? null,
+    };
   },
   findCollaborator(id) {
     return prisma.colaborador.findUnique({
