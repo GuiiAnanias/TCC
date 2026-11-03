@@ -1,4 +1,6 @@
 import prisma from "../config/prisma.js";
+import { HttpError } from "../utils/HttpError.js";
+import { previousFinanceDay } from "../utils/financeDates.js";
 
 const projectListInclude = {
   cliente: true,
@@ -14,6 +16,47 @@ const projectListInclude = {
 };
 
 export const projetosRepository = {
+  async transaction(operation) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
+      } catch (error) {
+        if (
+          error.code === "P2002" ||
+          error.code === "P2004" ||
+          error.message?.includes("equipe_periodos_sem_sobreposicao")
+        )
+          throw new HttpError(
+            409,
+            "Já existe participação deste colaborador no período informado.",
+          );
+        if (error.code !== "P2034") throw error;
+        if (attempt === 2)
+          throw new HttpError(
+            409,
+            "A equipe foi alterada em outra operação. Atualize e tente novamente.",
+          );
+      }
+    }
+  },
+  findOverlappingTeamMember(
+    projetoId,
+    colaboradorId,
+    dataEntrada,
+    dataSaida,
+    exceptId,
+    db = prisma,
+  ) {
+    return db.projetoColaborador.findFirst({
+      where: {
+        projetoId,
+        colaboradorId,
+        ...(exceptId ? { id: { not: exceptId } } : {}),
+        ...(dataSaida ? { dataEntrada: { lte: dataSaida } } : {}),
+        OR: [{ dataSaida: null }, { dataSaida: { gte: dataEntrada } }],
+      },
+    });
+  },
   findAll({ busca, status, clienteId } = {}) {
     return prisma.projeto.findMany({
       where: {
@@ -26,8 +69,8 @@ export const projetosRepository = {
     });
   },
 
-  findById(id) {
-    return prisma.projeto.findUnique({
+  findById(id, db = prisma) {
+    return db.projeto.findUnique({
       where: { id },
       include: {
         cliente: true,
@@ -66,8 +109,8 @@ export const projetosRepository = {
     });
   },
 
-  findTeamMemberById(id) {
-    return prisma.projetoColaborador.findUnique({
+  findTeamMemberById(id, db = prisma) {
+    return db.projetoColaborador.findUnique({
       where: { id },
       include: {
         colaborador: true,
@@ -86,8 +129,8 @@ export const projetosRepository = {
     });
   },
 
-  addTeamMember(data) {
-    return prisma.projetoColaborador.create({
+  addTeamMember(data, db = prisma) {
+    return db.projetoColaborador.create({
       data,
       include: {
         colaborador: true,
@@ -95,8 +138,8 @@ export const projetosRepository = {
     });
   },
 
-  updateTeamMember(id, data) {
-    return prisma.projetoColaborador.update({
+  updateTeamMember(id, data, db = prisma) {
+    return db.projetoColaborador.update({
       where: { id },
       data,
       include: {
@@ -105,23 +148,21 @@ export const projetosRepository = {
     });
   },
 
-  changeTeamRole(member, papel, dataVigencia) {
-    return prisma.$transaction(async (tx) => {
-      const closed = await tx.projetoColaborador.updateMany({
-        where: { id: member.id, dataSaida: null, papel: member.papel },
-        data: { dataSaida: dataVigencia },
-      });
-      if (closed.count !== 1)
-        throw new Error("O vínculo foi alterado. Atualize a equipe e tente novamente.");
-      return tx.projetoColaborador.create({
-        data: {
-          projetoId: member.projetoId,
-          colaboradorId: member.colaboradorId,
-          papel,
-          dataEntrada: dataVigencia,
-        },
-        include: { colaborador: true },
-      });
+  async changeTeamRole(member, papel, dataVigencia, tx) {
+    const closed = await tx.projetoColaborador.updateMany({
+      where: { id: member.id, dataSaida: null, papel: member.papel },
+      data: { dataSaida: previousFinanceDay(dataVigencia) },
+    });
+    if (closed.count !== 1)
+      throw new HttpError(409, "O vínculo foi alterado. Atualize a equipe e tente novamente.");
+    return tx.projetoColaborador.create({
+      data: {
+        projetoId: member.projetoId,
+        colaboradorId: member.colaboradorId,
+        papel,
+        dataEntrada: dataVigencia,
+      },
+      include: { colaborador: true },
     });
   },
 };

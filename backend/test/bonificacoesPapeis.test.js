@@ -63,6 +63,8 @@ test("new bonus percentages close the previous version without rewriting it or p
 
 test("changing project role creates a dated version instead of rewriting the previous role", async () => {
   const originals = { ...projetosRepository };
+  projetosRepository.transaction = async (operation) => operation({});
+  projetosRepository.findOverlappingTeamMember = async () => null;
   const originalMember = {
     id: 1,
     projetoId: 2,

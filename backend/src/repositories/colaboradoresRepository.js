@@ -36,8 +36,8 @@ export const colaboradoresRepository = {
     });
   },
 
-  findById(id) {
-    return prisma.colaborador.findUnique({
+  findById(id, db = prisma) {
+    return db.colaborador.findUnique({
       where: { id },
       include: colaboradorInclude(),
     });
