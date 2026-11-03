@@ -1,10 +1,11 @@
 import { clientesRepository } from "../repositories/clientesRepository.js";
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../repositories/projetosRepository.js";
+import { financeDate, todayFinanceDate } from "../utils/financeDates.js";
 import { HttpError } from "../utils/HttpError.js";
 
-async function ensureProjetoExists(id) {
-  const projeto = await projetosRepository.findById(id);
+async function ensureProjetoExists(id, db) {
+  const projeto = await projetosRepository.findById(id, db);
 
   if (!projeto) {
     throw new HttpError(404, "Projeto não encontrado.");
@@ -33,8 +34,8 @@ function ensureProjetoAtivo(projeto) {
   }
 }
 
-async function ensureColaboradorAtivo(colaboradorId) {
-  const colaborador = await colaboradoresRepository.findById(colaboradorId);
+async function ensureColaboradorAtivo(colaboradorId, db) {
+  const colaborador = await colaboradoresRepository.findById(colaboradorId, db);
 
   if (!colaborador) {
     throw new HttpError(404, "Colaborador não encontrado.");
@@ -47,8 +48,8 @@ async function ensureColaboradorAtivo(colaboradorId) {
   return colaborador;
 }
 
-async function ensureVinculoDoProjeto(projetoId, vinculoId) {
-  const vinculo = await projetosRepository.findTeamMemberById(vinculoId);
+async function ensureVinculoDoProjeto(projetoId, vinculoId, db) {
+  const vinculo = await projetosRepository.findTeamMemberById(vinculoId, db);
 
   if (!vinculo || vinculo.projetoId !== projetoId) {
     throw new HttpError(404, "Vínculo de equipe não encontrado para este projeto.");
@@ -61,6 +62,23 @@ function ensurePeriodoValido(dataEntrada, dataSaida) {
   if (dataSaida && dataEntrada && dataSaida < dataEntrada) {
     throw new HttpError(400, "Data de saída não pode ser anterior à data de entrada.");
   }
+}
+
+async function ensureSemSobreposicao(projetoId, colaboradorId, entrada, saida, exceptId, db) {
+  if (
+    await projetosRepository.findOverlappingTeamMember(
+      projetoId,
+      colaboradorId,
+      entrada,
+      saida,
+      exceptId,
+      db,
+    )
+  )
+    throw new HttpError(
+      409,
+      "Já existe participação deste colaborador no período informado. Confira as datas de entrada e saída.",
+    );
 }
 
 export const projetosService = {
@@ -98,72 +116,97 @@ export const projetosService = {
   },
 
   async addTeamMember(projetoId, data) {
-    const projeto = await ensureProjetoExists(projetoId);
-    ensureProjetoAtivo(projeto);
+    return projetosRepository.transaction(async (db) => {
+      const projeto = await ensureProjetoExists(projetoId, db);
+      ensureProjetoAtivo(projeto);
 
-    await ensureColaboradorAtivo(data.colaboradorId);
+      await ensureColaboradorAtivo(data.colaboradorId, db);
 
-    const activeTeamMember = await projetosRepository.findActiveTeamMember(
-      projetoId,
-      data.colaboradorId,
-    );
+      const entrada = financeDate(data.dataEntrada);
+      await ensureSemSobreposicao(projetoId, data.colaboradorId, entrada, null, undefined, db);
 
-    if (activeTeamMember) {
-      throw new HttpError(409, "Este colaborador já está ativo na equipe do projeto.");
-    }
-
-    return projetosRepository.addTeamMember({
-      projetoId,
-      colaboradorId: data.colaboradorId,
-      papel: data.papel,
-      dataEntrada: data.dataEntrada,
+      return projetosRepository.addTeamMember(
+        {
+          projetoId,
+          colaboradorId: data.colaboradorId,
+          papel: data.papel,
+          dataEntrada: entrada,
+        },
+        db,
+      );
     });
   },
 
   async updateTeamMember(projetoId, vinculoId, data) {
-    const projeto = await ensureProjetoExists(projetoId);
-    ensureProjetoAtivo(projeto);
+    return projetosRepository.transaction(async (db) => {
+      const projeto = await ensureProjetoExists(projetoId, db);
+      ensureProjetoAtivo(projeto);
 
-    const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId);
-    if (data.papel && data.papel !== vinculo.papel) {
-      if (vinculo.dataSaida)
-        throw new HttpError(400, "O papel de uma participação encerrada não pode ser alterado.");
-      if (!data.dataVigencia) throw new HttpError(400, "Informe a data de vigência do novo papel.");
-      if (data.dataEntrada !== undefined || data.dataSaida !== undefined)
-        throw new HttpError(400, "Altere o papel separadamente das datas de participação.");
-      const day = new Date(data.dataVigencia.toISOString().slice(0, 10));
-      if (day <= new Date(vinculo.dataEntrada.toISOString().slice(0, 10))) {
-        throw new HttpError(
-          400,
-          "A vigência do novo papel deve começar após a entrada do vínculo atual.",
-        );
+      const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId, db);
+      if (data.papel && data.papel !== vinculo.papel) {
+        if (vinculo.dataSaida)
+          throw new HttpError(400, "O papel de uma participação encerrada não pode ser alterado.");
+        if (!data.dataVigencia)
+          throw new HttpError(400, "Informe a data de vigência do novo papel.");
+        if (data.dataEntrada !== undefined || data.dataSaida !== undefined)
+          throw new HttpError(400, "Altere o papel separadamente das datas de participação.");
+        const day = financeDate(data.dataVigencia);
+        if (day <= new Date(vinculo.dataEntrada.toISOString().slice(0, 10))) {
+          throw new HttpError(
+            400,
+            "A vigência do novo papel deve começar após a entrada do vínculo atual.",
+          );
+        }
+        await ensureSemSobreposicao(projetoId, vinculo.colaboradorId, day, null, vinculo.id, db);
+        return projetosRepository.changeTeamRole(vinculo, data.papel, day, db);
       }
-      return projetosRepository.changeTeamRole(vinculo, data.papel, day);
-    }
-    const nextDataEntrada = data.dataEntrada ?? vinculo.dataEntrada;
-    const nextDataSaida = data.dataSaida === undefined ? vinculo.dataSaida : data.dataSaida;
+      const nextDataEntrada = financeDate(data.dataEntrada ?? vinculo.dataEntrada);
+      const nextDataSaida =
+        data.dataSaida === undefined
+          ? vinculo.dataSaida
+          : data.dataSaida && financeDate(data.dataSaida);
 
-    ensurePeriodoValido(nextDataEntrada, nextDataSaida);
+      ensurePeriodoValido(nextDataEntrada, nextDataSaida);
 
-    const { dataVigencia, ...changes } = data;
-    if (!Object.keys(changes).length) throw new HttpError(400, "Informe uma alteração no vínculo.");
-    return projetosRepository.updateTeamMember(vinculoId, changes);
+      await ensureSemSobreposicao(
+        projetoId,
+        vinculo.colaboradorId,
+        nextDataEntrada,
+        nextDataSaida,
+        vinculo.id,
+        db,
+      );
+      const { dataVigencia, ...changes } = data;
+      if (!Object.keys(changes).length)
+        throw new HttpError(400, "Informe uma alteração no vínculo.");
+      return projetosRepository.updateTeamMember(
+        vinculoId,
+        { ...changes, dataEntrada: nextDataEntrada, dataSaida: nextDataSaida },
+        db,
+      );
+    });
   },
 
   async removeTeamMember(projetoId, vinculoId) {
-    const projeto = await ensureProjetoExists(projetoId);
-    ensureProjetoAtivo(projeto);
+    return projetosRepository.transaction(async (db) => {
+      const projeto = await ensureProjetoExists(projetoId, db);
+      ensureProjetoAtivo(projeto);
 
-    const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId);
+      const vinculo = await ensureVinculoDoProjeto(projetoId, vinculoId, db);
 
-    if (vinculo.dataSaida) {
-      return vinculo;
-    }
+      if (vinculo.dataSaida) {
+        return vinculo;
+      }
 
-    const dataSaida = new Date();
+      const dataSaida = todayFinanceDate();
 
-    return projetosRepository.updateTeamMember(vinculoId, {
-      dataSaida: dataSaida < vinculo.dataEntrada ? vinculo.dataEntrada : dataSaida,
+      return projetosRepository.updateTeamMember(
+        vinculoId,
+        {
+          dataSaida: dataSaida < vinculo.dataEntrada ? vinculo.dataEntrada : dataSaida,
+        },
+        db,
+      );
     });
   },
 };

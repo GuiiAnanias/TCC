@@ -22,7 +22,8 @@
     "test:awards-db": "node scripts/verify-awards.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:team-db": "node scripts/verify-team.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
