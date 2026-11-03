@@ -6,6 +6,7 @@ import {
   Building2,
   ChevronDown,
   Clock3,
+  FileSpreadsheet,
   Filter,
   RotateCcw,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { FloatingActions } from "../components/FloatingActions.jsx";
 import { AuditTable, OperationalMetrics } from "../components/OperationalDashboard.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { Link } from "react-router-dom";
+import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
 
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
 
@@ -58,6 +60,7 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [openSection, setOpenSection] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const requestId = useRef(0);
   const appliedRef = useRef(emptyFilters);
 
@@ -105,6 +108,26 @@ export function DashboardPage() {
       requestId.current++;
     };
   }, [loadSummary, loadOptions]);
+
+  // Exporta exatamente o recorte aplicado na tela, com uma linha por apontamento.
+  async function exportExcel() {
+    setExporting(true);
+    setError("");
+    try {
+      const params = Object.fromEntries(
+        Object.entries(applied).filter(([, value]) => value !== ""),
+      );
+      const response = await api.get("/relatorios/indicadores.xlsx", {
+        params,
+        responseType: "blob",
+      });
+      salvarArquivo(response, "indicadores-codebi.xlsx");
+    } catch (err) {
+      setError(await mensagemDeErro(err, "Não foi possível gerar a planilha. Tente novamente."));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   function updateFilter(event) {
     setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
@@ -273,6 +296,20 @@ export function DashboardPage() {
             >
               <RotateCcw size={16} />
               Limpar
+            </button>
+            <button
+              type="button"
+              className="secondary-button dashboard-export"
+              disabled={loading || exporting || changed || !data}
+              onClick={exportExcel}
+              title={
+                changed
+                  ? "Aplique os filtros antes de exportar."
+                  : "Baixar os indicadores do recorte aplicado em Excel"
+              }
+            >
+              <FileSpreadsheet size={16} />
+              {exporting ? "Gerando planilha…" : "Exportar Excel"}
             </button>
           </div>
         </form>

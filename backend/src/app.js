@@ -5,7 +5,8 @@ import { routes } from "./http/routes/index.js";
 
 export const app = express();
 
-app.use(cors());
+// O front lê o nome do arquivo baixado (planilhas) pelo Content-Disposition.
+app.use(cors({ exposedHeaders: ["Content-Disposition"] }));
 app.use(express.json());
 
 app.get("/", (request, response) => {

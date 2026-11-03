@@ -199,7 +199,50 @@ export const dashboardService = {
   options() {
     return dashboardRepository.options();
   },
+  // Mesmo recorte do dashboard geral, com uma linha por apontamento para o relatório em Excel.
+  async report(filters = {}) {
+    const [projects, bonuses, nomesFiltros] = await Promise.all([
+      dashboardRepository.load(filters),
+      bonificacoesPapeisRepository.findAll(),
+      dashboardRepository.filterNames(filters),
+    ]);
+    return {
+      ...summarizeDashboard(projects, filters, bonuses),
+      apontamentos: reportEntries(projects, bonuses),
+      filtros: filters,
+      nomesFiltros,
+    };
+  },
 };
+
+export function reportEntries(projects, bonuses) {
+  return projects
+    .flatMap((project) =>
+      project.apontamentos.map((entry) => {
+        const cost = entryCost(entry, project, bonuses);
+        return {
+          id: entry.id,
+          data: dayOf(entry.data),
+          clienteId: project.clienteId,
+          cliente: project.cliente.nome,
+          projetoId: project.id,
+          projeto: project.nome,
+          tarefaId: entry.tarefaId,
+          tarefa: project.tarefas?.find((task) => task.id === entry.tarefaId)?.titulo ?? null,
+          colaboradorId: entry.colaboradorId,
+          colaborador: entry.colaborador.nomeCompleto,
+          email: entry.colaborador.email ?? null,
+          departamento: entry.colaborador.departamento ?? null,
+          cargo: entry.colaborador.cargo ?? null,
+          horas: Number(entry.horas),
+          status: entry.status,
+          descricao: entry.descricao,
+          ...cost,
+        };
+      }),
+    )
+    .sort((a, b) => a.data.localeCompare(b.data) || a.id - b.id);
+}
 
 function detailRows(projects, filters, bonuses) {
   const entries = projects

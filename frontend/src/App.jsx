@@ -1,6 +1,7 @@
 import { AwardsPage } from "./pages/AwardsPage.jsx";
 import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
 import { TasksPage } from "./pages/TasksPage.jsx";
+import { ImportacaoPage } from "./pages/ImportacaoPage.jsx";
 import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
 import {
@@ -11,6 +12,7 @@ import {
   LogOut,
   ListTodo,
   Award,
+  FileUp,
 } from "lucide-react";
 import { resources } from "./config/resources.jsx";
 import { CrudPage } from "./pages/CrudPage.jsx";
@@ -66,6 +68,7 @@ function AppRoutes() {
         />
         <Route path="/premiacao" element={<AwardsPage />} />
         <Route path="/tarefas" element={<TasksPage />} />
+        <Route path="/importacao" element={<ImportacaoPage />} />
         {resources.map((resource) => (
           <Route
             key={resource.key}
@@ -179,6 +182,15 @@ function ProtectedLayout() {
           <NavLink to="/premiacao" className="nav-link" title="Premiação" aria-label="Premiação">
             <Award size={19} aria-hidden="true" />
             <span className="sidebar-label">Premiação</span>
+          </NavLink>
+          <NavLink
+            to="/importacao"
+            className="nav-link"
+            title="Importar horas"
+            aria-label="Importar horas"
+          >
+            <FileUp size={19} aria-hidden="true" />
+            <span className="sidebar-label">Importar horas</span>
           </NavLink>
         </nav>
         <div className="sidebar-actions-slot" aria-hidden="true" />

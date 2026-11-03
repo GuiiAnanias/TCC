@@ -71,6 +71,8 @@ jobs:
         run: pnpm run test:tasks-db
       - name: Testes de integração com banco (concorrência de apontamentos)
         run: pnpm run test:hours-db
+      - name: Testes de integração com banco (importação e exportação em Excel)
+        run: pnpm run test:excel-db
       - name: Testes de integração com banco (premiação)
         run: pnpm run test:awards-db
       - name: Testes de integração com banco (histórico financeiro)
