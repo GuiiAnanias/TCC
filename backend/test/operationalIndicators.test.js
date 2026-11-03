@@ -132,3 +132,22 @@ test("cost components round by entry so contributor and project totals reconcile
   assert.equal(cost.bonificacao, 0);
   assert.equal(cost.custo, cost.custoBase + cost.bonificacao);
 });
+
+test("faturados usam a composição preservada mesmo sem parâmetros atuais", () => {
+  const preserved = {
+    custoBase: 100,
+    bonificacao: 50,
+    custo: 150,
+    semCusto: false,
+    semVinculo: false,
+    valorHora: 100,
+    nivel: "Pleno I",
+    papel: "Dev",
+    percentual: 50,
+  };
+  const row = {
+    status: "FATURADO",
+    custoConsolidado: { ...preserved, origem: "FATURAMENTO", versao: 1 },
+  };
+  assert.deepEqual(entryCost(row, { equipe: [] }, []), preserved);
+});

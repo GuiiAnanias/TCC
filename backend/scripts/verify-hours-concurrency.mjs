@@ -220,6 +220,26 @@ try {
   assert.equal(await total("2026-01-09", people[0]), 8);
   assert.equal(await total("2026-01-09", people[1]), 8);
 
+  const invoiceRate = await client.itemTabelaRemuneracao.create({
+    data: { nivel: "Teste faturamento", valorHora: 100 },
+  });
+  await client.configuracaoFinanceira.create({
+    data: {
+      colaboradorId: people[0].id,
+      itemTabelaId: invoiceRate.id,
+      valorHoraAplicado: 100,
+      nivelAplicado: invoiceRate.nivel,
+      dataInicio: new Date("2026-01-01"),
+    },
+  });
+  await client.projetoColaborador.create({
+    data: {
+      projetoId: project.id,
+      colaboradorId: people[0].id,
+      papel: "Dev",
+      dataEntrada: new Date("2026-01-01"),
+    },
+  });
   // Faturar entre a leitura e a escrita exige repetir também a leitura do status.
   async function billBeforeWrite(method, change) {
     const row = await hours.create(entry("2026-01-10", 1));

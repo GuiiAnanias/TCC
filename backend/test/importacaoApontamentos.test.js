@@ -349,6 +349,13 @@ function simularBanco({ existentes = [] } = {}) {
 test("validar só confere; importar grava tudo numa transação ou nada", async (t) => {
   const banco = simularBanco();
   t.after(() => banco.restaurar());
+  repositorio.cadastros = async () => ({
+    ...cadastros,
+    equipes: [
+      { projetoId: 10, colaboradorId: 1, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+    ],
+    vigencias: [{ colaboradorId: 1, dataInicio: new Date("2026-01-01"), dataFim: null }],
+  });
   const valida = await planilha([
     [
       "01/10/2026",
@@ -367,8 +374,8 @@ test("validar só confere; importar grava tudo numa transação ou nada", async 
   assert.equal(previa.resumo.horas, 10.25);
   assert.deepEqual(previa.resumo.periodo, { inicio: "2026-10-01", fim: "2026-10-02" });
   assert.deepEqual(previa.resumo.porStatus, { PENDENTE: 1, APROVADO: 0, FATURADO: 1 });
-  assert.equal(previa.resumo.comAviso, 2, "Sem equipe e valor/hora no cadastro simulado.");
-  assert.equal(previa.linhas[0].avisos.length, 2);
+  assert.equal(previa.resumo.comAviso, 1, "Apenas a linha pendente pode entrar sem parâmetros.");
+  assert.equal(previa.linhas[0].avisos.length, 0);
   assert.equal(banco.chamadas.criar.length, 0, "A prévia não grava.");
 
   const resultado = await service.importar(valida);
@@ -473,4 +480,20 @@ test("o modelo preenchido volta pela importação", async (t) => {
   assert.equal(resultado.aba, "Apontamentos");
   assert.deepEqual(resultado.erros, []);
   assert.deepEqual(resultado.linhas[0].projeto, { id: 12, nome: "Mobile" });
+});
+
+test("importação faturada sem parâmetros é erro; Pendente continua permitido com aviso", () => {
+  const rows = interpretarLinhas(
+    [
+      { linha: 2, valores: { ...base, status: "Faturado" } },
+      { linha: 3, valores: { ...base, status: "Pendente", descricao: "Ainda não faturado" } },
+    ],
+    cadastros,
+    HOJE,
+  );
+  conferirCustos(rows, {});
+  assert.match(erroDe(rows[0], "status"), /necessário valor\/hora/);
+  assert.equal(rows[0].erros[0].coluna, "Status");
+  assert.deepEqual(rows[1].erros, []);
+  assert.equal(rows[1].avisos.length, 2);
 });
