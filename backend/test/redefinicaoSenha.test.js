@@ -7,6 +7,8 @@ const { app } = await import("../src/app.js");
 const { senhaService, hashToken, VALIDADE_LINK_MINUTOS } =
   await import("../src/services/senhaService.js");
 const { usuariosRepository } = await import("../src/repositories/usuariosRepository.js");
+const { limitesAutenticacaoRepository } =
+  await import("../src/repositories/limitesAutenticacaoRepository.js");
 
 const agora = new Date("2026-10-22T12:00:00.000Z");
 const minutos = (n) => new Date(agora.getTime() + n * 60 * 1000);
@@ -107,6 +109,8 @@ test("link expirado, desconhecido ou de usuário inativo é recusado", async () 
 });
 
 test("rota de redefinição é pública e valida o corpo antes de consultar o banco", async () => {
+  const originalConsume = limitesAutenticacaoRepository.consume;
+  limitesAutenticacaoRepository.consume = async () => ({ allowed: true });
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   const url = `http://127.0.0.1:${server.address().port}/api/auth/redefinir-senha`;
@@ -122,6 +126,7 @@ test("rota de redefinição é pública e valida o corpo antes de consultar o ba
     assert.equal(curta.status, 400);
     assert.match((await curta.json()).errors[0].message, /8 caracteres/);
   } finally {
+    limitesAutenticacaoRepository.consume = originalConsume;
     await new Promise((resolve) => server.close(resolve));
   }
 });

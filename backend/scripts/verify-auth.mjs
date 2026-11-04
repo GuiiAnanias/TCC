@@ -184,11 +184,128 @@ try {
     }
     assert.equal((await me(active)).status, 401);
     assert.equal((await me(await login("SenhaFinal123"))).status, 200);
+
+    // Contas anteriores com senha longa continuam autenticando; novas senhas são limitadas em bytes.
+    const longPassword = "é".repeat(40);
+    await client.usuario.create({
+      data: {
+        nomeUsuario: "legacy-long",
+        email: "legacy-long@example.local",
+        senhaHash: await bcrypt.hash(longPassword, 4),
+      },
+    });
+    const legacySession = await login(longPassword, "legacy-long");
+    assert.equal((await me(legacySession)).status, 200);
+    const longReset = await senhaService.gerarLink("legacy-long", {
+      frontendUrl: "http://localhost:5173",
+    });
+    const longToken = new URL(longReset.link).searchParams.get("token");
+    for (const novaSenha of ["a".repeat(73), "é".repeat(37), "🔒".repeat(19)]) {
+      const invalid = await send("/redefinir-senha", { token: longToken, novaSenha });
+      assert.equal(invalid.status, 400);
+      assert.match((await invalid.json()).errors[0].message, /72 bytes/);
+      assert.equal(
+        (await me(legacySession)).status,
+        200,
+        "Senha inválida não consome o link nem revoga a sessão.",
+      );
+    }
+    assert.equal(
+      (await send("/redefinir-senha", { token: longToken, novaSenha: "é".repeat(36) })).status,
+      200,
+    );
+    assert.equal((await me(legacySession)).status, 401);
+    assert.equal((await me(await login("é".repeat(36), "legacy-long"))).status, 200);
+
+    const { limitesAutenticacaoRepository: limits } =
+      await import("../src/repositories/limitesAutenticacaoRepository.js");
+    const { createHmac } = await import("node:crypto");
+    // Clientes independentes compartilham o mesmo contador, inclusive em concorrência.
+    const secondClient = new PrismaClient();
+    const concurrencyKey = "teste-concorrencia";
+    try {
+      const attempts = await Promise.all(
+        Array.from({ length: 24 }, (_, index) =>
+          limits.consume(concurrencyKey, 5, 60000, index % 2 ? client : secondClient),
+        ),
+      );
+      assert.equal(attempts.filter((result) => result.allowed).length, 5);
+      await client.limiteAutenticacao.update({
+        where: { chave: concurrencyKey },
+        data: { expiraEm: new Date(0) },
+      });
+      assert.equal((await limits.consume(concurrencyKey, 5, 60000, secondClient)).allowed, true);
+    } finally {
+      await secondClient.$disconnect();
+    }
+    await client.limiteAutenticacao.deleteMany({ where: { chave: concurrencyKey } });
+
+    // Identificador limita inclusive desconhecidos, sem revelar existência da conta.
+    for (let index = 0; index < env.authLoginLimit.identifierLimit; index++)
+      assert.equal((await send("/login", { login: "inexistente", senha: "errada" })).status, 401);
+    const blocked = await send("/login", { login: " INEXISTENTE ", senha: "errada" });
+    assert.equal(blocked.status, 429);
+    assert.ok(Number(blocked.headers.get("Retry-After")) > 0);
+    assert.equal(
+      (await me(await login("SenhaFinal123"))).status,
+      200,
+      "Outra conta continua acessível pela mesma origem.",
+    );
+    // Ao atingir o teto da origem, variar login ou forjar X-Forwarded-For não contorna a proteção.
+    let originBlocked;
+    for (let index = 0; index <= env.authLoginLimit.originLimit; index++) {
+      const response = await send("/login", { login: `desconhecido-${index}`, senha: "errada" });
+      if (response.status === 429) {
+        originBlocked = response;
+        break;
+      }
+      assert.equal(response.status, 401);
+    }
+    assert.equal(originBlocked?.status, 429);
+    const spoof = await fetch(base + "/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Forwarded-For": "203.0.113.99" },
+      body: JSON.stringify({ login: "outro", senha: "errada" }),
+    });
+    assert.equal(spoof.status, 429);
+    assert.deepEqual(await spoof.json(), await blocked.json());
+    const originKey = createHmac("sha256", env.jwtSecret)
+      .update(JSON.stringify(["login:origin", "127.0.0.1"]))
+      .digest("hex");
+    const stored = await client.limiteAutenticacao.findMany();
+    assert.ok(stored.some((item) => item.chave === originKey));
+    assert.ok(stored.every((item) => /^[a-f0-9]{64}$/.test(item.chave)));
+    await client.limiteAutenticacao.updateMany({ data: { expiraEm: new Date(0) } });
+    assert.equal(
+      (await me(await login("SenhaFinal123"))).status,
+      200,
+      "O bloqueio expira sem intervenção administrativa.",
+    );
+
+    for (let index = 0; index < env.authResetLimit.identifierLimit; index++)
+      assert.equal(
+        (
+          await send("/redefinir-senha", {
+            token: "invalido-comprido-para-teste",
+            novaSenha: "SenhaValida123",
+          })
+        ).status,
+        400,
+      );
+    assert.equal(
+      (
+        await send("/redefinir-senha", {
+          token: "invalido-comprido-para-teste",
+          novaSenha: "SenhaValida123",
+        })
+      ).status,
+      429,
+    );
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
   console.log(
-    "OK: migração com conta existente, logout individual, redefinição concorrente, revogação global, tokens legados/expirados, inatividade e login concorrente à troca de senha.",
+    "OK: migração com conta existente, logout individual, redefinição concorrente, revogação global, tokens legados/expirados, inatividade, login concorrente, limite UTF-8, compatibilidade legada e limitação por origem/identificador com concorrência e expiração.",
   );
 } finally {
   await client?.$disconnect();
