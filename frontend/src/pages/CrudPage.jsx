@@ -23,6 +23,7 @@ import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
+import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -85,6 +86,7 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 }
 
 export function CrudPage({ config }) {
+  const requestScope = useRequestScope(config);
   const isClient = config.key === "clientes";
   const [query] = useSearchParams();
   const handledNavigation = useRef("");
@@ -112,6 +114,7 @@ export function CrudPage({ config }) {
   const [optionErrors, setOptionErrors] = useState({});
   const [loadingOptions, setLoadingOptions] = useState({});
   const [filters, setFilters] = useState({ busca: "", status: "" });
+  const currentFilters = useLatestValue(filters);
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
   const [originalRecord, setOriginalRecord] = useState(null);
@@ -168,17 +171,20 @@ export function CrudPage({ config }) {
   );
 
   const loadRecords = useCallback(async () => {
+    const request = requestScope.begin("records");
     setLoading(true);
     setError("");
 
     try {
       const { data } = await api.get(config.endpoint, {
+        signal: request.signal,
         params: {
-          busca: filters.busca || undefined,
-          status: filters.status || undefined,
+          busca: currentFilters.current.busca || undefined,
+          status: currentFilters.current.status || undefined,
         },
       });
 
+      if (!request.isCurrent()) return;
       setRecords(data);
       setSelectedRecord((current) => {
         if (!current || (!config.teamManager && !config.financeManager)) {
@@ -188,98 +194,115 @@ export function CrudPage({ config }) {
         return data.find((record) => record.id === current.id) || null;
       });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível carregar os dados.");
+      if (request.isCurrent())
+        setError(requestError.response?.data?.message || "Não foi possível carregar os dados.");
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [config.endpoint, filters.busca, filters.status]);
+  }, [config.endpoint, config.teamManager, config.financeManager, currentFilters, requestScope]);
 
   const loadClientes = useCallback(async () => {
     if (!config.loadClientes) {
       return;
     }
 
+    const request = requestScope.begin("clientes");
     setLoadingOptions((current) => ({ ...current, clientes: true }));
     setOptionErrors((current) => ({ ...current, clientes: "" }));
     try {
       const { data } = await api.get("/clientes", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
 
+      if (!request.isCurrent()) return;
       setClientes(data);
     } catch {
+      if (!request.isCurrent()) return;
       setClientes([]);
       setOptionErrors((current) => ({
         ...current,
         clientes: "Não foi possível carregar os clientes.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, clientes: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, clientes: false }));
     }
-  }, [config.loadClientes]);
+  }, [config.loadClientes, requestScope]);
 
   const loadProjetos = useCallback(async () => {
     if (!config.loadProjetos) {
       return;
     }
 
+    const request = requestScope.begin("projetos");
     setLoadingOptions((current) => ({ ...current, projetos: true }));
     setOptionErrors((current) => ({ ...current, projetos: "" }));
     try {
       const { data } = await api.get("/projetos", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
+      if (!request.isCurrent()) return;
       setProjetos(data);
     } catch {
+      if (!request.isCurrent()) return;
       setProjetos([]);
       setOptionErrors((current) => ({
         ...current,
         projetos: "Não foi possível carregar os projetos.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, projetos: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, projetos: false }));
     }
-  }, [config.loadProjetos]);
+  }, [config.loadProjetos, requestScope]);
 
   const loadColaboradores = useCallback(async () => {
     if (!config.loadColaboradores) {
       return;
     }
 
+    const request = requestScope.begin("colaboradores");
     setLoadingOptions((current) => ({ ...current, colaboradores: true }));
     setOptionErrors((current) => ({ ...current, colaboradores: "" }));
     try {
       const { data } = await api.get("/colaboradores", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
+      if (!request.isCurrent()) return;
       setColaboradores(data);
     } catch {
+      if (!request.isCurrent()) return;
       setColaboradores([]);
       setOptionErrors((current) => ({
         ...current,
         colaboradores: "Não foi possível carregar os colaboradores.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, colaboradores: false }));
+      if (request.isCurrent())
+        setLoadingOptions((current) => ({ ...current, colaboradores: false }));
     }
-  }, [config.loadColaboradores]);
+  }, [config.loadColaboradores, requestScope]);
 
   const loadCatalog = useCallback(async () => {
     if (!config.fields.some((field) => field.type === "catalog-select")) return;
+    const request = requestScope.begin("catalog");
     setLoadingOptions((current) => ({ ...current, catalog: true }));
     setOptionErrors((current) => ({ ...current, catalog: "" }));
     try {
-      const { data } = await api.get("/opcoes-cadastro");
+      const { data } = await api.get("/opcoes-cadastro", { signal: request.signal });
+      if (!request.isCurrent()) return;
       setCatalog(data);
     } catch {
+      if (!request.isCurrent()) return;
       setOptionErrors((current) => ({
         ...current,
         catalog: "Não foi possível carregar as opções de cadastro.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, catalog: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, catalog: false }));
     }
-  }, [config.fields]);
+  }, [config.fields, requestScope]);
 
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
@@ -292,6 +315,12 @@ export function CrudPage({ config }) {
     setError("");
     setFilters({ busca: "", status: "" });
     setSelectedRecord(null);
+    setSaving(false);
+    setRecords([]);
+    setClientes([]);
+    setProjetos([]);
+    setColaboradores([]);
+    setCatalog({ cargos: [], niveisRemuneracao: [], departamentos: [] });
     setConsultingCnpj(false);
     setConsultingCep(false);
     setCepFeedback("");
@@ -301,11 +330,14 @@ export function CrudPage({ config }) {
 
   useEffect(() => {
     loadRecords();
+  }, [loadRecords, filters.busca, filters.status]);
+
+  useEffect(() => {
     loadClientes();
     loadProjetos();
     loadColaboradores();
     loadCatalog();
-  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
+  }, [loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
 
   function cancelCepLookup() {
     cepRequest.current?.abort();
@@ -347,6 +379,8 @@ export function CrudPage({ config }) {
   }
 
   function resetForm() {
+    requestScope.cancel("mutation");
+    setSaving(false);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -360,6 +394,8 @@ export function CrudPage({ config }) {
   }
 
   function chooseClientKind(kind) {
+    requestScope.cancel("mutation");
+    setSaving(false);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -375,6 +411,8 @@ export function CrudPage({ config }) {
   }
 
   function handleEdit(record) {
+    requestScope.cancel("mutation");
+    setSaving(false);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -409,6 +447,8 @@ export function CrudPage({ config }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (saving) return;
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setError("");
     setMessage("");
@@ -429,16 +469,18 @@ export function CrudPage({ config }) {
         await api.post(config.endpoint, payload);
       }
 
+      if (!request.isCurrent()) return;
       resetForm();
       setMessage(`${config.singular} ${isEditing ? "atualizado" : "cadastrado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       const response = requestError.response?.data;
       const validationMessage = response?.errors?.[0]?.message;
       setError(validationMessage || response?.message || "Não foi possível salvar o registro.");
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
@@ -491,17 +533,20 @@ export function CrudPage({ config }) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
     setError("");
     setMessage("");
 
     try {
       await api.delete(`${config.endpoint}/${record.id}`);
+      if (!request.isCurrent()) return;
       if (editingId === record.id) resetForm();
       setMessage(`${config.singular} ${deleting ? "excluído" : "inativado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
+      if (request.isCurrent())
+        setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
     }
   }
 

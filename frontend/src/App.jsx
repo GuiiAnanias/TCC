@@ -73,7 +73,7 @@ function AppRoutes() {
           <Route
             key={resource.key}
             path={`/${resource.key}`}
-            element={<CrudPage config={resource} />}
+            element={<CrudPage key={resource.key} config={resource} />}
           />
         ))}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
