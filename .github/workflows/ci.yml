@@ -104,3 +104,5 @@ jobs:
         run: pnpm run lint
       - name: Build de produção
         run: pnpm run build
+      - name: Regressões da interface
+        run: pnpm test
