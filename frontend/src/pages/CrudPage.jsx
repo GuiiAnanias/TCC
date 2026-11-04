@@ -1148,6 +1148,7 @@ export function CrudPage({ config }) {
       <div ref={detailRegion}>
         {config.teamManager && selectedRecord ? (
           <ProjectTeamManager
+            key={selectedRecord.id}
             project={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}

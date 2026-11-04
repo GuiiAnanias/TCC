@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
 import { api } from "../api/client.js";
+import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 import { todayBusinessDate as today } from "../utils/businessDates.js";
@@ -26,6 +27,9 @@ function memberName(vinculo) {
 }
 
 export function ProjectTeamManager({ project, onChanged, onClose }) {
+  const requestScope = useRequestScope(project?.id);
+  const callbacks = useLatestValue({ onChanged });
+  const [loadError, setLoadError] = useState("");
   const [team, setTeam] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -70,16 +74,19 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    const request = requestScope.begin("load");
+    setLoadError("");
     setLoading(true);
     setError("");
 
     try {
       const [teamResponse, collaboratorsResponse, rolesResponse] = await Promise.all([
-        api.get(`/projetos/${project.id}/equipe`),
-        api.get("/colaboradores", { params: { status: "ATIVO" } }),
-        api.get("/projetos/papeis"),
+        api.get(`/projetos/${project.id}/equipe`, { signal: request.signal }),
+        api.get("/colaboradores", { params: { status: "ATIVO" }, signal: request.signal }),
+        api.get("/projetos/papeis", { signal: request.signal }),
       ]);
 
+      if (!request.isCurrent()) return;
       setTeam(teamResponse.data);
       setCollaborators(collaboratorsResponse.data);
       setRoles(rolesResponse.data);
@@ -92,16 +99,27 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         ),
       );
     } catch (requestError) {
-      setError(
+      if (!request.isCurrent()) return;
+      setTeam([]);
+      setCollaborators([]);
+      setRoles([]);
+      setLoadError(
         requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.",
       );
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [project?.id]);
+  }, [project?.id, requestScope]);
 
   useEffect(() => {
     setTeam([]);
+    setCollaborators([]);
+    setRoles([]);
+    setEditingRoles({});
+    setEditingEntryDates({});
+    setRoleEffectiveDate(today());
+    setSaving(false);
+    setLoadError("");
     setMessage("");
     setError("");
     setTeamStatusFilter("");
@@ -116,16 +134,18 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
     setError("");
 
     try {
       await api.post(`/projetos/${project.id}/equipe`, formData);
+      if (!request.isCurrent()) return;
       setMessage("Colaborador vinculado ao projeto.");
       setFormData({
         colaboradorId: "",
@@ -133,23 +153,26 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         dataEntrada: today(),
       });
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       const response = requestError.response?.data;
       const validationMessage = response?.errors?.[0]?.message;
       setError(
         validationMessage || response?.message || "Não foi possível vincular o colaborador.",
       );
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
   async function updateRole(member) {
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
+    setSaving(true);
     setMessage("");
     setError("");
 
@@ -159,16 +182,20 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           ? { papel: editingRoles[member.id], dataVigencia: roleEffectiveDate }
           : { dataEntrada: editingEntryDates[member.id] }),
       });
+      if (!request.isCurrent()) return;
       setMessage("Vínculo atualizado. Trocas de papel preservam o histórico.");
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       setError(requestError.response?.data?.message || "Não foi possível atualizar o papel.");
+    } finally {
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
   async function closeParticipation(member) {
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
@@ -176,16 +203,22 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
+    setSaving(true);
     setMessage("");
     setError("");
 
     try {
       await api.delete(`/projetos/${project.id}/equipe/${member.id}`);
+      if (!request.isCurrent()) return;
       setMessage("Participação encerrada e histórico preservado.");
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       setError(requestError.response?.data?.message || "Não foi possível encerrar a participação.");
+    } finally {
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
@@ -231,6 +264,14 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       </header>
 
       <div className="feedback-row">
+        {loadError && (
+          <div className="feedback error" role="alert">
+            {loadError}
+            <button type="button" onClick={loadTeam}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
         {isInactive ? (
           <div className="feedback warning">
             <AlertTriangle size={18} />
@@ -257,7 +298,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           <select
             value={formData.colaboradorId}
             required
-            disabled={isInactive || loading}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
             onChange={(event) =>
               setFormData((current) => ({ ...current, colaboradorId: event.target.value }))
             }
@@ -276,7 +317,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           <select
             value={formData.papel}
             required
-            disabled={isInactive || loading}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
             onChange={(event) =>
               setFormData((current) => ({ ...current, papel: event.target.value }))
             }
@@ -296,7 +337,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             type="date"
             value={formData.dataEntrada}
             required
-            disabled={isInactive || loading}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
             onChange={(event) =>
               setFormData((current) => ({ ...current, dataEntrada: event.target.value }))
             }
@@ -306,7 +347,13 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         <button
           className="primary-button"
           type="submit"
-          disabled={isInactive || saving || loading || activeCollaborators.length === 0}
+          disabled={
+            isInactive ||
+            saving ||
+            loading ||
+            Boolean(loadError) ||
+            activeCollaborators.length === 0
+          }
           title="Vincular"
         >
           <Link2 size={18} />
@@ -322,7 +369,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             required
             value={roleEffectiveDate}
             onChange={(event) => setRoleEffectiveDate(event.target.value)}
-            disabled={isInactive}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
         <select
@@ -367,7 +414,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                     ) : (
                       <select
                         value={editingRoles[member.id] || member.papel}
-                        disabled={isInactive}
+                        disabled={isInactive || loading || saving || Boolean(loadError)}
                         onChange={(event) =>
                           setEditingRoles((current) => ({
                             ...current,
@@ -416,6 +463,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                             className="icon-button"
                             onClick={() => updateRole(member)}
                             title="Salvar vínculo"
+                            disabled={saving || loading || Boolean(loadError)}
                           >
                             <Save size={17} />
                           </button>
@@ -424,6 +472,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                             className="icon-button danger"
                             onClick={() => closeParticipation(member)}
                             title="Encerrar participação"
+                            disabled={saving || loading || Boolean(loadError)}
                           >
                             <UserMinus size={17} />
                           </button>
