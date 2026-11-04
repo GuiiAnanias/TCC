@@ -109,6 +109,8 @@ export function CrudPage({ config }) {
   const [taskLoadError, setTaskLoadError] = useState("");
   const [colaboradores, setColaboradores] = useState([]);
   const [catalog, setCatalog] = useState({ cargos: [], niveisRemuneracao: [], departamentos: [] });
+  const [optionErrors, setOptionErrors] = useState({});
+  const [loadingOptions, setLoadingOptions] = useState({});
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
@@ -197,6 +199,8 @@ export function CrudPage({ config }) {
       return;
     }
 
+    setLoadingOptions((current) => ({ ...current, clientes: true }));
+    setOptionErrors((current) => ({ ...current, clientes: "" }));
     try {
       const { data } = await api.get("/clientes", {
         params: { status: "ATIVO" },
@@ -205,6 +209,12 @@ export function CrudPage({ config }) {
       setClientes(data);
     } catch {
       setClientes([]);
+      setOptionErrors((current) => ({
+        ...current,
+        clientes: "Não foi possível carregar os clientes.",
+      }));
+    } finally {
+      setLoadingOptions((current) => ({ ...current, clientes: false }));
     }
   }, [config.loadClientes]);
 
@@ -213,6 +223,8 @@ export function CrudPage({ config }) {
       return;
     }
 
+    setLoadingOptions((current) => ({ ...current, projetos: true }));
+    setOptionErrors((current) => ({ ...current, projetos: "" }));
     try {
       const { data } = await api.get("/projetos", {
         params: { status: "ATIVO" },
@@ -220,6 +232,12 @@ export function CrudPage({ config }) {
       setProjetos(data);
     } catch {
       setProjetos([]);
+      setOptionErrors((current) => ({
+        ...current,
+        projetos: "Não foi possível carregar os projetos.",
+      }));
+    } finally {
+      setLoadingOptions((current) => ({ ...current, projetos: false }));
     }
   }, [config.loadProjetos]);
 
@@ -228,6 +246,8 @@ export function CrudPage({ config }) {
       return;
     }
 
+    setLoadingOptions((current) => ({ ...current, colaboradores: true }));
+    setOptionErrors((current) => ({ ...current, colaboradores: "" }));
     try {
       const { data } = await api.get("/colaboradores", {
         params: { status: "ATIVO" },
@@ -235,16 +255,29 @@ export function CrudPage({ config }) {
       setColaboradores(data);
     } catch {
       setColaboradores([]);
+      setOptionErrors((current) => ({
+        ...current,
+        colaboradores: "Não foi possível carregar os colaboradores.",
+      }));
+    } finally {
+      setLoadingOptions((current) => ({ ...current, colaboradores: false }));
     }
   }, [config.loadColaboradores]);
 
   const loadCatalog = useCallback(async () => {
     if (!config.fields.some((field) => field.type === "catalog-select")) return;
+    setLoadingOptions((current) => ({ ...current, catalog: true }));
+    setOptionErrors((current) => ({ ...current, catalog: "" }));
     try {
       const { data } = await api.get("/opcoes-cadastro");
       setCatalog(data);
     } catch {
-      setError("Não foi possível carregar as opções de cadastro.");
+      setOptionErrors((current) => ({
+        ...current,
+        catalog: "Não foi possível carregar as opções de cadastro.",
+      }));
+    } finally {
+      setLoadingOptions((current) => ({ ...current, catalog: false }));
     }
   }, [config.fields]);
 
@@ -262,6 +295,8 @@ export function CrudPage({ config }) {
     setConsultingCnpj(false);
     setConsultingCep(false);
     setCepFeedback("");
+    setOptionErrors({});
+    setLoadingOptions({});
   }, [config]);
 
   useEffect(() => {
@@ -568,10 +603,20 @@ export function CrudPage({ config }) {
     }
 
     if (field.type === "cliente") {
-      const clienteOptions = clientes.map((cliente) => ({
-        value: String(cliente.id),
-        label: cliente.nome,
-      }));
+      const clienteOptions = clientes
+        .filter((cliente) => cliente.status === "ATIVO")
+        .map((cliente) => ({
+          value: String(cliente.id),
+          label: cliente.nome,
+        }));
+      if (
+        originalRecord?.clienteId &&
+        !clienteOptions.some((option) => option.value === String(originalRecord.clienteId))
+      )
+        clienteOptions.push({
+          value: String(originalRecord.clienteId),
+          label: `${originalRecord.cliente?.nome || "Cliente do projeto"}${originalRecord.cliente?.status === "INATIVO" ? " (inativo)" : " (vínculo atual)"}`,
+        });
 
       return (
         <SearchableSelect
@@ -584,7 +629,7 @@ export function CrudPage({ config }) {
           }
           placeholder="Buscar cliente..."
           required={field.required}
-          disabled={saving}
+          disabled={saving || loadingOptions.clientes || Boolean(optionErrors.clientes)}
         />
       );
     }
@@ -618,7 +663,7 @@ export function CrudPage({ config }) {
           }
           placeholder="Buscar projeto..."
           required={field.required}
-          disabled={saving}
+          disabled={saving || loadingOptions.projetos || Boolean(optionErrors.projetos)}
         />
       );
     }
@@ -669,7 +714,7 @@ export function CrudPage({ config }) {
           }
           placeholder="Buscar colaborador..."
           required={field.required}
-          disabled={saving}
+          disabled={saving || loadingOptions.colaboradores || Boolean(optionErrors.colaboradores)}
         />
       );
     }
@@ -785,6 +830,27 @@ export function CrudPage({ config }) {
       </header>
 
       <div className="feedback-row">
+        {Object.entries(optionErrors)
+          .filter(([, text]) => text)
+          .map(([kind, text]) => (
+            <div className="feedback error" role="alert" key={kind}>
+              {text}
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() =>
+                  ({
+                    clientes: loadClientes,
+                    projetos: loadProjetos,
+                    colaboradores: loadColaboradores,
+                    catalog: loadCatalog,
+                  })[kind]()
+                }
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ))}
         {message ? (
           <div className="feedback success">
             <Check size={18} />
@@ -896,6 +962,8 @@ export function CrudPage({ config }) {
                   saving ||
                   consultingCnpj ||
                   consultingCep ||
+                  Object.values(loadingOptions).some(Boolean) ||
+                  Object.values(optionErrors).some(Boolean) ||
                   loadingTarefas ||
                   Boolean(taskLoadError)
                 }

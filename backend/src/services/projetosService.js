@@ -96,9 +96,9 @@ export const projetosService = {
   },
 
   async update(id, data) {
-    await ensureProjetoExists(id);
+    const previous = await ensureProjetoExists(id);
 
-    if (data.clienteId) {
+    if (data.clienteId && data.clienteId !== previous.clienteId) {
       await ensureClienteAtivo(data.clienteId);
     }
 

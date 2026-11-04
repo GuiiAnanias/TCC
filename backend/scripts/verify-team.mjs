@@ -194,6 +194,21 @@ try {
   });
   assert.equal(periods.filter((x) => !x.dataSaida).length, 1);
   assert.equal(periods.length, 3);
+  await client.cliente.update({ where: { id: customer.id }, data: { status: "INATIVO" } });
+  await teams.update(project.id, { clienteId: customer.id, nome: "Projeto com cliente histórico" });
+  assert.equal(
+    (await client.projeto.findUnique({ where: { id: project.id } })).clienteId,
+    customer.id,
+  );
+  const otherCustomer = await client.cliente.create({
+    data: { nome: "Outro cliente inativo", status: "INATIVO" },
+  });
+  await assert.rejects(teams.update(project.id, { clienteId: otherCustomer.id }), {
+    statusCode: 400,
+  });
+  await assert.rejects(teams.create({ clienteId: customer.id, nome: "Novo projeto inválido" }), {
+    statusCode: 400,
+  });
   console.log(
     "OK: migração recusa conflitos sem alterar dados, fronteiras antigas preservadas, concorrência, restrições diretas, reabertura e troca de papel.",
   );
