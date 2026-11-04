@@ -200,7 +200,7 @@ try {
   assert.equal((await find(pending.id)).status, "APROVADO");
   const { env } = await import("../src/config/env.js");
   env.jwtSecret = "segredo-somente-teste-custos";
-  const { default: jwt } = await import("jsonwebtoken");
+  const { createTestSession } = await import("./helpers/session-fixture.mjs");
   const { app } = await import("../src/app.js");
   const user = await client.usuario.create({
     data: {
@@ -209,7 +209,7 @@ try {
       senhaHash: "hash-de-teste",
     },
   });
-  const token = jwt.sign({}, env.jwtSecret, { subject: String(user.id), expiresIn: "5m" });
+  const token = await createTestSession(client, user, env.jwtSecret);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   try {

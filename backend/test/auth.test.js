@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 process.env.JWT_SECRET = "test-secret-only";
 const { app } = await import("../src/app.js");
 const { default: prisma } = await import("../src/config/prisma.js");
+const { sessoesRepository } = await import("../src/repositories/sessoesRepository.js");
 
 test("protected API rejects missing, forged, expired and inactive sessions", async () => {
   const user = {
@@ -14,6 +15,18 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
     email: "admin@sistema.local",
     status: "ATIVO",
     senhaHash: await bcrypt.hash("admin123", 4),
+    versaoSessao: 0,
+  };
+  const originalSessions = { ...sessoesRepository };
+  const sessions = new Map();
+  sessoesRepository.create = async (user, data) => {
+    const session = { ...data, usuarioId: user.id, versaoSessao: user.versaoSessao, usuario: user };
+    sessions.set(data.id, session);
+    return session;
+  };
+  sessoesRepository.findById = async (id) => sessions.get(id);
+  sessoesRepository.revoke = async (id) => {
+    sessions.get(id).revogadaEm = new Date();
   };
   const originalFindFirst = prisma.usuario.findFirst;
   const originalFindUnique = prisma.usuario.findUnique;
@@ -108,6 +121,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
       jwt.sign({}, process.env.JWT_SECRET, { subject: "1", expiresIn: -1 }),
       jwt.sign({}, process.env.JWT_SECRET, { subject: "999" }),
       jwt.sign({}, process.env.JWT_SECRET, { subject: "bad" }),
+      jwt.sign({}, process.env.JWT_SECRET, { subject: "1", expiresIn: "5m" }),
     ]) {
       assert.equal(
         (await fetch(`${base}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })).status,
@@ -136,6 +150,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
       404,
     );
   } finally {
+    Object.assign(sessoesRepository, originalSessions);
     prisma.usuario.findFirst = originalFindFirst;
     prisma.usuario.findUnique = originalFindUnique;
     await new Promise((resolve) => server.close(resolve));

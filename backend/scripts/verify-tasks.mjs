@@ -307,11 +307,11 @@ try {
   // Exercitar o contrato HTTP autenticado com o mesmo schema isolado.
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { default: jwt } = await import("jsonwebtoken");
+  const { createTestSession } = await import("./helpers/session-fixture.mjs");
   const user = await client.usuario.create({
     data: { nomeUsuario: "tasks-test", email: "tasks-test@example.local", senhaHash: "test-only" },
   });
-  const token = jwt.sign({}, env.jwtSecret, { subject: String(user.id), expiresIn: "1m" });
+  const token = await createTestSession(client, user, env.jwtSecret);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   const endpoint = `http://127.0.0.1:${server.address().port}/api`;

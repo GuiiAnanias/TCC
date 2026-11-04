@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.19.0",
   "type": "module",
   "scripts": {
+    "test:auth-db": "node scripts/verify-auth.mjs",
     "test": "node --test",
     "test:finance-db": "node scripts/verify-finance-history.mjs",
     "test:hours-db": "node scripts/verify-hours-concurrency.mjs",
