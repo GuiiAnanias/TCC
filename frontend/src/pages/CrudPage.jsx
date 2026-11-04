@@ -1157,6 +1157,7 @@ export function CrudPage({ config }) {
 
         {config.financeManager && selectedRecord ? (
           <CollaboratorFinanceManager
+            key={selectedRecord.id}
             collaborator={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}

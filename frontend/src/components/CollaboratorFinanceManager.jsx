@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Copy, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
+import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 import { todayBusinessDate as today } from "../utils/businessDates.js";
@@ -48,6 +49,9 @@ function statusOf(config) {
 }
 
 export function CollaboratorFinanceManager({ collaborator, onChanged, onClose }) {
+  const requestScope = useRequestScope(collaborator?.id);
+  const callbacks = useLatestValue({ onChanged });
+  const [loadError, setLoadError] = useState("");
   const [configs, setConfigs] = useState([]);
   const [remunerations, setRemunerations] = useState([]);
   const [formData, setFormData] = useState(initialForm);
@@ -65,28 +69,38 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
 
   const loadConfigs = useCallback(async () => {
     if (!collaborator?.id) return;
+    const request = requestScope.begin("load");
+    setLoadError("");
     setLoading(true);
     setError("");
     try {
       const [history, rates] = await Promise.all([
-        api.get(`/colaboradores/${collaborator.id}/configuracoes-financeiras`),
-        api.get("/remuneracoes", { params: { status: "ATIVO" } }),
+        api.get(`/colaboradores/${collaborator.id}/configuracoes-financeiras`, {
+          signal: request.signal,
+        }),
+        api.get("/remuneracoes", { params: { status: "ATIVO" }, signal: request.signal }),
       ]);
+      if (!request.isCurrent()) return;
       setConfigs(history.data);
       setRemunerations(rates.data);
       setFormData(initialForm(history.data));
     } catch (err) {
-      setError(
+      if (!request.isCurrent()) return;
+      setConfigs([]);
+      setRemunerations([]);
+      setLoadError(
         err.response?.data?.message || "Não foi possível carregar as configurações financeiras.",
       );
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [collaborator?.id]);
+  }, [collaborator?.id, requestScope]);
 
   useEffect(() => {
     setConfigs([]);
     setRemunerations([]);
+    setSaving(false);
+    setLoadError("");
     setFormData(initialForm());
     setMessage("");
     setError("");
@@ -100,23 +114,28 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
 
   async function submit(event) {
     event.preventDefault();
-    if (isInactive || saving) return;
+    if (isInactive || saving || loading || loadError) return;
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
     setError("");
     try {
       await api.post(`/colaboradores/${collaborator.id}/configuracoes-financeiras`, formData);
+      if (!request.isCurrent()) return;
       await loadConfigs();
-      await onChanged?.();
+      if (!request.isCurrent()) return;
+      await callbacks.current.onChanged?.();
+      if (!request.isCurrent()) return;
       setMessage("Nova vigência criada com sucesso.");
     } catch (err) {
+      if (!request.isCurrent()) return;
       setError(
         err.response?.data?.errors?.[0]?.message ||
           err.response?.data?.message ||
           "Não foi possível criar a vigência.",
       );
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
@@ -124,27 +143,35 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
     if (
       isInactive ||
       saving ||
+      loading ||
+      loadError ||
       !window.confirm(
         "Encerrar esta vigência ao final de hoje? Os valores e o histórico serão preservados.",
       )
     )
       return;
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
     setError("");
     try {
       await api.delete(`/colaboradores/${collaborator.id}/configuracoes-financeiras/${config.id}`);
+      if (!request.isCurrent()) return;
       await loadConfigs();
-      await onChanged?.();
+      if (!request.isCurrent()) return;
+      await callbacks.current.onChanged?.();
+      if (!request.isCurrent()) return;
       setMessage("Vigência encerrada ao final de hoje. O histórico foi preservado.");
     } catch (err) {
+      if (!request.isCurrent()) return;
       setError(err.response?.data?.message || "Não foi possível encerrar a vigência.");
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
   function usarComoBase(config) {
+    if (loading || saving || loadError) return;
     if (!remunerations.some((item) => item.id === config.itemTabelaId)) {
       setError(
         "A faixa desta vigência está inativa. Selecione uma faixa ativa no formulário de nova vigência.",
@@ -225,6 +252,14 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
         </div>
       </header>
       <div className="feedback-row">
+        {loadError && (
+          <div className="feedback error" role="alert">
+            {loadError}
+            <button type="button" onClick={loadConfigs}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
         {isInactive && (
           <div className="feedback warning">
             <AlertTriangle size={18} />
@@ -260,7 +295,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             required
             value={formData.itemTabelaId}
             onChange={update}
-            disabled={isInactive || loading || saving}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
           >
             <option value="">Selecione a faixa e o valor/hora</option>
             {remunerations.map((item) => (
@@ -281,7 +316,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             required
             value={formData.beneficios}
             onChange={update}
-            disabled={isInactive || loading || saving}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
         <label className="field">
@@ -294,7 +329,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             max="9999-12-31"
             value={formData.dataInicio}
             onChange={update}
-            disabled={isInactive || loading || saving}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
         <label className="field">
@@ -305,14 +340,14 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             maxLength={500}
             value={formData.motivo}
             onChange={update}
-            disabled={isInactive || loading || saving}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
             placeholder="Ex.: reajuste de remuneração"
           />
         </label>
         <button
           className="primary-button"
           type="submit"
-          disabled={isInactive || saving || loading || !remunerations.length}
+          disabled={isInactive || saving || loading || Boolean(loadError) || !remunerations.length}
         >
           <WalletCards size={18} />
           {saving ? "Salvando…" : "Criar nova vigência"}
@@ -395,7 +430,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
                           type="button"
                           className="icon-button"
                           onClick={() => usarComoBase(config)}
-                          disabled={loading || saving}
+                          disabled={loading || saving || Boolean(loadError)}
                           title="Usar como base de nova vigência"
                           aria-label={`Usar ${config.nivelAplicado} de ${formatDate(config.dataInicio)} como base`}
                         >
@@ -407,7 +442,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
                           type="button"
                           className="icon-button danger"
                           onClick={() => close(config)}
-                          disabled={loading || saving}
+                          disabled={loading || saving || Boolean(loadError)}
                           title="Encerrar vigência"
                           aria-label={`Encerrar ${config.nivelAplicado} de ${formatDate(config.dataInicio)}`}
                         >
