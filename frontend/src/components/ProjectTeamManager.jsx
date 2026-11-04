@@ -3,10 +3,7 @@ import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "luc
 import { api } from "../api/client.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
-
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { todayBusinessDate as today } from "../utils/businessDates.js";
 
 function toInputDate(value) {
   if (!value) {

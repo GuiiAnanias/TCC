@@ -19,7 +19,7 @@ const emptyData = () => ({
   justificativaPercentual: "",
   observacoes: "",
 });
-const month = () => new Date().toLocaleDateString("en-CA").slice(0, 7);
+import { currentBusinessMonth as month } from "../utils/businessDates.js";
 const fieldNumber = (value) => (value === "" ? null : Number(value));
 const percent = (value) =>
   value == null
