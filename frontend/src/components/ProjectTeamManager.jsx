@@ -30,6 +30,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
   const requestScope = useRequestScope(project?.id);
   const callbacks = useLatestValue({ onChanged });
   const [loadError, setLoadError] = useState("");
+  const [selectionErrors, setSelectionErrors] = useState({});
   const [team, setTeam] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -118,6 +119,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
     setEditingRoles({});
     setEditingEntryDates({});
     setRoleEffectiveDate(today());
+    setSelectionErrors({});
     setSaving(false);
     setLoadError("");
     setMessage("");
@@ -138,6 +140,15 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    const missing = {};
+    if (!activeCollaborators.some((person) => String(person.id) === String(formData.colaboradorId)))
+      missing.colaboradorId = "Selecione um colaborador disponível.";
+    if (!roles.includes(formData.papel)) missing.papel = "Selecione um papel no projeto.";
+    setSelectionErrors(missing);
+    if (Object.keys(missing).length) {
+      document.getElementById(`team-${Object.keys(missing)[0]}`)?.focus();
+      return;
+    }
     const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
@@ -171,6 +182,18 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    if (!String(editingRoles[member.id] ?? "").trim()) {
+      setSelectionErrors((current) => ({ ...current, [`role-${member.id}`]: true }));
+      setError("Selecione o papel do vínculo antes de salvar.");
+      document.getElementById(`team-role-${member.id}`)?.focus();
+      return;
+    }
+    if (editingRoles[member.id] !== member.papel && !roleEffectiveDate) {
+      setSelectionErrors((current) => ({ ...current, vigencia: true }));
+      setError("Informe a vigência da troca de papel.");
+      document.getElementById("team-role-date")?.focus();
+      return;
+    }
     const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
@@ -285,7 +308,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           </div>
         ) : null}
         {error ? (
-          <div className="feedback error">
+          <div className="feedback error" id="team-operation-error" role="alert">
             <X size={18} />
             {error}
           </div>
@@ -296,12 +319,18 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         <label className="field">
           <span>Colaborador</span>
           <select
+            id="team-colaboradorId"
+            aria-invalid={Boolean(selectionErrors.colaboradorId)}
+            aria-describedby={
+              selectionErrors.colaboradorId ? "team-colaboradorId-error" : undefined
+            }
             value={formData.colaboradorId}
             required
             disabled={isInactive || loading || saving || Boolean(loadError)}
-            onChange={(event) =>
-              setFormData((current) => ({ ...current, colaboradorId: event.target.value }))
-            }
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, colaboradorId: "" }));
+              setFormData((current) => ({ ...current, colaboradorId: event.target.value }));
+            }}
           >
             <option value="">Selecione</option>
             {activeCollaborators.map((collaborator) => (
@@ -310,17 +339,26 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
               </option>
             ))}
           </select>
+          {selectionErrors.colaboradorId && (
+            <small id="team-colaboradorId-error" role="alert">
+              {selectionErrors.colaboradorId}
+            </small>
+          )}
         </label>
 
         <label className="field">
           <span>Papel no projeto</span>
           <select
+            id="team-papel"
+            aria-invalid={Boolean(selectionErrors.papel)}
+            aria-describedby={selectionErrors.papel ? "team-papel-error" : undefined}
             value={formData.papel}
             required
             disabled={isInactive || loading || saving || Boolean(loadError)}
-            onChange={(event) =>
-              setFormData((current) => ({ ...current, papel: event.target.value }))
-            }
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, papel: "" }));
+              setFormData((current) => ({ ...current, papel: event.target.value }));
+            }}
           >
             <option value="">Selecione</option>
             {roles.map((role) => (
@@ -329,6 +367,11 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
               </option>
             ))}
           </select>
+          {selectionErrors.papel && (
+            <small id="team-papel-error" role="alert">
+              {selectionErrors.papel}
+            </small>
+          )}
         </label>
 
         <label className="field">
@@ -368,7 +411,13 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             type="date"
             required
             value={roleEffectiveDate}
-            onChange={(event) => setRoleEffectiveDate(event.target.value)}
+            id="team-role-date"
+            aria-invalid={Boolean(selectionErrors.vigencia)}
+            aria-describedby={selectionErrors.vigencia ? "team-operation-error" : undefined}
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, vigencia: false }));
+              setRoleEffectiveDate(event.target.value);
+            }}
             disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
@@ -413,18 +462,28 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                       member.papel
                     ) : (
                       <select
-                        value={editingRoles[member.id] || member.papel}
+                        id={`team-role-${member.id}`}
+                        aria-invalid={Boolean(selectionErrors[`role-${member.id}`])}
+                        aria-describedby={
+                          selectionErrors[`role-${member.id}`] ? "team-operation-error" : undefined
+                        }
+                        value={editingRoles[member.id] ?? member.papel}
                         disabled={isInactive || loading || saving || Boolean(loadError)}
-                        onChange={(event) =>
+                        onChange={(event) => {
+                          setSelectionErrors((current) => ({
+                            ...current,
+                            [`role-${member.id}`]: false,
+                          }));
                           setEditingRoles((current) => ({
                             ...current,
                             [member.id]: event.target.value,
-                          }))
-                        }
+                          }));
+                        }}
                       >
                         {!roles.includes(member.papel) && (
                           <option value={member.papel}>{member.papel}</option>
                         )}
+                        <option value="">Selecione o papel</option>
                         {roles.map((role) => (
                           <option key={role} value={role}>
                             {role}

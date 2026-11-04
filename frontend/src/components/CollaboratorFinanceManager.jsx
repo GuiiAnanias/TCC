@@ -52,6 +52,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
   const requestScope = useRequestScope(collaborator?.id);
   const callbacks = useLatestValue({ onChanged });
   const [loadError, setLoadError] = useState("");
+  const [selectionError, setSelectionError] = useState("");
   const [configs, setConfigs] = useState([]);
   const [remunerations, setRemunerations] = useState([]);
   const [formData, setFormData] = useState(initialForm);
@@ -102,6 +103,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
     setSaving(false);
     setLoadError("");
     setFormData(initialForm());
+    setSelectionError("");
     setMessage("");
     setError("");
     setStatusFilter("");
@@ -109,12 +111,19 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
   }, [loadConfigs]);
 
   function update(event) {
+    if (event.target.name === "itemTabelaId") setSelectionError("");
     setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
   async function submit(event) {
     event.preventDefault();
     if (isInactive || saving || loading || loadError) return;
+    if (!remunerations.some((rate) => String(rate.id) === String(formData.itemTabelaId))) {
+      setSelectionError("Selecione uma faixa de remuneração disponível.");
+      document.getElementById("finance-rate")?.focus();
+      return;
+    }
+    setSelectionError("");
     const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
@@ -291,6 +300,9 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
         <label className="field">
           <span>Nível de remuneração / valor hora</span>
           <select
+            id="finance-rate"
+            aria-invalid={Boolean(selectionError)}
+            aria-describedby={selectionError ? "finance-rate-error" : undefined}
             name="itemTabelaId"
             required
             value={formData.itemTabelaId}
@@ -304,6 +316,11 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
               </option>
             ))}
           </select>
+          {selectionError && (
+            <small id="finance-rate-error" role="alert">
+              {selectionError}
+            </small>
+          )}
         </label>
         <label className="field">
           <span>Benefícios</span>

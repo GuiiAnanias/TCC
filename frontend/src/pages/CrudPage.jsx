@@ -109,6 +109,7 @@ export function CrudPage({ config }) {
   const [tarefas, setTarefas] = useState([]);
   const [loadingTarefas, setLoadingTarefas] = useState(false);
   const [taskLoadError, setTaskLoadError] = useState("");
+  const [taskLoadVersion, setTaskLoadVersion] = useState(0);
   const [colaboradores, setColaboradores] = useState([]);
   const [catalog, setCatalog] = useState({ cargos: [], niveisRemuneracao: [], departamentos: [] });
   const [optionErrors, setOptionErrors] = useState({});
@@ -122,6 +123,7 @@ export function CrudPage({ config }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
   const [consultingCep, setConsultingCep] = useState(false);
@@ -155,15 +157,14 @@ export function CrudPage({ config }) {
       .catch((err) => {
         if (!controller.signal.aborted)
           setTaskLoadError(
-            err.response?.data?.message ||
-              "Não foi possível carregar as tarefas do projeto. Atualize a página para tentar novamente.",
+            err.response?.data?.message || "Não foi possível carregar as tarefas do projeto.",
           );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoadingTarefas(false);
       });
     return () => controller.abort();
-  }, [config.key, formData.projetoId]);
+  }, [config.key, formData.projetoId, taskLoadVersion]);
 
   const visibleFields = useMemo(
     () => formFields.filter((field) => !field.hiddenOnCreate || isEditing),
@@ -311,6 +312,7 @@ export function CrudPage({ config }) {
     clientDrafts.current = {};
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
@@ -389,6 +391,7 @@ export function CrudPage({ config }) {
     clientDrafts.current = {};
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
@@ -406,6 +409,7 @@ export function CrudPage({ config }) {
     setFormOpen(true);
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
@@ -441,13 +445,36 @@ export function CrudPage({ config }) {
     setFormData(nextForm);
     setEditingId(record.id);
     setOriginalRecord(record);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (saving) return;
+    if (
+      saving ||
+      Object.values(loadingOptions).some(Boolean) ||
+      Object.values(optionErrors).some(Boolean) ||
+      loadingTarefas ||
+      taskLoadError
+    )
+      return;
+    const missing = {};
+    for (const field of formFields) {
+      if (
+        (field.required || (field.requiredOnCreate && !isEditing)) &&
+        ["cliente", "projeto", "colaborador", "catalog-select", "select"].includes(field.type) &&
+        !String(formData[field.name] ?? "").trim()
+      )
+        missing[field.name] = `Selecione ${field.label.toLocaleLowerCase("pt-BR")}.`;
+    }
+    setFieldErrors(missing);
+    if (Object.keys(missing).length) {
+      setError("Confira os campos obrigatórios indicados no formulário.");
+      document.getElementById(Object.keys(missing)[0])?.focus();
+      return;
+    }
     const request = requestScope.begin("mutation");
     setSaving(true);
     setError("");
@@ -558,12 +585,15 @@ export function CrudPage({ config }) {
       pattern: field.pattern,
       value: formData[field.name] ?? "",
       required: field.required || (field.requiredOnCreate && !isEditing),
+      "aria-invalid": Boolean(fieldErrors[field.name]),
+      "aria-describedby": fieldErrors[field.name] ? `${field.name}-error` : undefined,
       disabled: consultingCnpj || saving,
       onChange: (event) => {
         const raw = field.noNumbers
           ? event.target.value.replace(/\p{N}/gu, "")
           : event.target.value;
         const value = field.format ? field.format(raw) : raw;
+        setFieldErrors((current) => ({ ...current, [field.name]: "" }));
         setFormData((current) => ({ ...current, [field.name]: value }));
         if (isClient && field.name === "cep") handleCepChange(value);
       },
@@ -618,7 +648,12 @@ export function CrudPage({ config }) {
       return (
         <select
           {...commonProps}
-          disabled={commonProps.disabled || (options.length === 0 && !legacy.length)}
+          disabled={
+            commonProps.disabled ||
+            loadingOptions.catalog ||
+            Boolean(optionErrors.catalog) ||
+            (options.length === 0 && !legacy.length)
+          }
         >
           <option value="">Selecione...</option>
           {legacy.map((option) => (
@@ -669,11 +704,10 @@ export function CrudPage({ config }) {
           name={field.name}
           options={clienteOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({ ...current, [field.name]: event.target.value }))
-          }
+          onChange={commonProps.onChange}
           placeholder="Buscar cliente..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.clientes || Boolean(optionErrors.clientes)}
         />
       );
@@ -699,15 +733,13 @@ export function CrudPage({ config }) {
           name={field.name}
           options={projetoOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({
-              ...current,
-              [field.name]: event.target.value,
-              tarefaId: "",
-            }))
-          }
+          onChange={(event) => {
+            commonProps.onChange(event);
+            setFormData((current) => ({ ...current, tarefaId: "" }));
+          }}
           placeholder="Buscar projeto..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.projetos || Boolean(optionErrors.projetos)}
         />
       );
@@ -754,11 +786,10 @@ export function CrudPage({ config }) {
           name={field.name}
           options={colaboradorOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({ ...current, [field.name]: event.target.value }))
-          }
+          onChange={commonProps.onChange}
           placeholder="Buscar colaborador..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.colaboradores || Boolean(optionErrors.colaboradores)}
         />
       );
@@ -911,6 +942,9 @@ export function CrudPage({ config }) {
         {taskLoadError && (
           <div className="feedback error" role="alert">
             {taskLoadError}
+            <button type="button" onClick={() => setTaskLoadVersion((value) => value + 1)}>
+              Tentar novamente
+            </button>
           </div>
         )}
       </div>
@@ -983,6 +1017,11 @@ export function CrudPage({ config }) {
                             </span>
                           </label>
                           {renderField(field)}
+                          {fieldErrors[field.name] && (
+                            <small id={`${field.name}-error`} role="alert">
+                              {fieldErrors[field.name]}
+                            </small>
+                          )}
                         </div>
                       ))}
                   </div>
@@ -994,6 +1033,11 @@ export function CrudPage({ config }) {
                   <label key={field.name} className="field">
                     <span>{field.label}</span>
                     {renderField(field)}
+                    {fieldErrors[field.name] && (
+                      <small id={`${field.name}-error`} role="alert">
+                        {fieldErrors[field.name]}
+                      </small>
+                    )}
                   </label>
                 ))}
               </div>
