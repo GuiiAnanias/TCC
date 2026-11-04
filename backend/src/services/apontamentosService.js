@@ -10,14 +10,26 @@ async function ensureApontamentoExists(id, db) {
   if (!record) throw new HttpError(404, "Apontamento não encontrado.");
   return record;
 }
-async function validate(data, previous = {}) {
+async function validate(data, previous = {}, db) {
   const merged = { ...previous, ...data };
-  if (data.colaboradorId && !(await colaboradoresRepository.findById(data.colaboradorId)))
-    throw new HttpError(404, "Colaborador não encontrado.");
-  if (data.projetoId && !(await projetosRepository.findById(data.projetoId)))
-    throw new HttpError(404, "Projeto não encontrado.");
+  const colaboradorId =
+    merged.colaboradorId !== previous.colaboradorId ? merged.colaboradorId : null;
+  const projetoId = merged.projetoId !== previous.projetoId ? merged.projetoId : null;
+  await apontamentosRepository.lockReferences({ colaboradorId, projetoId }, db);
+  if (colaboradorId) {
+    const person = await colaboradoresRepository.findById(colaboradorId, db);
+    if (!person) throw new HttpError(404, "Colaborador não encontrado.");
+    if (person.status !== "ATIVO")
+      throw new HttpError(409, "Selecione um colaborador ativo para lançar horas.");
+  }
+  if (projetoId) {
+    const project = await projetosRepository.findById(projetoId, db);
+    if (!project) throw new HttpError(404, "Projeto não encontrado.");
+    if (project.status !== "ATIVO")
+      throw new HttpError(409, "Selecione um projeto ativo para lançar horas.");
+  }
   if (merged.tarefaId) {
-    const task = await tarefasRepository.findById(merged.tarefaId);
+    const task = await tarefasRepository.findById(merged.tarefaId, db);
     if (!task) throw new HttpError(404, "Tarefa não encontrada.");
     if (task.projetoId !== merged.projetoId)
       throw new HttpError(
@@ -109,8 +121,8 @@ export const apontamentosService = {
   },
   getById: ensureApontamentoExists,
   async create(data) {
-    await validate(data);
     return apontamentosRepository.transaction(async (db) => {
+      await validate(data, {}, db);
       await validateDiaEHoras(data, {}, db);
       return apontamentosRepository.create(data, db);
     });
@@ -119,7 +131,7 @@ export const apontamentosService = {
     return apontamentosRepository.transaction(async (db) => {
       const previous = await ensureApontamentoExists(id, db);
       ensureEditavel(previous, data);
-      await validate(data, previous);
+      await validate(data, previous, db);
       await validateDiaEHoras(data, previous, db);
       return apontamentosRepository.update(id, data, db);
     });

@@ -323,6 +323,59 @@ try {
     assert.deepEqual(responses.map((response) => response.status).sort(), [201, 400]);
     assert.match(responses.find((response) => response.status === 400).body.message, /24 h/);
     assert.equal(await total("2026-01-12"), 16);
+
+    const post = (data) =>
+      fetch(`http://127.0.0.1:${server.address().port}/api/apontamentos`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+    const historical = await hours.create(entry("2026-01-13", 2));
+    await client.colaborador.update({ where: { id: people[0].id }, data: { status: "INATIVO" } });
+    assert.equal((await post(entry("2026-01-14", 1))).status, 409);
+    await client.colaborador.update({ where: { id: people[0].id }, data: { status: "ATIVO" } });
+    await client.projeto.update({ where: { id: project.id }, data: { status: "INATIVO" } });
+    assert.equal((await post(entry("2026-01-14", 1))).status, 409);
+    await client.colaborador.update({ where: { id: people[0].id }, data: { status: "INATIVO" } });
+    await hours.update(historical.id, { horas: 1, descricao: "Correção histórica" });
+    assert.equal(Number((await hours.getById(historical.id)).horas), 1);
+    assert.equal(await total("2026-01-14"), 0);
+    await hours.remove(historical.id);
+    await client.projeto.update({ where: { id: project.id }, data: { status: "ATIVO" } });
+    await client.colaborador.update({ where: { id: people[0].id }, data: { status: "ATIVO" } });
+
+    // Inativação ainda não confirmada: a criação espera a trava e revalida o estado.
+    for (const model of ["colaborador", "projeto"]) {
+      const id = model === "colaborador" ? people[0].id : project.id;
+      const updated = Promise.withResolvers();
+      const release = Promise.withResolvers();
+      const reached = Promise.withResolvers();
+      const originalLock = repository.lockReferences;
+      const transaction = client.$transaction(async (db) => {
+        await db[model].update({ where: { id }, data: { status: "INATIVO" } });
+        updated.resolve();
+        await release.promise;
+      });
+      await updated.promise;
+      repository.lockReferences = (...args) => {
+        reached.resolve();
+        return originalLock(...args);
+      };
+      const creation = hours.create(entry("2026-01-15", 1));
+      const rejected = assert.rejects(creation, { statusCode: 409 });
+      try {
+        await reached.promise;
+        release.resolve();
+        await transaction;
+        await rejected;
+        assert.equal(await total("2026-01-15"), 0);
+      } finally {
+        release.resolve();
+        repository.lockReferences = originalLock;
+        await transaction;
+        await client[model].update({ where: { id }, data: { status: "ATIVO" } });
+      }
+    }
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
