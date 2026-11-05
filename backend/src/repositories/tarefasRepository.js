@@ -52,8 +52,8 @@ export const tarefasRepository = {
     const byId = new Map(totals.map((total) => [total.tarefaId, total._sum.horas]));
     return tasks.map((task) => ({ ...task, horasRealizadas: byId.get(task.id) ?? 0 }));
   },
-  findById(id) {
-    return prisma.tarefa.findUnique({ where: { id }, include: includeTask });
+  findById(id, db = prisma) {
+    return db.tarefa.findUnique({ where: { id }, include: includeTask });
   },
   async save(id, data) {
     return transaction(async (tx) => {

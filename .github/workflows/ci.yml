@@ -63,6 +63,8 @@ jobs:
         run: pnpm test
       - name: Migrations em banco limpo
         run: pnpm exec prisma migrate deploy
+      - name: Testes de integração com banco (sessões)
+        run: pnpm run test:auth-db
       - name: Testes de integração com banco (seed)
         run: pnpm run test:seed-db
       - name: Testes de integração com banco (dashboard)

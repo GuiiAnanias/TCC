@@ -20,8 +20,13 @@ export const usuariosRepository = {
   // usarem o mesmo link ao mesmo tempo, só um deles consegue.
   async consumeResetToken(id, tokenHash, senhaHash, agora) {
     const result = await prisma.usuario.updateMany({
-      where: { id, resetToken: tokenHash, resetTokenExpiraEm: { gt: agora } },
-      data: { senhaHash, resetToken: null, resetTokenExpiraEm: null },
+      where: { id, status: "ATIVO", resetToken: tokenHash, resetTokenExpiraEm: { gt: agora } },
+      data: {
+        senhaHash,
+        resetToken: null,
+        resetTokenExpiraEm: null,
+        versaoSessao: { increment: 1 },
+      },
     });
     return result.count === 1;
   },

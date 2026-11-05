@@ -226,11 +226,8 @@ test("aponta o problema de cada campo na coluna certa", () => {
   assert.equal(interpretar({ horas: "1:20" }).horas, 1.33, "Minutos viram horas com duas casas.");
   assert.match(erroDe(interpretar({ status: "Concluído" }), "status"), /Status inválido/);
   assert.match(erroDe(interpretar({ descricao: "ok" }), "descricao"), /mínimo de 3/);
-  assert.deepEqual(
-    interpretar({ projeto: "Projeto Antigo" }).erros,
-    [],
-    "Projeto inativo aceita horas sem tarefa, como no cadastro manual.",
-  );
+  assert.match(erroDe(interpretar({ projeto: "Projeto Antigo" }), "projeto"), /ativo/);
+  assert.match(erroDe(interpretar({ colaborador: "carla2@codebi.local" }), "colaborador"), /ativo/);
   const vazia = interpretarLinhas([linha({})], cadastros, HOJE)[0];
   assert.deepEqual(
     vazia.erros.map((erro) => erro.campo),

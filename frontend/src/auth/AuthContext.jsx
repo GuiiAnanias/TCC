@@ -1,15 +1,23 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../api/client.js";
+import { revokeSession } from "./session.js";
 
 const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sessionMessage, setSessionMessage] = useState("");
   function logout() {
-    sessionStorage.removeItem("authToken");
-    setUser(null);
-    setError("");
+    return revokeSession(
+      api,
+      () => {
+        setUser(null);
+        setError("");
+        setSessionMessage("");
+      },
+      () => setError("Não foi possível encerrar a sessão no servidor. Tente novamente."),
+    );
   }
   async function restore(signal) {
     setLoading(true);
@@ -29,20 +37,27 @@ export function AuthProvider({ children }) {
   }
   useEffect(() => {
     const controller = new AbortController();
-    window.addEventListener("auth-expired", logout);
+    const expired = () => {
+      setUser(null);
+      setError("");
+      setSessionMessage("Sua sessão expirou ou foi encerrada. Entre novamente.");
+    };
+    window.addEventListener("auth-expired", expired);
     restore(controller.signal);
     return () => {
       controller.abort();
-      window.removeEventListener("auth-expired", logout);
+      window.removeEventListener("auth-expired", expired);
     };
   }, []);
   async function login(login, senha) {
     const { data } = await api.post("/auth/login", { login, senha });
     sessionStorage.setItem("authToken", data.token);
     setUser(data.user);
+    setError("");
+    setSessionMessage("");
   }
   return (
-    <AuthContext.Provider value={{ user, loading, error, restore, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, error, sessionMessage, restore, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

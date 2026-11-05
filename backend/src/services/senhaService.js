@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import { usuariosRepository } from "../repositories/usuariosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
+import { novaSenhaSchema } from "../schemas/senhaSchemas.js";
 
 // Recuperação de senha sem e-mail: quem administra o servidor gera um link de uso
 // único (scripts/gerar-link-senha.mjs) e entrega ao usuário. Só o hash do token fica
@@ -28,6 +29,7 @@ export const senhaService = {
   },
 
   async redefinir(token, novaSenha, agora = new Date()) {
+    novaSenhaSchema.parse(novaSenha);
     const tokenHash = hashToken(token);
     const usuario = await usuariosRepository.findByResetToken(tokenHash);
     const expirado = !usuario?.resetTokenExpiraEm || new Date(usuario.resetTokenExpiraEm) <= agora;

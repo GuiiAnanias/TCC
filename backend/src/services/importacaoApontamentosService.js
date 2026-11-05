@@ -313,6 +313,13 @@ export function interpretarLinhas(linhas, cadastros, hoje) {
     const data = campo("data", lerData(valores.data, hoje));
     const colaborador = campo("colaborador", lerColaborador(valores.colaborador, indice));
     const projeto = campo("projeto", lerProjeto(valores.projeto, indice));
+    if (colaborador && colaborador.status !== "ATIVO")
+      erros.push({
+        campo: "colaborador",
+        mensagem: "Selecione um colaborador ativo para lançar horas.",
+      });
+    if (projeto && projeto.status !== "ATIVO")
+      erros.push({ campo: "projeto", mensagem: "Selecione um projeto ativo para lançar horas." });
     const tarefa = campo("tarefa", lerTarefa(valores.tarefa, projeto, indice));
     const horas = campo("horas", lerHoras(valores.horas));
     const status = campo("status", lerStatus(valores.status));
@@ -674,8 +681,8 @@ export const importacaoApontamentosService = {
    */
   async importar(buffer) {
     const planilha = await lerPlanilha(buffer);
-    const cadastros = await repositorio.cadastros();
     return apontamentosRepository.transaction(async (db) => {
+      const cadastros = await repositorio.cadastros(db);
       const resultado = await analisar(planilha, cadastros, db);
       if (resultado.resumo.comErro)
         throw new HttpError(

@@ -269,7 +269,7 @@ async function principal() {
     await seedDemo(client);
     const { app } = await import("../src/app.js");
     const { env } = await import("../src/config/env.js");
-    const { default: jwt } = await import("jsonwebtoken");
+    const { createTestSession } = await import("./helpers/session-fixture.mjs");
     const user = await client.usuario.create({
       data: {
         nomeUsuario: "excel-test",
@@ -277,7 +277,7 @@ async function principal() {
         senhaHash: "test-only",
       },
     });
-    const token = jwt.sign({}, env.jwtSecret, { subject: String(user.id), expiresIn: "5m" });
+    const token = await createTestSession(client, user, env.jwtSecret);
     const server = app.listen(0, "127.0.0.1");
     await new Promise((resolve) => server.once("listening", resolve));
     try {
