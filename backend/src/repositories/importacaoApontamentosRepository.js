@@ -2,17 +2,17 @@ import prisma from "../config/prisma.js";
 
 export const importacaoApontamentosRepository = {
   // Cadastros usados para reconhecer colaborador, projeto e tarefa de cada linha.
-  async cadastros() {
+  async cadastros(db = prisma) {
     const [colaboradores, projetos, tarefas, equipes, vigencias] = await Promise.all([
-      prisma.colaborador.findMany({
+      db.colaborador.findMany({
         select: { id: true, nomeCompleto: true, email: true, status: true },
         orderBy: { nomeCompleto: "asc" },
       }),
-      prisma.projeto.findMany({
+      db.projeto.findMany({
         select: { id: true, nome: true, status: true, cliente: { select: { nome: true } } },
         orderBy: { nome: "asc" },
       }),
-      prisma.tarefa.findMany({
+      db.tarefa.findMany({
         select: {
           id: true,
           projetoId: true,
@@ -24,10 +24,10 @@ export const importacaoApontamentosRepository = {
       }),
       // Participação na equipe e valor/hora vigente: sem eles o custo da hora fica
       // incompleto no dashboard, então a importação avisa antes de gravar.
-      prisma.projetoColaborador.findMany({
+      db.projetoColaborador.findMany({
         select: { projetoId: true, colaboradorId: true, dataEntrada: true, dataSaida: true },
       }),
-      prisma.configuracaoFinanceira.findMany({
+      db.configuracaoFinanceira.findMany({
         select: { colaboradorId: true, dataInicio: true, dataFim: true },
       }),
     ]);
@@ -52,7 +52,13 @@ export const importacaoApontamentosRepository = {
     });
   },
 
-  criar(registros, db = prisma) {
+  async criar(registros, db = prisma) {
+    const pessoas = [...new Set(registros.map((item) => item.colaboradorId))].sort((a, b) => a - b);
+    const projetos = [...new Set(registros.map((item) => item.projetoId))].sort((a, b) => a - b);
+    for (const id of pessoas)
+      await db.$queryRaw`SELECT id FROM colaboradores WHERE id = ${id} FOR SHARE`;
+    for (const id of projetos)
+      await db.$queryRaw`SELECT id FROM projetos WHERE id = ${id} FOR SHARE`;
     return db.apontamentoHora.createMany({ data: registros });
   },
 };

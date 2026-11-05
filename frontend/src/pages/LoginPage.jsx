@@ -50,6 +50,7 @@ export function LoginPage() {
         </div>
         <h1>Entrar no sistema</h1>
         <p>Use sua conta para acessar os projetos e indicadores.</p>
+        {auth.sessionMessage && <p role="status">{auth.sessionMessage}</p>}
         <form onSubmit={submit} className="login-form">
           <label htmlFor="login">Usuário ou e-mail</label>
           <input
