@@ -24,6 +24,7 @@ async function withRepositories({ horasNoDia = 0, record = existente } = {}, run
   );
   const calls = { sums: [], writes: [] };
   apontamentosRepository.transaction = async (operation) => operation();
+  apontamentosRepository.lockReferences = async () => {};
   apontamentosRepository.findById = async () => ({ ...record });
   apontamentosRepository.sumHorasNoDia = async (...args) => {
     calls.sums.push(args);
@@ -93,5 +94,25 @@ test("apontamento antigo com data futura pode ser editado sem mudar a data", asy
     await apontamentosService.update(9, { data: day(30), descricao: "Ajuste" });
     await apontamentosService.update(9, { data: day(-1) });
     assert.equal(calls.writes.length, 2);
+  });
+});
+
+test("novos lançamentos e transferências recusam inativos, mas preservam correções históricas", async () => {
+  await withRepositories({}, async (calls) => {
+    colaboradoresRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
+    await assert.rejects(apontamentosService.update(9, { colaboradorId: 3 }), { statusCode: 409 });
+    colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
+    projetosRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
+    await assert.rejects(apontamentosService.update(9, { projetoId: 3 }), { statusCode: 409 });
+    colaboradoresRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    await apontamentosService.update(9, {
+      colaboradorId: 2,
+      projetoId: 1,
+      horas: 5,
+      descricao: "Correção histórica",
+    });
+    assert.equal(calls.writes.length, 1);
   });
 });

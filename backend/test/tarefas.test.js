@@ -89,6 +89,7 @@ test("linking existing time checks the merged project and task, and updates once
   ].map((repo) => ({ ...repo }));
   const writes = [];
   apontamentosRepository.transaction = async (operation) => operation();
+  apontamentosRepository.lockReferences = async () => {};
   apontamentosRepository.findById = async () => ({
     id: 8,
     projetoId: 1,
@@ -103,7 +104,7 @@ test("linking existing time checks the merged project and task, and updates once
   apontamentosRepository.create = async () => {
     throw new Error("Não pode duplicar apontamentos");
   };
-  projetosRepository.findById = async () => ({ id: 2 });
+  projetosRepository.findById = async () => ({ id: 2, status: "ATIVO" });
   tarefasRepository.findById = async (id) => ({
     id,
     projetoId: id === 5 ? 2 : 1,

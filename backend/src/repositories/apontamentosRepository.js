@@ -3,6 +3,13 @@ import { HttpError } from "../utils/HttpError.js";
 import { custoConflict } from "../utils/custoConflict.js";
 
 export const apontamentosRepository = {
+  async lockReferences({ colaboradorId, projetoId }, db = prisma) {
+    // A inativação precisa esperar o lançamento terminar (ou vice-versa).
+    // Sempre bloquear pessoa antes de projeto para manter a ordem consistente.
+    if (colaboradorId)
+      await db.$queryRaw`SELECT id FROM colaboradores WHERE id = ${colaboradorId} FOR SHARE`;
+    if (projetoId) await db.$queryRaw`SELECT id FROM projetos WHERE id = ${projetoId} FOR SHARE`;
+  },
   async transaction(operation) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -12,7 +19,11 @@ export const apontamentosRepository = {
       } catch (error) {
         const conflict = custoConflict(error);
         if (conflict) throw conflict;
-        if (error.code !== "P2034") throw error;
+        if (
+          error.code !== "P2034" &&
+          !(error.code === "P2010" && ["40001", "40P01"].includes(error.meta?.code))
+        )
+          throw error;
         if (attempt === 2)
           throw new HttpError(
             409,
