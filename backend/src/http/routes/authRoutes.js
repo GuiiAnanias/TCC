@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
@@ -6,6 +7,7 @@ import prisma from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { authenticate } from "../middlewares/authenticate.js";
 import { senhaService } from "../../services/senhaService.js";
+import { sessoesRepository } from "../../repositories/sessoesRepository.js";
 
 export const authRoutes = Router();
 const loginSchema = z.object({
@@ -37,11 +39,18 @@ authRoutes.post("/login", async (request, response, next) => {
       return response
         .status(503)
         .json({ message: "Autenticação indisponível. Configure JWT_SECRET no servidor." });
+    const id = randomUUID();
     const token = jwt.sign({}, env.jwtSecret, {
       algorithm: "HS256",
+      jwtid: id,
       subject: String(user.id),
       expiresIn: env.jwtExpiration,
     });
+    const session = await sessoesRepository.create(user, {
+      id,
+      expiraEm: new Date(jwt.decode(token).exp * 1000),
+    });
+    if (!session) return response.status(401).json({ message: "Usuário ou senha inválidos." });
     response.json({
       token,
       user: { id: user.id, nomeUsuario: user.nomeUsuario, email: user.email },
@@ -63,4 +72,12 @@ authRoutes.post("/redefinir-senha", async (request, response, next) => {
 authRoutes.get("/me", authenticate, (request, response) => {
   const { status, ...user } = request.user;
   response.json({ user });
+});
+authRoutes.post("/logout", authenticate, async (request, response, next) => {
+  try {
+    await sessoesRepository.revoke(request.sessionId, request.user.id);
+    response.status(204).end();
+  } catch (error) {
+    next(error);
+  }
 });

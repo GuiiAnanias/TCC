@@ -197,8 +197,8 @@ try {
   assert.equal(saves.filter((row) => row.status === "rejected").length, 1);
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { default: jwt } = await import("jsonwebtoken");
-  const token = jwt.sign({}, env.jwtSecret, { subject: String(user.id), expiresIn: "5m" });
+  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const token = await createTestSession(client, user, env.jwtSecret);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   const url = `http://127.0.0.1:${server.address().port}/api/premiacoes`;
