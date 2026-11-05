@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { api } from "../api/client.js";
 import { ThemeToggle } from "../ThemeContext.jsx";
+import { newPasswordError } from "../auth/password.js";
 
 // Tela aberta pelo link gerado com `corepack pnpm run senha:link <usuário>` no backend.
 export function RedefinirSenhaPage() {
@@ -17,6 +18,11 @@ export function RedefinirSenhaPage() {
   async function submit(event) {
     event.preventDefault();
     setError("");
+    const passwordError = newPasswordError(senha);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
     if (senha !== confirmacao) {
       setError("As duas senhas não são iguais.");
       return;
@@ -63,7 +69,10 @@ export function RedefinirSenhaPage() {
         )}
         {token && !done && (
           <>
-            <p>Escolha uma nova senha com pelo menos 8 caracteres.</p>
+            <p>
+              Escolha uma nova senha com pelo menos 8 caracteres e até 72 bytes UTF-8. Acentos e
+              emojis ocupam mais de um byte.
+            </p>
             <form onSubmit={submit} className="login-form">
               <label htmlFor="nova-senha">Nova senha</label>
               <input
@@ -72,7 +81,6 @@ export function RedefinirSenhaPage() {
                 autoComplete="new-password"
                 required
                 minLength={8}
-                maxLength={256}
                 value={senha}
                 onChange={(event) => setSenha(event.target.value)}
                 disabled={busy}
@@ -85,7 +93,6 @@ export function RedefinirSenhaPage() {
                 autoComplete="new-password"
                 required
                 minLength={8}
-                maxLength={256}
                 value={confirmacao}
                 onChange={(event) => setConfirmacao(event.target.value)}
                 disabled={busy}

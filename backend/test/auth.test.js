@@ -7,6 +7,8 @@ process.env.JWT_SECRET = "test-secret-only";
 const { app } = await import("../src/app.js");
 const { default: prisma } = await import("../src/config/prisma.js");
 const { sessoesRepository } = await import("../src/repositories/sessoesRepository.js");
+const { limitesAutenticacaoRepository } =
+  await import("../src/repositories/limitesAutenticacaoRepository.js");
 
 test("protected API rejects missing, forged, expired and inactive sessions", async () => {
   const user = {
@@ -18,6 +20,8 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
     versaoSessao: 0,
   };
   const originalSessions = { ...sessoesRepository };
+  const originalConsume = limitesAutenticacaoRepository.consume;
+  limitesAutenticacaoRepository.consume = async () => ({ allowed: true });
   const sessions = new Map();
   sessoesRepository.create = async (user, data) => {
     const session = { ...data, usuarioId: user.id, versaoSessao: user.versaoSessao, usuario: user };
@@ -151,6 +155,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
     );
   } finally {
     Object.assign(sessoesRepository, originalSessions);
+    limitesAutenticacaoRepository.consume = originalConsume;
     prisma.usuario.findFirst = originalFindFirst;
     prisma.usuario.findUnique = originalFindUnique;
     await new Promise((resolve) => server.close(resolve));
