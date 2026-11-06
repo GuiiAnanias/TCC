@@ -3,11 +3,18 @@ import { Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { ThemeToggle } from "../ThemeContext.jsx";
+import {
+  readRememberedLogin,
+  saveRememberedLogin,
+  forgetRememberedLogin,
+} from "../auth/rememberedLogin.js";
 
 export function LoginPage() {
   const auth = useAuth();
   const location = useLocation();
-  const [login, setLogin] = useState("");
+  const [initialLogin] = useState(readRememberedLogin);
+  const [login, setLogin] = useState(initialLogin);
+  const [rememberUser, setRememberUser] = useState(Boolean(initialLogin));
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -27,6 +34,7 @@ export function LoginPage() {
     setError("");
     try {
       await auth.login(login, senha);
+      if (rememberUser) saveRememberedLogin(login);
     } catch (error) {
       setError(
         error.response?.data?.message || "Não foi possível conectar ao servidor. Tente novamente.",
@@ -74,6 +82,26 @@ export function LoginPage() {
             onChange={(event) => setSenha(event.target.value)}
             disabled={busy}
           />
+          <div className="login-remember">
+            <label htmlFor="remember-user">
+              <input
+                id="remember-user"
+                type="checkbox"
+                checked={rememberUser}
+                disabled={busy}
+                aria-describedby="remember-user-help"
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setRememberUser(checked);
+                  if (!checked) forgetRememberedLogin();
+                }}
+              />
+              Lembrar meu usuário neste navegador
+            </label>
+            <small id="remember-user-help">
+              Preenche apenas o usuário ou e-mail no próximo acesso.
+            </small>
+          </div>
           {error && (
             <div className="feedback error" role="alert">
               {error}
