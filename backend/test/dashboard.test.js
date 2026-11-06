@@ -55,7 +55,7 @@ const summarize = (projects, filters = {}, bonuses = [bonus()]) =>
 test("unfiltered overview includes inactive and empty projects, all hours and distinct clients", () => {
   const result = summarize([
     project(1, [entry("2.5"), entry("1.5")]),
-    project(2, [entry("6")], { status: "INATIVO", clienteId: 2, cliente: { nome: "Cliente B" } }),
+    project(2, [entry("6")], { status: "ENCERRADO", clienteId: 2, cliente: { nome: "Cliente B" } }),
     project(3),
   ]);
   assert.equal(result.resumo.projetos, 3);

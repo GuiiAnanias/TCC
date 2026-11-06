@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { statusProjetoSchema } from "./statusProjetoSchema.js";
 
 const date = z
   .string()
@@ -13,7 +14,7 @@ export const dashboardQuerySchema = z
     projetoId: z.coerce.number().int().positive().optional(),
     colaboradorId: z.coerce.number().int().positive().optional(),
     sprintId: z.coerce.number().int().positive().optional(),
-    statusProjeto: z.enum(["ATIVO", "INATIVO"]).optional(),
+    statusProjeto: statusProjetoSchema.optional(),
     equipe: z.string().trim().min(1).max(255).optional(),
   })
   .refine((data) => !data.dataInicio || !data.dataFim || data.dataInicio <= data.dataFim, {

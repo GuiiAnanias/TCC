@@ -30,7 +30,7 @@ async function ensureClienteAtivo(clienteId) {
 
 function ensureProjetoAtivo(projeto) {
   if (projeto.status !== "ATIVO") {
-    throw new HttpError(400, "Não é possível alterar equipe de projeto inativo.");
+    throw new HttpError(400, "Reative o projeto para alterar a equipe.");
   }
 }
 
@@ -105,9 +105,9 @@ export const projetosService = {
     return projetosRepository.update(id, data);
   },
 
-  async inactivate(id) {
+  async close(id) {
     await ensureProjetoExists(id);
-    return projetosRepository.update(id, { status: "INATIVO" });
+    return projetosRepository.update(id, { status: "ENCERRADO" });
   },
 
   async listTeam(projetoId) {

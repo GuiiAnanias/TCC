@@ -18,9 +18,16 @@ enum TipoPessoa {
 }
 
 enum TipoContrato {
-  FIXO
-  HORAS
-  FECHADO
+  FEE_MENSAL
+  ESCOPO_SEMIABERTO
+  SQUAD
+}
+
+enum StatusProjeto {
+  ATIVO
+  PAUSADO
+  ENCERRADO
+  CANCELADO
 }
 
 enum TipoBonificacao {
@@ -195,7 +202,7 @@ model Projeto {
   horasContratadas  Decimal                @db.Decimal(10, 2)
   valorProjeto      Decimal                @db.Decimal(12, 2)
   dataInicio        DateTime
-  status            Status                 @default(ATIVO)
+  status            StatusProjeto          @default(ATIVO)
   cliente           Cliente                @relation(fields: [clienteId], references: [id])
   equipe            ProjetoColaborador[]
   apontamentos      ApontamentoHora[]

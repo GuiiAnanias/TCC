@@ -12,7 +12,12 @@ import {
 } from "../utils/planilha.js";
 
 const STATUS = { PENDENTE: "Pendente", APROVADO: "Aprovado", FATURADO: "Faturado" };
-const STATUS_PROJETO = { ATIVO: "Ativo", INATIVO: "Inativo" };
+const STATUS_PROJETO = {
+  ATIVO: "Ativo",
+  PAUSADO: "Pausado",
+  ENCERRADO: "Encerrado",
+  CANCELADO: "Cancelado",
+};
 const OCORRENCIAS = {
   SEM_VINCULO: "Sem vínculo de equipe",
   SEM_REMUNERACAO: "Sem valor/hora",
@@ -98,7 +103,7 @@ function abaResumo(pasta, relatorio, geradoEm) {
   item("Colaborador", nomesFiltros.colaborador ?? "Todos");
   item("Equipe (departamento)", filtros.equipe ?? "Todas");
   item("Sprint", nomesFiltros.sprint ?? "Todas");
-  item("Status do projeto", STATUS_PROJETO[filtros.statusProjeto] ?? "Ativos e inativos");
+  item("Status do projeto", STATUS_PROJETO[filtros.statusProjeto] ?? "Todos os estados");
 
   linha++;
   secao("Indicadores");

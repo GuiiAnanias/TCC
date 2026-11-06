@@ -43,7 +43,7 @@ export const projetosController = {
 
   async destroy(request, response) {
     const id = parseId(request.params.id, "projeto");
-    const projeto = await projetosService.inactivate(id);
+    const projeto = await projetosService.close(id);
     return response.json(projeto);
   },
 
