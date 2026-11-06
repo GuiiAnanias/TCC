@@ -124,7 +124,8 @@ try {
   assert.equal((await service.collaborator(gustavo.id)).equipe.length, 0);
   assert.equal((await service.collaborator(helena.id)).resumo.custo, 340);
   assert.equal(
-    (await service.project(base.projetos.find((row) => row.status === "INATIVO").id)).resumo.custo,
+    (await service.project(base.projetos.find((row) => row.status === "ENCERRADO").id)).resumo
+      .custo,
     340,
   );
   const october = { dataInicio: new Date("2026-10-01"), dataFim: new Date("2026-10-31") };
@@ -148,7 +149,7 @@ try {
   );
   assert.equal(team.resumo.assertividadeEstimativas, null);
   assert.ok(team.resumo.assertividadeTarefasContexto > 0);
-  const archived = await service.get({ statusProjeto: "INATIVO" });
+  const archived = await service.get({ statusProjeto: "ENCERRADO" });
   assert.equal(archived.resumo.projetos, 1);
   assert.equal(archived.resumo.custo, 340);
   const septemberSprint = detail.projeto.sprints.find((row) => row.externalId === "portal-set");

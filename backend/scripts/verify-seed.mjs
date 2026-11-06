@@ -75,6 +75,8 @@ try {
   const { clienteCreateSchema } = await import("../src/schemas/clientesSchemas.js");
   const { dashboardService } = await import("../src/services/dashboardService.js");
   const { tarefasRepository } = await import("../src/repositories/tarefasRepository.js");
+  const { projetosService } = await import("../src/services/projetosService.js");
+  const { apontamentosService } = await import("../src/services/apontamentosService.js");
   const { cargosTi, departamentosTi, niveisRemuneracao, papeisProjeto } =
     await import("../src/schemas/cadastroOptions.js");
   const summary = await seedDemo(client);
@@ -146,6 +148,17 @@ try {
     assert.equal(initial[model].length, expected, model);
   assert.equal(initial.configuracaoFinanceira.length, 10);
   assert.equal(initial.bonificacaoPapel.length, 5);
+  assert.deepEqual([...new Set(initial.projeto.map((p) => p.status))].sort(), [
+    "ATIVO",
+    "CANCELADO",
+    "ENCERRADO",
+    "PAUSADO",
+  ]);
+  assert.deepEqual([...new Set(initial.projeto.map((p) => p.tipoContrato))].sort(), [
+    "ESCOPO_SEMIABERTO",
+    "FEE_MENSAL",
+    "SQUAD",
+  ]);
   for (const person of initial.colaborador) {
     assert.ok(cargosTi.includes(person.cargo));
     assert.ok(departamentosTi.includes(person.departamento));
@@ -205,6 +218,63 @@ try {
     await snapshot(),
     initial,
     "Reexecutar o seed não deve duplicar nem alterar o banco.",
+  );
+  const portalProject = initial.projeto.find((p) => p.nome === "Portal do Cliente (demo)");
+  const personId = initial.colaborador.find((p) => p.email === "ana.demo@exemplo.local").id;
+  const historicalCounts = [
+    initial.apontamentoHora.length,
+    initial.tarefa.length,
+    initial.projetoColaborador.length,
+  ];
+  for (const status of ["PAUSADO", "ENCERRADO", "CANCELADO"]) {
+    await projetosService.update(portalProject.id, { status });
+    assert.equal(
+      (await projetosService.list({ status })).some((p) => p.id === portalProject.id),
+      true,
+    );
+    assert.equal((await dashboardService.project(portalProject.id)).resumo.custo, 1212);
+    assert.equal(
+      (await dashboardService.get({ statusProjeto: status })).projetos.some(
+        (p) => p.id === portalProject.id,
+      ),
+      true,
+    );
+    await assert.rejects(
+      apontamentosService.create({
+        projetoId: portalProject.id,
+        colaboradorId: personId,
+        data: new Date("2026-10-10"),
+        horas: 1,
+        descricao: "Bloqueado",
+      }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      tarefasRepository.save(null, { projetoId: portalProject.id, titulo: "Bloqueada" }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      tarefasRepository.saveSprint(null, { projetoId: portalProject.id, nome: "Bloqueada" }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      projetosService.addTeamMember(portalProject.id, {
+        colaboradorId: personId,
+        papel: "Dev",
+        dataEntrada: new Date("2026-11-01"),
+      }),
+      { statusCode: 400 },
+    );
+    await projetosService.update(portalProject.id, { status: "ATIVO" });
+    assert.equal((await projetosService.getById(portalProject.id)).status, "ATIVO");
+  }
+  assert.deepEqual(
+    [
+      await client.apontamentoHora.count(),
+      await client.tarefa.count(),
+      await client.projetoColaborador.count(),
+    ],
+    historicalCounts,
   );
   const entry = initial.apontamentoHora.find(
     (item) => item.descricao === "Demonstração: portal-login-dev",
