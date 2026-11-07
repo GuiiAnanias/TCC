@@ -1,6 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { summarizeDashboard, dashboardService } from "../src/services/dashboardService.js";
+import {
+  summarizeDashboard,
+  dashboardService,
+  evolucaoMensal,
+} from "../src/services/dashboardService.js";
 import { dashboardQuerySchema } from "../src/schemas/dashboardSchemas.js";
 import { dashboardRepository } from "../src/repositories/dashboardRepository.js";
 import { bonificacoesPapeisRepository } from "../src/repositories/bonificacoesPapeisRepository.js";
@@ -68,6 +72,122 @@ test("unfiltered overview includes inactive and empty projects, all hours and di
   assert.equal(result.auditoria[0].id, 2);
   assert.equal(result.auditoria[2].assertividade, null);
   assert.equal(result.resumo.assertividade, 104.17);
+});
+
+test("resumo por equipe soma cada apontamento uma vez, por departamento, e fecha com o total", () => {
+  const pessoa = (horas, colaboradorId, departamento, extra = {}) => ({
+    ...entry(horas, "2026-10-02", [config("2026-01-01", null, "100")], colaboradorId),
+    colaborador: {
+      departamento,
+      configuracoesFinanceiras: [config("2026-01-01", null, "100")],
+    },
+    tarefaId: 9,
+    ...extra,
+  });
+  const semValor = {
+    ...entry("1", "2026-10-02", [], 3),
+    colaborador: { departamento: null, configuracoesFinanceiras: [] },
+    tarefaId: 9,
+  };
+  const result = summarize([
+    project(1, [pessoa("2", 1, "TI"), pessoa("3", 2, "Design", { tarefaId: null }), semValor]),
+    project(2, [pessoa("4", 1, "TI")]),
+  ]);
+  assert.deepEqual(
+    result.equipes.map(({ equipe, colaboradores, projetos, horas, custo, pendencias }) => ({
+      equipe,
+      colaboradores,
+      projetos,
+      horas,
+      custo,
+      pendencias,
+    })),
+    [
+      { equipe: "TI", colaboradores: 1, projetos: 2, horas: 6, custo: 600, pendencias: 0 },
+      { equipe: "Design", colaboradores: 1, projetos: 1, horas: 3, custo: 300, pendencias: 2 },
+      {
+        equipe: "Sem departamento",
+        colaboradores: 1,
+        projetos: 1,
+        horas: 1,
+        custo: 0,
+        pendencias: 2,
+      },
+    ],
+  );
+  assert.equal(result.equipes[2].horasSemCusto, 1);
+  const total = (campo) => result.equipes.reduce((soma, row) => soma + row[campo], 0);
+  assert.equal(total("horas"), result.resumo.horas, "Nenhuma hora repetida entre equipes.");
+  assert.equal(total("custo"), result.resumo.custo);
+});
+
+test("ranking de inconsistências ordena os projetos pela quantidade, com a contagem por tipo", () => {
+  const semVinculo = { ...entry("3", "2026-10-02", undefined, 2), tarefaId: 9 };
+  const semTarefa = { ...entry("1"), tarefaId: null };
+  const result = summarize([
+    project(1, [{ ...entry("2"), tarefaId: 9 }]),
+    project(2, [semVinculo, semTarefa]),
+    project(3, [{ ...entry("1"), tarefaId: 9 }], { nome: "Alfa" }),
+  ]);
+  assert.deepEqual(
+    result.rankingInconsistencias.map((row) => [row.nome, row.total]),
+    [
+      ["Projeto 2", 2],
+      ["Alfa", 0],
+      ["Projeto 1", 0],
+    ],
+    "Empate em zero segue a ordem alfabética.",
+  );
+  assert.equal(result.rankingInconsistencias[0].porTipo.SEM_VINCULO, 1);
+  assert.equal(result.rankingInconsistencias[0].porTipo.SEM_TAREFA, 1);
+  assert.equal(
+    result.rankingInconsistencias.reduce((soma, row) => soma + row.total, 0),
+    result.ocorrencias.length,
+  );
+  assert.equal(result.auditoria[0].id, 2, "O ranking de assertividade continua separado.");
+});
+
+test("a evolução mensal do projeto acumula o custo e compara com o orçamento integral", () => {
+  const linha = (data, horas, custoBase, bonificacao = 0) => ({
+    data: new Date(data),
+    horas,
+    custoBase,
+    bonificacao,
+  });
+  const meses = evolucaoMensal(
+    [linha("2026-10-05", 2, 200, 20), linha("2026-09-10", 4, 400), linha("2026-09-30", 1.5, 150)],
+    "1000",
+  );
+  assert.deepEqual(
+    meses.map(({ mes, horas, custo, custoAcumulado, percentualOrcamento, apontamentos }) => ({
+      mes,
+      horas,
+      custo,
+      custoAcumulado,
+      percentualOrcamento,
+      apontamentos,
+    })),
+    [
+      {
+        mes: "2026-09",
+        horas: 5.5,
+        custo: 550,
+        custoAcumulado: 550,
+        percentualOrcamento: 55,
+        apontamentos: 2,
+      },
+      {
+        mes: "2026-10",
+        horas: 2,
+        custo: 220,
+        custoAcumulado: 770,
+        percentualOrcamento: 77,
+        apontamentos: 1,
+      },
+    ],
+  );
+  assert.equal(evolucaoMensal([linha("2026-09-10", 1, 10)], "0")[0].percentualOrcamento, null);
+  assert.deepEqual(evolucaoMensal([], "1000"), []);
 });
 
 test("cost uses historical hourly rates and missing remuneration never fabricates costs or task metrics", () => {

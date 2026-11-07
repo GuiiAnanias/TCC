@@ -6,6 +6,76 @@ import { entryCost } from "./dashboardCosts.js";
 import { HttpError } from "../utils/HttpError.js";
 const sum = (rows, key) => round(rows.reduce((total, row) => total + Number(row[key]), 0));
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
+export const SEM_DEPARTAMENTO = "Sem departamento";
+export const TIPOS_OCORRENCIA = [
+  "SEM_REMUNERACAO",
+  "SEM_VINCULO",
+  "SEM_TAREFA",
+  "SEM_ESTIMATIVA",
+  "CONCLUIDA_SEM_HORAS",
+];
+
+/**
+ * Equipe = departamento do colaborador. Cada apontamento tem um único colaborador, então
+ * horas e custos somam por apontamento e nunca se repetem entre equipes, nem quando a
+ * tarefa tem vários responsáveis.
+ */
+function novaEquipe(nome) {
+  return {
+    equipe: nome,
+    colaboradores: new Set(),
+    projetos: new Set(),
+    horas: 0,
+    custoBase: 0,
+    bonificacao: 0,
+    horasSemCusto: 0,
+    pendencias: 0,
+  };
+}
+
+function fecharEquipes(equipes) {
+  return [...equipes.values()]
+    .map((row) => {
+      const custoBase = round(row.custoBase);
+      const bonificacao = round(row.bonificacao);
+      return {
+        ...row,
+        colaboradores: row.colaboradores.size,
+        projetos: row.projetos.size,
+        horas: round(row.horas),
+        custoBase,
+        bonificacao,
+        custo: round(custoBase + bonificacao),
+        horasSemCusto: round(row.horasSemCusto),
+      };
+    })
+    .sort((a, b) => b.horas - a.horas || a.equipe.localeCompare(b.equipe, "pt-BR"));
+}
+
+/** Projetos do que tem mais para o que tem menos ocorrências, com a contagem por tipo. */
+function rankingDeInconsistencias(rows, occurrences) {
+  const porProjeto = new Map(
+    rows.map((row) => [
+      row.id,
+      {
+        id: row.id,
+        nome: row.nome,
+        status: row.status,
+        total: 0,
+        porTipo: Object.fromEntries(TIPOS_OCORRENCIA.map((tipo) => [tipo, 0])),
+      },
+    ]),
+  );
+  for (const occurrence of occurrences) {
+    const project = porProjeto.get(occurrence.projetoId);
+    if (!project) continue;
+    project.total++;
+    project.porTipo[occurrence.tipo] = (project.porTipo[occurrence.tipo] ?? 0) + 1;
+  }
+  return [...porProjeto.values()].sort(
+    (a, b) => b.total - a.total || a.nome.localeCompare(b.nome, "pt-BR"),
+  );
+}
 
 export function summarizeDashboard(projects, filters = {}, bonuses = []) {
   const period = Boolean(filters.dataInicio || filters.dataFim);
@@ -16,6 +86,7 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
       (p.tarefas ?? []).some((task) => taskInScope(task, filters)),
   );
   const occurrences = [];
+  const equipes = new Map();
   const rows = visible.map((project) => {
     let custoBase = 0;
     let bonificacao = 0;
@@ -25,6 +96,17 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
     for (const entry of project.apontamentos) {
       const day = dayOf(entry.data);
       const cost = entryCost(entry, project, bonuses);
+      const nomeEquipe = entry.colaborador?.departamento?.trim() || SEM_DEPARTAMENTO;
+      if (!equipes.has(nomeEquipe)) equipes.set(nomeEquipe, novaEquipe(nomeEquipe));
+      const equipe = equipes.get(nomeEquipe);
+      equipe.colaboradores.add(entry.colaboradorId);
+      equipe.projetos.add(project.id);
+      equipe.horas += Number(entry.horas);
+      equipe.custoBase += cost.custoBase;
+      equipe.bonificacao += cost.bonificacao;
+      if (cost.semCusto) equipe.horasSemCusto += Number(entry.horas);
+      equipe.pendencias +=
+        Number(cost.semVinculo) + Number(cost.semCusto) + Number(!entry.tarefaId);
       const occurrence = {
         apontamentoId: entry.id,
         projetoId: project.id,
@@ -147,6 +229,8 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
     projetos: rows,
     ocorrencias: detailedOccurrences,
     tarefas: operational.tarefas,
+    equipes: fecharEquipes(equipes),
+    rankingInconsistencias: rankingDeInconsistencias(rows, detailedOccurrences),
     auditoria: [...rows].sort(
       (a, b) =>
         (a.assertividade ?? Infinity) - (b.assertividade ?? Infinity) ||
@@ -173,11 +257,13 @@ export const dashboardService = {
       bonificacoesPapeisRepository.findAll(),
     ]);
     const dashboard = summarizeDashboard(projects, scoped, bonuses);
+    const detalhes = detailRows(projects, scoped, bonuses);
     return {
       ...dashboard,
       tipo: "projeto",
       projeto: project,
-      ...detailRows(projects, scoped, bonuses),
+      ...detalhes,
+      evolucao: evolucaoMensal(detalhes.apontamentos, project.valorProjeto),
     };
   },
   async collaborator(id, filters = {}) {
@@ -242,6 +328,43 @@ export function reportEntries(projects, bonuses) {
       }),
     )
     .sort((a, b) => a.data.localeCompare(b.data) || a.id - b.id);
+}
+
+/**
+ * Horas e custo por mês dos apontamentos do recorte, com o custo acumulado e quanto ele
+ * representa do orçamento integral. Com período, o acumulado começa no início do período.
+ */
+export function evolucaoMensal(apontamentos, valorProjeto) {
+  const meses = new Map();
+  for (const entry of apontamentos) {
+    const mes = dayOf(entry.data).slice(0, 7);
+    if (!meses.has(mes))
+      meses.set(mes, { mes, horas: 0, custoBase: 0, bonificacao: 0, apontamentos: 0 });
+    const row = meses.get(mes);
+    row.horas += entry.horas;
+    row.custoBase += entry.custoBase;
+    row.bonificacao += entry.bonificacao;
+    row.apontamentos++;
+  }
+  const orcamento = Number(valorProjeto);
+  let acumulado = 0;
+  return [...meses.values()]
+    .sort((a, b) => a.mes.localeCompare(b.mes))
+    .map((row) => {
+      const custoBase = round(row.custoBase);
+      const bonificacao = round(row.bonificacao);
+      const custo = round(custoBase + bonificacao);
+      acumulado = round(acumulado + custo);
+      return {
+        ...row,
+        horas: round(row.horas),
+        custoBase,
+        bonificacao,
+        custo,
+        custoAcumulado: acumulado,
+        percentualOrcamento: orcamento > 0 ? round((acumulado / orcamento) * 100) : null,
+      };
+    });
 }
 
 function detailRows(projects, filters, bonuses) {

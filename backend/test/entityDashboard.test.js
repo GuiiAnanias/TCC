@@ -75,6 +75,11 @@ test("individual dashboards separate personal costs from shared task context and
     assert.equal(queries[0].projetoId, 7);
     assert.equal(whole.resumo.horas, 10);
     assert.equal(whole.resumo.custo, 550);
+    assert.equal(whole.evolucao.at(-1).custoAcumulado, 550, "O gráfico fecha com o custo total.");
+    assert.equal(
+      whole.evolucao.reduce((sum, row) => sum + row.horas, 0),
+      10,
+    );
     assert.equal(
       whole.colaboradores.reduce((sum, row) => sum + row.custo, 0),
       550,
