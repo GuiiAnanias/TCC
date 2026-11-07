@@ -71,8 +71,9 @@ test("individual dashboards separate personal costs from shared task context and
     { papel: "Dev", percentual: 10, dataInicio: new Date("2026-01-01") },
   ];
   try {
-    const whole = await dashboardService.project(7, { projetoId: 99 });
-    assert.equal(queries[0].projetoId, 7);
+    const whole = await dashboardService.project(7, { projetoId: 99, projetoIds: [98, 99] });
+    assert.deepEqual(queries[0].projetoIds, [7]);
+    assert.equal(queries[0].projetoId, undefined);
     assert.equal(whole.resumo.horas, 10);
     assert.equal(whole.resumo.custo, 550);
     assert.equal(

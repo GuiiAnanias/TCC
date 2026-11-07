@@ -7,14 +7,16 @@ export const dashboardRepository = {
     dataInicio,
     dataFim,
     projetoId,
+    projetoIds,
     colaboradorId,
     sprintId,
     statusProjeto,
   } = {}) {
+    const ids = projetoIds?.length ? projetoIds : projetoId ? [projetoId] : [];
     const projetos = await prisma.projeto.findMany({
       where: {
         ...(clienteId ? { clienteId } : {}),
-        ...(projetoId ? { id: projetoId } : {}),
+        ...(ids.length ? { id: { in: ids } } : {}),
         ...(statusProjeto ? { status: statusProjeto } : {}),
         ...(sprintId ? { sprints: { some: { id: sprintId } } } : {}),
         // Equipe continua sendo departamento; incluir também trabalho sem vínculo
@@ -128,15 +130,26 @@ export const dashboardRepository = {
       include: { cliente: { select: { nome: true } }, sprints: { orderBy: { dataInicio: "asc" } } },
     });
   },
+  findSprint(id) {
+    return prisma.sprint.findUnique({
+      where: { id },
+      select: { id: true, nome: true, projetoId: true },
+    });
+  },
   // Nomes dos filtros por id, para identificar o recorte no relatório exportado.
-  async filterNames({ clienteId, projetoId, colaboradorId, sprintId } = {}) {
-    const [cliente, projeto, colaborador, sprint] = await Promise.all([
+  async filterNames({ clienteId, projetoId, projetoIds, colaboradorId, sprintId } = {}) {
+    const ids = projetoIds?.length ? projetoIds : projetoId ? [projetoId] : [];
+    const [cliente, projetos, colaborador, sprint] = await Promise.all([
       clienteId
         ? prisma.cliente.findUnique({ where: { id: clienteId }, select: { nome: true } })
         : null,
-      projetoId
-        ? prisma.projeto.findUnique({ where: { id: projetoId }, select: { nome: true } })
-        : null,
+      ids.length
+        ? prisma.projeto.findMany({
+            where: { id: { in: ids } },
+            select: { nome: true },
+            orderBy: { nome: "asc" },
+          })
+        : [],
       colaboradorId
         ? prisma.colaborador.findUnique({
             where: { id: colaboradorId },
@@ -149,7 +162,7 @@ export const dashboardRepository = {
     ]);
     return {
       cliente: cliente?.nome ?? null,
-      projeto: projeto?.nome ?? null,
+      projetos: projetos.map((item) => item.nome),
       colaborador: colaborador?.nomeCompleto ?? null,
       sprint: sprint?.nome ?? null,
     };
@@ -161,7 +174,7 @@ export const dashboardRepository = {
     });
   },
   async options() {
-    const [clientes, departamentos, projetos, colaboradores] = await Promise.all([
+    const [clientes, departamentos, projetos, colaboradores, sprints] = await Promise.all([
       prisma.cliente.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
       prisma.colaborador.findMany({
         where: {
@@ -176,12 +189,17 @@ export const dashboardRepository = {
         orderBy: { departamento: "asc" },
       }),
       prisma.projeto.findMany({
-        select: { id: true, nome: true, status: true },
+        select: { id: true, nome: true, status: true, clienteId: true },
         orderBy: { nome: "asc" },
       }),
       prisma.colaborador.findMany({
         select: { id: true, nomeCompleto: true, status: true },
         orderBy: { nomeCompleto: "asc" },
+      }),
+      // A sprint só faz sentido junto do projeto dela: a tela mostra as do projeto escolhido.
+      prisma.sprint.findMany({
+        select: { id: true, nome: true, projetoId: true, statusRegistro: true },
+        orderBy: [{ dataInicio: "asc" }, { id: "asc" }],
       }),
     ]);
     return {
@@ -189,6 +207,7 @@ export const dashboardRepository = {
       equipes: departamentos.map((item) => item.departamento),
       projetos,
       colaboradores,
+      sprints,
     };
   },
 };

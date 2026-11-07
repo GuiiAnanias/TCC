@@ -78,7 +78,7 @@ const bonificacoes = [
   { papel: "Dev", percentual: 10, dataInicio: new Date("2026-01-01"), dataFim: null },
 ];
 
-function simular({ carregados = projetos } = {}) {
+function simular({ carregados = projetos, nomesProjetos = [] } = {}) {
   const original = { ...dashboardRepository };
   const bonificacoesOriginal = bonificacoesPapeisRepository.findAll;
   const filtrosRecebidos = [];
@@ -88,7 +88,7 @@ function simular({ carregados = projetos } = {}) {
   };
   dashboardRepository.filterNames = async () => ({
     cliente: "Cliente A",
-    projeto: null,
+    projetos: nomesProjetos,
     colaborador: null,
     sprint: null,
   });
@@ -146,6 +146,7 @@ test("relatório usa o recorte do dashboard e soma igual aos indicadores", async
   );
   assert.equal(procurar(resumo, "Cliente").value, "Cliente A");
   assert.equal(procurar(resumo, "Equipe (departamento)").value, "Todas");
+  assert.equal(procurar(resumo, "Projetos").value, "Todos");
   assert.equal(procurar(resumo, "Horas trabalhadas").value, dashboard.resumo.horas);
   assert.equal(procurar(resumo, "Custo total (R$)").value, dashboard.resumo.custo);
   assert.equal(procurar(resumo, "Custo total (R$)").numFmt, '"R$" #,##0.00');
@@ -214,4 +215,13 @@ test("recorte vazio gera abas com cabeçalho e aviso, sem tabela vazia", async (
     assert.equal(aba.getCell("A2").value, "Sem dados no recorte selecionado.", nome);
   }
   assert.equal(procurar(pasta.getWorksheet("Resumo"), "Projetos no recorte").value, 0);
+});
+
+test("relatório com vários projetos lista todos eles nos filtros aplicados", async (t) => {
+  const banco = simular({ nomesProjetos: ["Mobile", "Portal"] });
+  t.after(() => banco.restaurar());
+  const filtros = { projetoIds: [10, 11] };
+  const pasta = await abrir((await relatoriosService.indicadoresXlsx(filtros)).arquivo);
+  assert.deepEqual(banco.filtrosRecebidos, [filtros], "O mesmo recorte do dashboard.");
+  assert.equal(procurar(pasta.getWorksheet("Resumo"), "Projetos").value, "Mobile; Portal");
 });

@@ -99,7 +99,7 @@ function abaResumo(pasta, relatorio, geradoEm) {
   secao("Filtros aplicados");
   item("Período (data dos apontamentos)", textoPeriodo(filtros));
   item("Cliente", nomesFiltros.cliente ?? "Todos");
-  item("Projeto", nomesFiltros.projeto ?? "Todos");
+  item("Projetos", nomesFiltros.projetos?.length ? nomesFiltros.projetos.join("; ") : "Todos");
   item("Colaborador", nomesFiltros.colaborador ?? "Todos");
   item("Equipe (departamento)", filtros.equipe ?? "Todas");
   item("Sprint", nomesFiltros.sprint ?? "Todas");
