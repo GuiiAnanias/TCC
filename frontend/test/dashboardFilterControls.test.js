@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import React, { act } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { installDom, mount, click, change } from "../scripts/testing/dom.mjs";
 import { api } from "../src/api/client.js";
 import { MultiSelect } from "../src/components/MultiSelect.jsx";
@@ -216,7 +217,21 @@ test("o dashboard do colaborador usa o mesmo recorte de vários projetos", async
     };
   };
   const { EntityDashboardPage } = await import("../src/pages/EntityDashboardPage.jsx");
-  const view = await mount(React.createElement(EntityDashboardPage, { type: "colaboradores" }));
+  // Abre pela rota com o código do colaborador, como no sistema.
+  const view = await mount(
+    React.createElement(
+      Routes,
+      null,
+      React.createElement(Route, {
+        path: "/",
+        element: React.createElement(Navigate, { to: "/dashboard/colaboradores/5" }),
+      }),
+      React.createElement(Route, {
+        path: "/dashboard/colaboradores/:id",
+        element: React.createElement(EntityDashboardPage, { type: "colaboradores" }),
+      }),
+    ),
+  );
   try {
     await esperar();
     const raiz = view.container;
