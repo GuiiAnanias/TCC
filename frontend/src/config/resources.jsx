@@ -441,7 +441,7 @@ export const resources = [
         label: "Equipe",
         render: (item) => {
           const total = activeTeamCount(item);
-          return `${total} ativo${total === 1 ? "" : "s"}`;
+          return total ? `${total} vigente${total === 1 ? "" : "s"} hoje` : "Sem equipe vigente";
         },
       },
       { key: "dataInicio", label: "Início", render: (item) => date(item.dataInicio) },
