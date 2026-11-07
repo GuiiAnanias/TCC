@@ -152,9 +152,35 @@ try {
   const archived = await service.get({ statusProjeto: "ENCERRADO" });
   assert.equal(archived.resumo.projetos, 1);
   assert.equal(archived.resumo.custo, 340);
+  // Vários projetos: o recorte traz só os escolhidos e soma igual aos dashboards individuais.
+  const integracao = base.projetos.find((row) => row.nome === "Integração de Dados (demo)");
+  const doisProjetos = [portal.id, integracao.id].sort((a, b) => a - b);
+  const escolhidos = await service.get({ projetoIds: doisProjetos });
+  assert.deepEqual(
+    escolhidos.projetos.map((row) => row.id).sort((a, b) => a - b),
+    doisProjetos,
+  );
+  const individuais = await Promise.all(doisProjetos.map((id) => service.project(id)));
+  const somar = (campo) =>
+    Math.round(individuais.reduce((total, row) => total + row.resumo[campo], 0) * 100) / 100;
+  assert.equal(escolhidos.resumo.horas, somar("horas"));
+  assert.equal(escolhidos.resumo.custo, somar("custo"));
+  const outroCliente = base.clientes.find((row) => row.id !== portal.clienteId);
+  assert.equal(
+    (await service.get({ projetoIds: [portal.id], clienteId: outroCliente.id })).resumo.projetos,
+    0,
+    "Filtros combinados se somam: projeto de outro cliente fica fora.",
+  );
   const septemberSprint = detail.projeto.sprints.find((row) => row.externalId === "portal-set");
   const sprint = await service.project(portal.id, { sprintId: septemberSprint.id });
   assert.equal(sprint.resumo.horas, 14);
+  assert.equal(
+    (await service.get({ projetoIds: doisProjetos, sprintId: septemberSprint.id })).resumo.horas,
+    14,
+  );
+  await assert.rejects(service.get({ projetoIds: [integracao.id], sprintId: septemberSprint.id }), {
+    statusCode: 400,
+  });
   assert.equal(sprint.resumo.assertividade, null);
   assert.equal(sprint.resumo.assertividadeEstimativas, 57.14);
   assert.equal(
@@ -226,15 +252,25 @@ try {
     assert.equal((await get("/projetos/99999999")).status, 404);
     assert.equal((await get("/colaboradores/99999999")).status, 404);
     assert.equal((await get(`/projetos/${portal.id}?dataInicio=2026-02-30`)).status, 400);
+    const multiplos = await get(`?projetoIds=${doisProjetos.join(",")}&statusProjeto=ATIVO`);
+    assert.equal(multiplos.status, 200);
+    assert.equal((await multiplos.json()).projetos.length, 2);
+    assert.equal((await get("?projetoIds=1,x")).status, 400);
+    const sprintAlheia = await get(`?projetoIds=${integracao.id}&sprintId=${septemberSprint.id}`);
+    assert.equal(sprintAlheia.status, 400);
+    assert.match((await sprintAlheia.json()).message, /não pertence aos projetos selecionados/);
     assert.equal((await fetch(`${url}/projetos/${portal.id}`)).status, 401);
     const options = await (await get("/opcoes")).json();
     assert.equal(options.projetos.length, 6);
     assert.equal(options.colaboradores.length, 9);
+    assert.ok(options.projetos.every((row) => row.clienteId));
+    assert.ok(options.sprints.some((row) => row.id === septemberSprint.id));
+    assert.ok(options.sprints.every((row) => row.projetoId && row.nome));
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
   console.log(
-    "OK: indicadores, filtros, sprints, histórico, auditoria, contexto compartilhado, custos conciliados, alterações manuais e API autenticada de projeto/colaborador.",
+    "OK: indicadores, filtros (inclusive vários projetos), sprints, histórico, auditoria, contexto compartilhado, custos conciliados, alterações manuais e API autenticada de projeto/colaborador.",
   );
 } finally {
   await client?.$disconnect();

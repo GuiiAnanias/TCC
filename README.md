@@ -114,6 +114,7 @@ Funcionalidades disponíveis:
 - Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios e histórico.
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
+- Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
 - Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
 - Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar.
 - Consulta visual dos dados do banco pelo Prisma Studio.
@@ -411,7 +412,7 @@ Exemplo para aplicar uma configuração financeira ao colaborador:
 Relatórios e importação em Excel:
 
 ```txt
-GET    /relatorios/indicadores.xlsx          aceita os mesmos filtros de GET /dashboard
+GET    /relatorios/indicadores.xlsx          aceita os mesmos filtros de GET /dashboard (docs/filtros.md)
 GET    /importacoes/apontamentos/modelo      modelo .xlsx com listas dos cadastros ativos
 POST   /importacoes/apontamentos/validacao   corpo = arquivo .xlsx; confere sem gravar
 POST   /importacoes/apontamentos             corpo = arquivo .xlsx; grava tudo ou nada

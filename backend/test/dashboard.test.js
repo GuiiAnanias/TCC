@@ -333,3 +333,75 @@ test("repository applies combined filters and leaves default project and entry s
     prisma.projeto.findMany = original;
   }
 });
+
+test("vários projetos chegam como lista, repetidos na URL ou pelo projetoId antigo, sem duplicar", () => {
+  const parse = (query) => dashboardQuerySchema.parse(query);
+  assert.deepEqual(parse({ projetoIds: "3,1" }), { projetoIds: [1, 3] });
+  assert.deepEqual(parse({ projetoIds: ["2", "1"] }), { projetoIds: [1, 2] });
+  assert.deepEqual(parse({ projetoIds: " 2 , 2 ,1" }), { projetoIds: [1, 2] });
+  assert.deepEqual(parse({ projetoId: "4" }), { projetoIds: [4] }, "O parâmetro antigo continua.");
+  assert.deepEqual(parse({ projetoId: "4", projetoIds: "4,5" }), { projetoIds: [4, 5] });
+  assert.deepEqual(parse({ projetoIds: "" }), {}, "Lista vazia é o mesmo que todos os projetos.");
+  for (const projetoIds of ["1,x", "0", "-2", "1.5"])
+    assert.equal(dashboardQuerySchema.safeParse({ projetoIds }).success, false, projetoIds);
+  const muitos = Array.from({ length: 51 }, (_, indice) => indice + 1).join(",");
+  const erro = dashboardQuerySchema.safeParse({ projetoIds: muitos }).error;
+  assert.match(erro.issues[0].message, /até 50 projetos/);
+});
+
+test("o recorte por vários projetos chega ao banco como uma lista", async () => {
+  const original = prisma.projeto.findMany;
+  const queries = [];
+  prisma.projeto.findMany = async (query) => {
+    queries.push(query);
+    return [];
+  };
+  try {
+    await dashboardRepository.load(
+      dashboardQuerySchema.parse({ projetoIds: "7,2", clienteId: "1" }),
+    );
+    assert.deepEqual(queries[0].where.id, { in: [2, 7] });
+    assert.equal(queries[0].where.clienteId, 1);
+    await dashboardRepository.load({ projetoId: 9 });
+    assert.deepEqual(queries[1].where.id, { in: [9] }, "Chamadas internas antigas continuam.");
+  } finally {
+    prisma.projeto.findMany = original;
+  }
+});
+
+test("sprint de outro projeto é recusada; sem projeto escolhido, a sprint define o recorte", async () => {
+  const original = { ...dashboardRepository };
+  const originalBonuses = bonificacoesPapeisRepository.findAll;
+  const carregados = [];
+  dashboardRepository.findSprint = async (id) => (id === 5 ? { id: 5, projetoId: 2 } : null);
+  dashboardRepository.findProject = async (id) => ({ id, nome: "Portal", sprints: [] });
+  dashboardRepository.findCollaborator = async (id) => ({ id, nomeCompleto: "Ana" });
+  dashboardRepository.load = async (filters) => {
+    carregados.push(filters);
+    return [];
+  };
+  bonificacoesPapeisRepository.findAll = async () => [];
+  try {
+    const recusa = { statusCode: 400, message: /não pertence aos projetos selecionados/ };
+    await assert.rejects(dashboardService.get({ projetoIds: [1, 3], sprintId: 5 }), recusa);
+    await assert.rejects(dashboardService.project(1, { sprintId: 5 }), recusa);
+    await assert.rejects(dashboardService.report({ projetoIds: [1], sprintId: 5 }), recusa);
+    await assert.rejects(dashboardService.get({ sprintId: 8 }), {
+      statusCode: 400,
+      message: /Sprint não encontrada/,
+    });
+    assert.equal(carregados.length, 0, "Nada é consultado com um recorte impossível.");
+    await dashboardService.get({ projetoIds: [2, 3], sprintId: 5 });
+    await dashboardService.get({ sprintId: 5 });
+    await dashboardService.project(2, { sprintId: 5 });
+    await dashboardService.collaborator(4, { projetoIds: [2], sprintId: 5 });
+    assert.deepEqual(
+      carregados.map((filtros) => filtros.projetoIds ?? null),
+      [[2, 3], null, [2], [2]],
+    );
+    assert.equal(carregados[3].colaboradorId, 4);
+  } finally {
+    Object.assign(dashboardRepository, original);
+    bonificacoesPapeisRepository.findAll = originalBonuses;
+  }
+});

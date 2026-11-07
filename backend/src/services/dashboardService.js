@@ -156,8 +156,21 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
   };
 }
 
+/**
+ * Uma sprint pertence a um único projeto. Escolhê-la junto de projetos que não são o dela
+ * esvaziaria o recorte sem explicação, então a combinação é recusada.
+ */
+async function conferirRecorte(filters) {
+  if (!filters.sprintId) return;
+  const sprint = await dashboardRepository.findSprint(filters.sprintId);
+  if (!sprint) throw new HttpError(400, "Sprint não encontrada.");
+  if (filters.projetoIds?.length && !filters.projetoIds.includes(sprint.projetoId))
+    throw new HttpError(400, "A sprint escolhida não pertence aos projetos selecionados.");
+}
+
 export const dashboardService = {
   async get(filters) {
+    await conferirRecorte(filters);
     const [projects, bonuses] = await Promise.all([
       dashboardRepository.load(filters),
       bonificacoesPapeisRepository.findAll(),
@@ -167,7 +180,10 @@ export const dashboardService = {
   async project(id, filters = {}) {
     const project = await dashboardRepository.findProject(id);
     if (!project) throw new HttpError(404, "Projeto não encontrado.");
-    const scoped = { ...filters, projetoId: id };
+    // O próprio projeto da tela prevalece sobre qualquer outro projeto informado.
+    const { projetoId: _projetoId, ...resto } = filters;
+    const scoped = { ...resto, projetoIds: [id] };
+    await conferirRecorte(scoped);
     const [projects, bonuses] = await Promise.all([
       dashboardRepository.load(scoped),
       bonificacoesPapeisRepository.findAll(),
@@ -184,6 +200,7 @@ export const dashboardService = {
     const collaborator = await dashboardRepository.findCollaborator(id);
     if (!collaborator) throw new HttpError(404, "Colaborador não encontrado.");
     const scoped = { ...filters, colaboradorId: id };
+    await conferirRecorte(scoped);
     const [projects, bonuses] = await Promise.all([
       dashboardRepository.load(scoped),
       bonificacoesPapeisRepository.findAll(),
@@ -201,6 +218,7 @@ export const dashboardService = {
   },
   // Mesmo recorte do dashboard geral, com uma linha por apontamento para o relatório em Excel.
   async report(filters = {}) {
+    await conferirRecorte(filters);
     const [projects, bonuses, nomesFiltros] = await Promise.all([
       dashboardRepository.load(filters),
       bonificacoesPapeisRepository.findAll(),
