@@ -8,6 +8,7 @@ const labels = {
   sprints: "Sprints (incluindo arquivadas)",
   apontamentos: "Apontamentos de horas",
   avaliacoes: "Referências em avaliações de premiação",
+  relatorios: "Relatórios gerados",
 };
 
 export function ProjectDeletionDialog({ project, onClose, onDeleted }) {
