@@ -5,6 +5,7 @@ import { ImportacaoPage } from "./pages/ImportacaoPage.jsx";
 import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
 import {
+  ChartNoAxesCombined,
   DatabaseZap,
   LayoutDashboard,
   PanelLeftClose,
@@ -13,6 +14,7 @@ import {
   ListTodo,
   Award,
   FileUp,
+  UserRoundSearch,
 } from "lucide-react";
 import { resources } from "./config/resources.jsx";
 import { CrudPage } from "./pages/CrudPage.jsx";
@@ -61,7 +63,13 @@ function AppRoutes() {
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
+        {/* Sem o código na URL, o dashboard individual abre na escolha do projeto/colaborador. */}
+        <Route path="/dashboard/projetos" element={<EntityDashboardPage type="projetos" />} />
         <Route path="/dashboard/projetos/:id" element={<EntityDashboardPage type="projetos" />} />
+        <Route
+          path="/dashboard/colaboradores"
+          element={<EntityDashboardPage type="colaboradores" />}
+        />
         <Route
           path="/dashboard/colaboradores/:id"
           element={<EntityDashboardPage type="colaboradores" />}
@@ -147,12 +155,31 @@ function ProtectedLayout() {
         <nav className="nav-list" id="sidebar-navigation" aria-label="Menu principal">
           <NavLink
             to="/dashboard"
+            end
             className="nav-link"
             title="Dashboard Geral"
             aria-label="Dashboard Geral"
           >
             <LayoutDashboard size={19} aria-hidden="true" />
             <span className="sidebar-label">Dashboard Geral</span>
+          </NavLink>
+          <NavLink
+            to="/dashboard/projetos"
+            className="nav-link"
+            title="Visão por projeto"
+            aria-label="Visão por projeto"
+          >
+            <ChartNoAxesCombined size={19} aria-hidden="true" />
+            <span className="sidebar-label">Visão por projeto</span>
+          </NavLink>
+          <NavLink
+            to="/dashboard/colaboradores"
+            className="nav-link"
+            title="Visão por colaborador"
+            aria-label="Visão por colaborador"
+          >
+            <UserRoundSearch size={19} aria-hidden="true" />
+            <span className="sidebar-label">Visão por colaborador</span>
           </NavLink>
           {resources.map((resource) => {
             const Icon = resource.icon;
