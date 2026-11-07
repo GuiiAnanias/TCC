@@ -7,6 +7,8 @@ export const projetosRoutes = Router();
 projetosRoutes.get("/papeis", asyncHandler(projetosController.roles));
 projetosRoutes.get("/", asyncHandler(projetosController.index));
 projetosRoutes.post("/", asyncHandler(projetosController.store));
+projetosRoutes.get("/:id/exclusao", asyncHandler(projetosController.deletionInfo));
+projetosRoutes.delete("/:id/permanente", asyncHandler(projetosController.deletePermanently));
 projetosRoutes.get("/:id", asyncHandler(projetosController.show));
 projetosRoutes.put("/:id", asyncHandler(projetosController.update));
 projetosRoutes.delete("/:id", asyncHandler(projetosController.destroy));
