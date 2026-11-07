@@ -1277,10 +1277,17 @@ tbody tr:hover {
   border: 1px solid var(--success-line);
 }
 
-.status-inativo {
+.status-inativo,
+.status-pausado,
+.status-cancelado {
   color: var(--warning);
   background: var(--warning-soft);
   border: 1px solid var(--warning-line);
+}
+.status-encerrado {
+  color: var(--muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
 }
 
 .status-pendente {

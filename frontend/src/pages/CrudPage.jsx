@@ -12,6 +12,7 @@ import {
   Save,
   Search,
   Trash2,
+  Archive,
   UsersRound,
   WalletCards,
   X,
@@ -450,7 +451,7 @@ export function CrudPage({ config }) {
 
   async function handleInactivate(record) {
     const deleting = config.deleteMode === "delete";
-    const confirmMessage = `${deleting ? "Excluir definitivamente" : "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
+    const confirmMessage = `${deleting ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
 
     if (!window.confirm(confirmMessage)) {
       return;
@@ -462,7 +463,9 @@ export function CrudPage({ config }) {
     try {
       await api.delete(`${config.endpoint}/${record.id}`);
       if (editingId === record.id) resetForm();
-      setMessage(`${config.singular} ${deleting ? "excluído" : "inativado"} com sucesso.`);
+      setMessage(
+        `${config.singular} ${deleting ? "excluído" : config.inactivatedLabel || "inativado"} com sucesso.`,
+      );
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
@@ -1017,9 +1020,14 @@ export function CrudPage({ config }) {
                           type="button"
                           className="icon-button danger"
                           onClick={() => handleInactivate(record)}
-                          title={config.deleteMode === "delete" ? "Excluir" : "Inativar"}
+                          title={
+                            config.deleteMode === "delete"
+                              ? "Excluir"
+                              : config.inactivateLabel || "Inativar"
+                          }
+                          disabled={config.teamManager && record.status === "ENCERRADO"}
                         >
-                          <Trash2 size={17} />
+                          {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
                         </button>
                       </div>
                     </td>
