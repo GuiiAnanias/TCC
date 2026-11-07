@@ -4,7 +4,7 @@ O front é uma aplicação React em português, com tema escuro (padrão) e clar
 
 ## Estrutura comum
 
-- **Menu lateral**: Dashboard Geral, Clientes, Colaboradores, Remuneração, Projetos, Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas. No rodapé ficam o usuário logado e o botão Sair.
+- **Menu lateral**: Dashboard Geral, Visão por projeto, Visão por colaborador, Clientes, Colaboradores, Remuneração, Projetos, Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas. No rodapé ficam o usuário logado e o botão Sair.
 - O menu pode ser recolhido para mostrar só os ícones. A escolha fica salva no navegador; em telas de até 860 px ele começa recolhido.
 - **Ações da página**: os botões **Atualizar** (recarrega os dados da tela) e de tema ficam no canto superior direito. Ao rolar a página, eles se acomodam no menu lateral, acima do usuário. O tema escolhido fica salvo no navegador.
 - **Ajuda**: o botão "?" ao lado do título abre a explicação da tela, com as regras e fórmulas usadas. Fecha com Esc ou pelo botão de fechar.
@@ -26,10 +26,10 @@ Inativar e excluir pedem confirmação. Cada tela tem a própria ajuda; as regra
 
 ## Dashboards
 
-- **Dashboard Geral**: filtros aplicados pelo botão Aplicar filtros, cartões de resumo (projetos ativos, clientes, custo, horas, assertividade média do orçamento e ocorrências), indicadores operacionais de tarefas e as seções Comparativo por projeto, Auditoria operacional e Resumo por cliente. **Exportar Excel** gera a planilha do recorte aplicado.
-- **Dashboards do projeto e do colaborador**: abertos pela ação Dashboard das listas ou pelos nomes nas tabelas do Dashboard Geral. Mostram o resumo da entidade e as abas Tarefas, Apontamentos, Participação e custos e Auditoria.
+- **Dashboard Geral**: filtros aplicados pelo botão Aplicar filtros e mostrados em etiquetas, cartões de resumo (projetos ativos, clientes, custo, horas, assertividade média do orçamento e ocorrências), indicadores operacionais de tarefas e as seções Comparativo por projeto, Auditoria operacional, Ranking de inconsistências, Resumo por cliente e Resumo por equipe. **Exportar Excel** gera a planilha do recorte aplicado.
+- **Visão por projeto** e **Visão por colaborador**: pelo menu, abrem numa tela de escolha; também podem ser abertas pela ação Dashboard das listas ou pelos nomes nas tabelas do Dashboard Geral. Mostram o resumo da entidade e as abas Tarefas, Apontamentos, Participação e custos e Auditoria; a do projeto começa pela aba Evolução.
 
-As fórmulas estão em [indicadores.md](indicadores.md).
+As fórmulas estão em [indicadores.md](indicadores.md), os filtros em [filtros.md](filtros.md) e as visões em [dashboards.md](dashboards.md).
 
 ## Outras telas
 

@@ -1,6 +1,6 @@
 # Fórmulas dos indicadores
 
-Os dashboards, a exportação em Excel e a base da premiação usam os mesmos cálculos, feitos no backend (`dashboardService.js`, `dashboardCosts.js` e `operationalIndicators.js`). O botão "?" do Dashboard Geral traz o mesmo conteúdo em linguagem de tela.
+Os dashboards, a exportação em Excel e a base da premiação usam os mesmos cálculos, feitos no backend (`dashboardService.js`, `dashboardCosts.js` e `operationalIndicators.js`). O botão "?" do Dashboard Geral traz o mesmo conteúdo em linguagem de tela. Os filtros disponíveis estão em [filtros.md](filtros.md), e as visões do dashboard em [dashboards.md](dashboards.md).
 
 ## Custo e horas
 
@@ -58,7 +58,7 @@ Cada ocorrência aponta o registro que precisa de conferência:
 | Tarefa sem estimativa      | Tarefa não cancelada sem estimativa                                |
 | Tarefa concluída sem horas | Tarefa concluída sem apontamento                                   |
 
-As duas primeiras somam as **inconsistências** de custo do projeto. A falta de regra de bonificação não é ocorrência: aplica-se 0%. O ranking da auditoria ordena os projetos pela assertividade do orçamento, do menor percentual para o maior, com os indisponíveis no fim.
+As duas primeiras somam as **inconsistências** de custo do projeto. A falta de regra de bonificação não é ocorrência: aplica-se 0%. Na seção Auditoria operacional, o ranking ordena os projetos pela assertividade do orçamento, do menor percentual para o maior, com os indisponíveis no fim. O Ranking de inconsistências, separado, ordena pela quantidade de ocorrências ([dashboards.md](dashboards.md)).
 
 ## Conferência com o seed
 
