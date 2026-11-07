@@ -91,6 +91,15 @@ try {
       }),
     ),
   );
+  // Este cenário verifica a soma de horas; manter uma equipe válida no projeto.
+  await client.projetoColaborador.create({
+    data: {
+      projetoId: project.id,
+      colaboradorId: people[2].id,
+      papel: "QA",
+      dataEntrada: new Date("2026-01-01"),
+    },
+  });
   const entry = (date, amount, person = people[0]) => ({
     projetoId: project.id,
     colaboradorId: person.id,

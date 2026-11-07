@@ -27,8 +27,8 @@ export const clientesRepository = {
     });
   },
 
-  findById(id) {
-    return prisma.cliente.findUnique({ where: { id } });
+  findById(id, db = prisma) {
+    return db.cliente.findUnique({ where: { id } });
   },
 
   findByNome(nome) {

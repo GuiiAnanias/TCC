@@ -40,6 +40,7 @@ async function withRepositories({ horasNoDia = 0, record = existente } = {}, run
   };
   colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
   projetosRepository.findById = async (id) => ({ id, status: "ATIVO" });
+  projetosRepository.hasOperationalTeam = async () => true;
   try {
     await run(calls);
   } finally {
