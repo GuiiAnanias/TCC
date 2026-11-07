@@ -12,6 +12,7 @@ import {
   Save,
   Search,
   Trash2,
+  Archive,
   UsersRound,
   WalletCards,
   X,
@@ -23,6 +24,7 @@ import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
+import { ProjectDeletionDialog } from "../components/ProjectDeletionDialog.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -118,6 +120,7 @@ export function CrudPage({ config }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [deletingProject, setDeletingProject] = useState(null);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
   const [consultingCep, setConsultingCep] = useState(false);
   const [cepFeedback, setCepFeedback] = useState("");
@@ -258,6 +261,7 @@ export function CrudPage({ config }) {
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
+    setDeletingProject(null);
     setSelectedRecord(null);
     setConsultingCnpj(false);
     setConsultingCep(false);
@@ -1019,8 +1023,19 @@ export function CrudPage({ config }) {
                           onClick={() => handleInactivate(record)}
                           title={config.deleteMode === "delete" ? "Excluir" : "Inativar"}
                         >
-                          <Trash2 size={17} />
+                          {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
                         </button>
+                        {config.key === "projetos" && (
+                          <button
+                            type="button"
+                            className="icon-button danger"
+                            title="Excluir definitivamente"
+                            aria-label={`Excluir definitivamente o projeto ${record.nome}`}
+                            onClick={() => setDeletingProject(record)}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1032,6 +1047,20 @@ export function CrudPage({ config }) {
       </div>
 
       {config.key === "remuneracoes" && <RoleBonusManager />}
+      {config.key === "projetos" && deletingProject && (
+        <ProjectDeletionDialog
+          project={deletingProject}
+          onClose={() => setDeletingProject(null)}
+          onDeleted={async (project) => {
+            setDeletingProject(null);
+            if (editingId === project.id) resetForm();
+            if (selectedRecord?.id === project.id) setSelectedRecord(null);
+            setError("");
+            setMessage(`Projeto "${project.nome}" excluído definitivamente.`);
+            await loadRecords();
+          }}
+        />
+      )}
       <div ref={detailRegion}>
         {config.teamManager && selectedRecord ? (
           <ProjectTeamManager
