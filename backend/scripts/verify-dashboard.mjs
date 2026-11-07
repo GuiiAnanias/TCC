@@ -95,9 +95,30 @@ try {
   assert.equal(base.resumo.percentualTarefasSemEstimativa, 25);
   assert.equal(base.ocorrencias.length, 9);
   assert.equal(new Set(base.ocorrencias.map((row) => row.chave)).size, 9);
+  // Resumo por equipe (departamento) e ranking de inconsistências fecham com o total.
+  const somaEquipes = (campo) =>
+    Math.round(base.equipes.reduce((total, row) => total + row[campo], 0) * 100) / 100;
+  assert.equal(somaEquipes("horas"), base.resumo.horas);
+  assert.equal(somaEquipes("custo"), base.resumo.custo);
+  assert.equal(somaEquipes("horasSemCusto"), base.resumo.horasSemCusto);
+  assert.ok(base.equipes.some((row) => row.equipe === "Tecnologia"));
+  assert.equal(
+    base.rankingInconsistencias.reduce((total, row) => total + row.total, 0),
+    base.ocorrencias.length,
+  );
+  assert.ok(
+    base.rankingInconsistencias.every(
+      (row, indice, lista) => indice === 0 || lista[indice - 1].total >= row.total,
+    ),
+  );
   const detail = await service.project(portal.id);
   assert.equal(detail.resumo.horas, 22);
   assert.equal(detail.resumo.custo, 1212);
+  assert.equal(detail.evolucao.at(-1).custoAcumulado, 1212, "O gráfico fecha com o custo.");
+  assert.equal(
+    detail.evolucao.reduce((total, row) => total + row.horas, 0),
+    22,
+  );
   assert.equal(detail.resumo.assertividadeEstimativas, 55.56);
   assert.equal(detail.resumo.percentualTarefasSemHoras, 33.33);
   assert.equal(detail.resumo.percentualTarefasSemEstimativa, 20);

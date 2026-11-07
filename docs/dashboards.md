@@ -1,0 +1,41 @@
+# Visões dos dashboards
+
+O Dashboard Geral resume todos os projetos do recorte. As visões por projeto e por colaborador detalham uma entidade. Todas usam os mesmos apontamentos e o mesmo cálculo de custo.
+
+## Acesso pelo menu
+
+- **Dashboard Geral**: indicadores do recorte, com as seções abaixo.
+- **Visão por projeto** e **Visão por colaborador**: sem uma escolha anterior, abrem numa tela para escolher o projeto ou o colaborador. A lista traz também projetos não ativos e colaboradores inativos, para consulta do histórico. Depois da escolha, o seletor no topo troca de entidade sem voltar ao menu.
+- Os nomes nas tabelas do Dashboard Geral continuam levando ao dashboard de cada projeto.
+
+## Seções do Dashboard Geral
+
+| Seção                      | O que mostra                                                                                                                                             |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Comparativo por projeto    | Custo e horas por projeto, em gráfico e tabela                                                                                                           |
+| Auditoria operacional      | Ocorrências detalhadas e o ranking pela assertividade do orçamento (menor primeiro)                                                                      |
+| Ranking de inconsistências | Projetos do que tem mais para o que tem menos ocorrências, com a contagem por tipo; empate segue a ordem alfabética                                      |
+| Resumo por cliente         | Projetos, horas e custos por cliente                                                                                                                     |
+| Resumo por equipe          | Por departamento: colaboradores, projetos, horas, custo base, bonificação, custo total e pendências nas horas (sem valor/hora, sem equipe ou sem tarefa) |
+
+O ranking de inconsistências usa os mesmos tipos da auditoria: sem remuneração, sem participação na equipe, horas sem tarefa, tarefa sem estimativa e tarefa concluída sem horas. O total de cada projeto soma as ocorrências exibidas na auditoria.
+
+## Equipe é o departamento
+
+Decisão de 07/11/2026: equipe, no filtro e no resumo, é o departamento do cadastro do colaborador. Apontamentos de quem não tem departamento aparecem em "Sem departamento".
+
+Cada apontamento pertence a um único colaborador, então horas e custos entram uma vez só: a soma das equipes fecha com o total do dashboard, mesmo em tarefas com vários responsáveis. As ocorrências de tarefas (sem estimativa, concluída sem horas) não entram nas pendências das equipes, porque uma tarefa pode ter responsáveis de departamentos diferentes.
+
+## Evolução do projeto
+
+A visão por projeto abre na aba **Evolução**: um gráfico com o custo de cada mês (base e bonificação), a linha do custo acumulado e a linha do orçamento integral. Abaixo do gráfico, a tabela traz os mesmos números: horas, custo base, bonificação, custo do mês, custo acumulado e quanto ele representa do orçamento.
+
+- Sem apontamentos no recorte, a aba mostra um aviso no lugar do gráfico.
+- Com período ou sprint, o acumulado considera só os apontamentos do recorte; o percentual continua comparando com o orçamento integral.
+- O último custo acumulado é igual ao custo total do projeto no mesmo recorte.
+
+API: `GET /api/dashboard/projetos/:id` passa a devolver `evolucao` (mês, horas, custo base, bonificação, custo, custo acumulado, percentual do orçamento e quantidade de apontamentos). `GET /api/dashboard` devolve `equipes` e `rankingInconsistencias`.
+
+## Atualização dos dados
+
+Decisão de 07/11/2026: os dashboards não se atualizam sozinhos. O botão **Atualizar** recarrega os indicadores e as opções dos filtros. Assim, a tela não fica consultando o banco em segundo plano, e o que está na tela continua igual ao que foi exportado até a pessoa pedir uma atualização.

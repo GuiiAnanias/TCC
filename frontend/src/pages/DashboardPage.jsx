@@ -8,9 +8,11 @@ import {
   Clock3,
   FileSpreadsheet,
   Filter,
+  ListOrdered,
   RotateCcw,
   ShieldCheck,
   Target,
+  Users,
   WalletCards,
 } from "lucide-react";
 import { api } from "../api/client.js";
@@ -50,7 +52,17 @@ const percent = (value) => (value == null ? "Indisponível" : `${number(value)}%
 const sections = [
   { key: "projetos", label: "Comparativo por projeto", icon: BarChart3 },
   { key: "auditoria", label: "Auditoria operacional", icon: ShieldCheck },
+  { key: "inconsistencias", label: "Ranking de inconsistências", icon: ListOrdered },
   { key: "clientes", label: "Resumo por cliente", icon: Building2 },
+  { key: "equipes", label: "Resumo por equipe", icon: Users },
+];
+// Colunas do ranking: os mesmos tipos e nomes da tabela de ocorrências.
+const issueColumns = [
+  ["SEM_REMUNERACAO", "Sem remuneração"],
+  ["SEM_VINCULO", "Sem participação na equipe"],
+  ["SEM_TAREFA", "Horas sem tarefa"],
+  ["SEM_ESTIMATIVA", "Tarefa sem estimativa"],
+  ["CONCLUIDA_SEM_HORAS", "Concluída sem horas"],
 ];
 
 function Cost({ row }) {
@@ -599,6 +611,85 @@ export function DashboardPage() {
                       </div>
                     </>
                   )}
+                  {key === "inconsistencias" && (
+                    <div className="dashboard-table">
+                      <table>
+                        <caption>
+                          Projetos com mais ocorrências primeiro. A ordem pela assertividade do
+                          orçamento continua na Auditoria operacional.
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th>Posição</th>
+                            <th>Projeto</th>
+                            <th>Ocorrências</th>
+                            {issueColumns.map(([type, title]) => (
+                              <th key={type}>{title}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(data.rankingInconsistencias ?? []).map((row, index) => (
+                            <tr key={row.id}>
+                              <td>{row.total ? `${index + 1}º` : "—"}</td>
+                              <td>
+                                <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
+                              </td>
+                              <td>
+                                <strong>{row.total}</strong>
+                              </td>
+                              {issueColumns.map(([type]) => (
+                                <td key={type}>{row.porTipo[type] ?? 0}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {key === "equipes" &&
+                    (!data.equipes?.length ? (
+                      <p className="dashboard-empty">Sem apontamentos no recorte.</p>
+                    ) : (
+                      <div className="dashboard-table">
+                        <table>
+                          <caption>
+                            Equipe é o departamento do colaborador. Cada apontamento conta uma vez,
+                            mesmo em tarefas com vários responsáveis.
+                          </caption>
+                          <thead>
+                            <tr>
+                              <th>Equipe (departamento)</th>
+                              <th>Colaboradores</th>
+                              <th>Projetos</th>
+                              <th>Horas trabalhadas</th>
+                              <th>Custo base</th>
+                              <th>Bonificação</th>
+                              <th>Custo total</th>
+                              <th>Pendências nas horas</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {data.equipes.map((row) => (
+                              <tr key={row.equipe}>
+                                <td>{row.equipe}</td>
+                                <td>{row.colaboradores}</td>
+                                <td>{row.projetos}</td>
+                                <td>{number(row.horas)} h</td>
+                                <td>{money(row.custoBase)}</td>
+                                <td>
+                                  <Bonus row={row} />
+                                </td>
+                                <td>
+                                  <Cost row={row} />
+                                </td>
+                                <td>{row.pendencias}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ))}
                   {key === "clientes" && (
                     <div className="dashboard-table">
                       <table>
