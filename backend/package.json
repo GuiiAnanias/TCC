@@ -5,6 +5,7 @@
   "packageManager": "pnpm@11.19.0",
   "type": "module",
   "scripts": {
+    "test:project-deletion-db": "node scripts/verify-project-deletion.mjs",
     "test:auth-db": "node scripts/verify-auth.mjs",
     "test": "node --test",
     "test:finance-db": "node scripts/verify-finance-history.mjs",
