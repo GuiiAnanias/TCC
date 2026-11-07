@@ -68,6 +68,11 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
       .filter((valor) => valor != null);
   const emails = coluna(1);
   const projetos = coluna(4);
+  // Faturado exige uma participação válida. A ordem alfabética da lista não
+  // define a equipe do cenário (Mobile agora demonstra um projeto pausado).
+  const projetoEquipe = projetos.find((nome) => nome === "Portal do Cliente (demo)");
+  assert.ok(projetoEquipe, "Portal ativo está disponível para os lançamentos da equipe.");
+  assert.equal(projetos.includes("Aplicativo Mobile (demo)"), false);
   assert.ok(emails.includes("ana.demo@exemplo.local"), "Listas traz os e-mails ativos.");
   const tarefa = { titulo: listas.getCell("G2").value, projeto: listas.getCell("H2").value };
   assert.ok(tarefa.titulo && projetos.includes(tarefa.projeto));
@@ -91,11 +96,11 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
       "Aprovado",
       `${marca} 1`,
     ],
-    [diasAtras(2), "carla.demo@exemplo.local", projetos[0], null, "1,5", null, `${marca} 2`],
+    [diasAtras(2), "carla.demo@exemplo.local", projetoEquipe, null, "1,5", null, `${marca} 2`],
     [
       diasAtras(2),
       "bruno.demo@exemplo.local",
-      projetos[0],
+      projetoEquipe,
       null,
       "07:30",
       "Faturado",
@@ -141,9 +146,9 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
   resposta = await enviar(
     "/importacoes/apontamentos",
     await planilha([
-      [diasAtras(3), "diego.demo@exemplo.local", projetos[0], null, 16, null, `${marca} 4`],
-      [diasAtras(3), "diego.demo@exemplo.local", projetos[0], null, 10, null, `${marca} 5`],
-      [diasAtras(3), "eva.demo@exemplo.local", projetos[0], null, 1, null, `${marca} 6`],
+      [diasAtras(3), "diego.demo@exemplo.local", projetoEquipe, null, 16, null, `${marca} 4`],
+      [diasAtras(3), "diego.demo@exemplo.local", projetoEquipe, null, 10, null, `${marca} 5`],
+      [diasAtras(3), "eva.demo@exemplo.local", projetoEquipe, null, 1, null, `${marca} 6`],
     ]),
   );
   const excesso = await resposta.json();
@@ -153,8 +158,8 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
 
   // Duas importações simultâneas do mesmo arquivo: só uma grava.
   const simultanea = await planilha([
-    [diasAtras(4), "ana.demo@exemplo.local", projetos[0], null, 4, null, `${marca} 7`],
-    [diasAtras(4), "carla.demo@exemplo.local", projetos[0], null, 4, null, `${marca} 8`],
+    [diasAtras(4), "ana.demo@exemplo.local", projetoEquipe, null, 4, null, `${marca} 7`],
+    [diasAtras(4), "carla.demo@exemplo.local", projetoEquipe, null, 4, null, `${marca} 8`],
   ]);
   const respostas = await Promise.all([
     enviar("/importacoes/apontamentos", simultanea),
