@@ -1649,6 +1649,73 @@ tbody tr:hover {
   text-align: center;
 }
 
+/* Seleção de vários itens: caixa de marcação à esquerda e rodapé com limpar. */
+.multi-select .searchable-select__option {
+  justify-content: flex-start;
+}
+.multi-select__box {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--surface);
+}
+.multi-select .is-selected .multi-select__box {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.multi-select .is-selected .multi-select__box svg {
+  color: var(--button-text);
+}
+.multi-select__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 4px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.multi-select__footer span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+/* No painel de filtros, o seletor múltiplo usa a mesma letra dos selects nativos ao lado. */
+.dashboard-filters .multi-select .searchable-select__control span {
+  color: var(--text);
+  font-size: inherit;
+  font-weight: 400;
+}
+.dashboard-filters .multi-select .searchable-select__option span:not(.multi-select__box) {
+  color: inherit;
+  font-size: 14px;
+  font-weight: inherit;
+}
+.multi-select__clear {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--primary);
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.multi-select__clear:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.multi-select__clear:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
 /* Deixa os campos comuns com a mesma presença visual do seletor pesquisável. */
 .field > input,
 .field > select,
@@ -1747,9 +1814,14 @@ tbody tr:hover {
 }
 .dashboard-filters {
   display: grid;
-  grid-template-columns: minmax(260px, 1.4fr) minmax(150px, 1fr) minmax(170px, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   align-items: end;
+}
+@media (min-width: 1151px) {
+  .dashboard-filters:not(.entity-dashboard-filters) > .dashboard-period {
+    grid-column: span 2;
+  }
 }
 .dashboard-period {
   min-width: 0;
@@ -1788,6 +1860,28 @@ tbody tr:hover {
 }
 .dashboard-scope {
   margin: 16px 0;
+}
+/* Recorte aplicado, em etiquetas: o que os cartões, as tabelas e o Excel estão mostrando. */
+.dashboard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -6px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.dashboard-tags li {
+  max-width: 100%;
+  padding: 5px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.dashboard-tags li span {
+  font-weight: 700;
 }
 .dashboard-summary.summary-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));

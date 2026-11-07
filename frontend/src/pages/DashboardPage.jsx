@@ -20,6 +20,15 @@ import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { Link } from "react-router-dom";
 import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
 import { projectStatusOptions, projectStatusLabel } from "../config/projectOptions.js";
+import { MultiSelect } from "../components/MultiSelect.jsx";
+import {
+  ajustarRecorte,
+  etiquetasDoRecorte,
+  mesmoRecorte,
+  parametrosDoRecorte,
+  projetosDisponiveis,
+  sprintsDisponiveis,
+} from "../utils/dashboardFilters.js";
 
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
 
@@ -27,6 +36,9 @@ const emptyFilters = {
   dataInicio: "",
   dataFim: "",
   clienteId: "",
+  projetoIds: [],
+  colaboradorId: "",
+  sprintId: "",
   equipe: "",
   statusProjeto: "ATIVO",
 };
@@ -62,7 +74,13 @@ export function DashboardPage() {
   const [filters, setFilters] = useState(emptyFilters);
   const [applied, setApplied] = useState(emptyFilters);
   const [data, setData] = useState(null);
-  const [options, setOptions] = useState({ clientes: [], equipes: [] });
+  const [options, setOptions] = useState({
+    clientes: [],
+    equipes: [],
+    projetos: [],
+    colaboradores: [],
+    sprints: [],
+  });
   const [optionsError, setOptionsError] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -76,10 +94,7 @@ export function DashboardPage() {
     setLoading(true);
     setError("");
     try {
-      const params = Object.fromEntries(
-        Object.entries(nextFilters).filter(([, value]) => value !== ""),
-      );
-      const response = await api.get("/dashboard", { params });
+      const response = await api.get("/dashboard", { params: parametrosDoRecorte(nextFilters) });
       if (id !== requestId.current) return;
       setData(response.data);
       setApplied(nextFilters);
@@ -103,7 +118,7 @@ export function DashboardPage() {
       setOptionsError("");
     } catch {
       setOptionsError(
-        "Não foi possível carregar as opções de cliente e equipe. Atualize para tentar novamente.",
+        "Não foi possível carregar as opções de cliente, projeto, colaborador e equipe. Atualize para tentar novamente.",
       );
     }
   }, []);
@@ -121,11 +136,8 @@ export function DashboardPage() {
     setExporting(true);
     setError("");
     try {
-      const params = Object.fromEntries(
-        Object.entries(applied).filter(([, value]) => value !== ""),
-      );
       const response = await api.get("/relatorios/indicadores.xlsx", {
-        params,
+        params: parametrosDoRecorte(applied),
         responseType: "blob",
       });
       salvarArquivo(response, "indicadores-codebi.xlsx");
@@ -137,12 +149,23 @@ export function DashboardPage() {
   }
 
   function updateFilter(event) {
-    setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const { name, value } = event.target;
+    // Cliente, estado e projetos se combinam: o que deixa de valer sai do recorte.
+    setFilters((current) => ajustarRecorte({ ...current, [name]: value }, options));
   }
 
   const summary = data?.resumo;
-  const filtered = Object.keys(emptyFilters).some((key) => applied[key] !== emptyFilters[key]);
-  const changed = Object.keys(filters).some((key) => filters[key] !== applied[key]);
+  const filtered = !mesmoRecorte(applied, emptyFilters);
+  const changed = !mesmoRecorte(filters, applied);
+  const projectOptions = projetosDisponiveis(options.projetos, filters).map((project) => ({
+    value: String(project.id),
+    label:
+      project.status === "ATIVO"
+        ? project.nome
+        : `${project.nome} · ${projectStatusLabel(project.status).toLocaleLowerCase("pt-BR")}`,
+  }));
+  const sprintOptions = sprintsDisponiveis(options.sprints, filters.projetoIds);
+  const appliedTags = etiquetasDoRecorte(applied, options);
   const cards = [
     {
       label: "Projetos ativos",
@@ -256,6 +279,61 @@ export function DashboardPage() {
               ))}
             </select>
           </label>
+          <div className="field">
+            <span id="filtro-projetos-rotulo">Projetos</span>
+            <MultiSelect
+              id="filtro-projetos"
+              name="projetoIds"
+              options={projectOptions}
+              value={filters.projetoIds}
+              onChange={updateFilter}
+              placeholder="Todos os projetos"
+              plural="projetos"
+              labelledBy="filtro-projetos-rotulo"
+              disabled={loading || Boolean(optionsError)}
+            />
+          </div>
+          <label className="field">
+            <span>Colaborador</span>
+            <select
+              name="colaboradorId"
+              value={filters.colaboradorId}
+              onChange={updateFilter}
+              disabled={loading || Boolean(optionsError)}
+            >
+              <option value="">Todos os colaboradores</option>
+              {options.colaboradores.map((person) => (
+                <option key={person.id} value={person.id}>
+                  {person.nomeCompleto}
+                  {person.status === "INATIVO" ? " (inativo)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="field">
+            <span>Sprint</span>
+            <select
+              name="sprintId"
+              value={filters.sprintId}
+              onChange={updateFilter}
+              disabled={loading || filters.projetoIds.length !== 1}
+              title={
+                filters.projetoIds.length === 1
+                  ? undefined
+                  : "Escolha um único projeto para filtrar por sprint."
+              }
+            >
+              <option value="">
+                {filters.projetoIds.length === 1 ? "Todas as sprints" : "Escolha um projeto"}
+              </option>
+              {sprintOptions.map((row) => (
+                <option key={row.id} value={row.id}>
+                  {row.nome}
+                  {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
           <label className="field">
             <span>
               Equipe <small>(departamento)</small>
@@ -332,6 +410,15 @@ export function DashboardPage() {
                 ? "Exibindo o recorte aplicado. O período considera a data dos apontamentos."
                 : "Projetos ativos em todos os períodos, clientes e equipes. Outros estados estão disponíveis no filtro."}
         </p>
+        {!loading && !changed && filtered && (
+          <ul className="dashboard-tags" aria-label="Filtros aplicados">
+            {appliedTags.map((tag) => (
+              <li key={tag.chave} title={tag.completo}>
+                <span>{tag.rotulo}:</span> {tag.valor}
+              </li>
+            ))}
+          </ul>
+        )}
         {optionsError && (
           <div className="feedback error" role="alert">
             {optionsError}

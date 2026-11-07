@@ -5,6 +5,12 @@ import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { projectStatusLabel } from "../config/projectOptions.js";
+import { MultiSelect } from "../components/MultiSelect.jsx";
+import {
+  etiquetasDoRecorte,
+  mesmoRecorte,
+  parametrosDoRecorte,
+} from "../utils/dashboardFilters.js";
 import {
   AuditTable,
   IndicatorTasksTable,
@@ -15,7 +21,7 @@ import {
   percent,
 } from "../components/OperationalDashboard.jsx";
 
-const emptyFilters = { dataInicio: "", dataFim: "", projetoId: "", sprintId: "" };
+const emptyFilters = { dataInicio: "", dataFim: "", projetoIds: [], sprintId: "" };
 export function EntityDashboardPage({ type }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,8 +42,9 @@ export function EntityDashboardPage({ type }) {
       setLoading(true);
       setError("");
       try {
-        const params = Object.fromEntries(Object.entries(next).filter(([, value]) => value !== ""));
-        const response = await api.get(`/dashboard/${type}/${id}`, { params });
+        const response = await api.get(`/dashboard/${type}/${id}`, {
+          params: parametrosDoRecorte(next),
+        });
         if (sequence !== request.current) return;
         setData(response.data);
         setApplied(next);
@@ -80,8 +87,9 @@ export function EntityDashboardPage({ type }) {
   }, [load]);
   const summary = data?.resumo;
   const entity = individual ? data?.colaborador : data?.projeto;
-  const changed = Object.keys(filters).some((key) => filters[key] !== applied[key]);
-  const filtered = Object.values(applied).some(Boolean);
+  const changed = !mesmoRecorte(filters, applied);
+  const filtered = !mesmoRecorte(applied, emptyFilters);
+  const appliedTags = etiquetasDoRecorte(applied, { ...options, sprints: entity?.sprints });
   function update(event) {
     setFilters((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
@@ -222,22 +230,26 @@ export function EntityDashboardPage({ type }) {
             </div>
           </fieldset>
           {individual ? (
-            <label className="field">
-              <span>Projeto</span>
-              <select
-                name="projetoId"
-                value={filters.projetoId}
-                disabled={loading || Boolean(optionsError)}
+            <div className="field">
+              <span id="entidade-projetos-rotulo">Projetos</span>
+              <MultiSelect
+                id="entidade-projetos"
+                name="projetoIds"
+                options={options.projetos.map((row) => ({
+                  value: String(row.id),
+                  label:
+                    row.status === "ATIVO"
+                      ? row.nome
+                      : `${row.nome} · ${projectStatusLabel(row.status).toLocaleLowerCase("pt-BR")}`,
+                }))}
+                value={filters.projetoIds}
                 onChange={update}
-              >
-                <option value="">Todos os projetos</option>
-                {options.projetos.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.nome}
-                  </option>
-                ))}
-              </select>
-            </label>
+                placeholder="Todos os projetos"
+                plural="projetos"
+                labelledBy="entidade-projetos-rotulo"
+                disabled={loading || Boolean(optionsError)}
+              />
+            </div>
           ) : (
             <label className="field">
               <span>Sprint</span>
@@ -280,6 +292,15 @@ export function EntityDashboardPage({ type }) {
                 ? "Exibindo o recorte aplicado."
                 : "Todos os períodos. Histórico preservado, incluindo registros arquivados."}
         </p>
+        {!loading && !changed && filtered && (
+          <ul className="dashboard-tags" aria-label="Filtros aplicados">
+            {appliedTags.map((tag) => (
+              <li key={tag.chave} title={tag.completo}>
+                <span>{tag.rotulo}:</span> {tag.valor}
+              </li>
+            ))}
+          </ul>
+        )}
         {optionsError && (
           <div className="feedback error" role="alert">
             {optionsError}
