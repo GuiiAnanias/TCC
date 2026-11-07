@@ -1,20 +1,24 @@
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
-import { previousFinanceDay } from "../utils/financeDates.js";
+import { previousFinanceDay, todayFinanceDate } from "../utils/financeDates.js";
 import { custoConflict } from "../utils/custoConflict.js";
 
-const projectListInclude = {
+const operationalTeamWhere = (date) => ({
+  dataEntrada: { lte: date },
+  OR: [{ dataSaida: null }, { dataSaida: { gte: date } }],
+  colaborador: { status: "ATIVO" },
+});
+
+const projectListInclude = () => ({
   cliente: true,
   _count: {
     select: {
       equipe: {
-        where: {
-          dataSaida: null,
-        },
+        where: operationalTeamWhere(todayFinanceDate()),
       },
     },
   },
-};
+});
 
 export const projetosRepository = {
   async transaction(operation) {
@@ -67,7 +71,7 @@ export const projetosRepository = {
         ...(clienteId ? { clienteId } : {}),
         ...(busca ? { nome: { contains: busca, mode: "insensitive" } } : {}),
       },
-      include: projectListInclude,
+      include: projectListInclude(),
       orderBy: [{ status: "asc" }, { nome: "asc" }],
     });
   },
@@ -87,18 +91,29 @@ export const projetosRepository = {
     });
   },
 
-  create(data) {
-    return prisma.projeto.create({
+  create(data, db = prisma) {
+    return db.projeto.create({
       data,
-      include: projectListInclude,
+      include: projectListInclude(),
     });
+  },
+
+  async hasOperationalTeam(projetoId, date, db = prisma) {
+    const member = await db.projetoColaborador.findFirst({
+      where: {
+        projetoId,
+        ...operationalTeamWhere(date),
+      },
+      select: { id: true },
+    });
+    return Boolean(member);
   },
 
   update(id, data) {
     return prisma.projeto.update({
       where: { id },
       data,
-      include: projectListInclude,
+      include: projectListInclude(),
     });
   },
 

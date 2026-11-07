@@ -14,8 +14,8 @@ async function ensureProjetoExists(id, db) {
   return projeto;
 }
 
-async function ensureClienteAtivo(clienteId) {
-  const cliente = await clientesRepository.findById(clienteId);
+async function ensureClienteAtivo(clienteId, db) {
+  const cliente = await clientesRepository.findById(clienteId, db);
 
   if (!cliente) {
     throw new HttpError(404, "Cliente não encontrado.");
@@ -91,8 +91,23 @@ export const projetosService = {
   },
 
   async create(data) {
-    await ensureClienteAtivo(data.clienteId);
-    return projetosRepository.create(data);
+    const { equipeInicial = [], ...project } = data;
+    return projetosRepository.transaction(async (db) => {
+      await ensureClienteAtivo(project.clienteId, db);
+      for (const member of equipeInicial) await ensureColaboradorAtivo(member.colaboradorId, db);
+      return projetosRepository.create(
+        {
+          ...project,
+          equipe: {
+            create: equipeInicial.map((member) => ({
+              ...member,
+              dataEntrada: financeDate(member.dataEntrada),
+            })),
+          },
+        },
+        db,
+      );
+    });
   },
 
   async update(id, data) {

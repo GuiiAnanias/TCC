@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { paginationQuerySchema } from "./commonSchemas.js";
 import { statusProjetoSchema } from "./statusProjetoSchema.js";
+import { equipeInicialSchema } from "./equipeProjetoSchemas.js";
 
 export const tipoContratoSchema = z.enum(["FEE_MENSAL", "ESCOPO_SEMIABERTO", "SQUAD"], {
   message: "Tipo de contrato invalido.",
@@ -19,9 +20,10 @@ export const projetoCreateSchema = z.object({
   valorProjeto: z.coerce.number().positive("Valor do projeto deve ser maior que zero."),
   dataInicio: z.coerce.date(),
   status: z.literal("ATIVO").optional(),
+  equipeInicial: equipeInicialSchema.optional(),
 });
 
 export const projetoUpdateSchema = projetoCreateSchema
-  .extend({ status: statusProjetoSchema.optional() })
+  .extend({ status: statusProjetoSchema.optional(), equipeInicial: z.never().optional() })
   .partial()
   .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");

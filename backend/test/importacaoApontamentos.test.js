@@ -37,6 +37,11 @@ const cadastros = {
     { id: 103, projetoId: 10, titulo: "Revisão", statusRegistro: "ATIVO", projeto: ativo },
     { id: 104, projetoId: 10, titulo: "Arquivada", statusRegistro: "INATIVO", projeto: ativo },
   ],
+  equipes: [
+    { projetoId: 10, colaboradorId: 1, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+    { projetoId: 11, colaboradorId: 3, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+    { projetoId: 12, colaboradorId: 1, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+  ],
 };
 
 async function planilha(
@@ -293,6 +298,7 @@ test("avisa, sem bloquear, quando a hora ficaria sem custo completo", () => {
     HOJE,
   );
   conferirCustos(linhas, {
+    colaboradores: cadastros.colaboradores,
     equipes: [
       { projetoId: 10, colaboradorId: 1, dataEntrada: new Date("2026-06-01"), dataSaida: null },
       {
@@ -350,6 +356,7 @@ test("validar só confere; importar grava tudo numa transação ou nada", async 
     ...cadastros,
     equipes: [
       { projetoId: 10, colaboradorId: 1, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+      { projetoId: 11, colaboradorId: 3, dataEntrada: new Date("2026-01-01"), dataSaida: null },
     ],
     vigencias: [{ colaboradorId: 1, dataInicio: new Date("2026-01-01"), dataFim: null }],
   });
@@ -488,9 +495,40 @@ test("importação faturada sem parâmetros é erro; Pendente continua permitido
     cadastros,
     HOJE,
   );
-  conferirCustos(rows, {});
+  conferirCustos(rows, {
+    colaboradores: cadastros.colaboradores,
+    equipes: [
+      { projetoId: 10, colaboradorId: 2, dataEntrada: new Date("2026-01-01"), dataSaida: null },
+    ],
+  });
   assert.match(erroDe(rows[0], "status"), /necessário valor\/hora/);
   assert.equal(rows[0].erros[0].coluna, "Status");
   assert.deepEqual(rows[1].erros, []);
   assert.equal(rows[1].avisos.length, 2);
+});
+
+test("importação exige equipe ativa e vigente na data, mesmo para horas pendentes", () => {
+  const member = {
+    projetoId: 10,
+    colaboradorId: 1,
+    dataEntrada: new Date("2026-01-01"),
+    dataSaida: null,
+  };
+  for (const [equipes, colaboradores] of [
+    [[], cadastros.colaboradores],
+    [[{ ...member, dataEntrada: new Date("2026-11-01") }], cadastros.colaboradores],
+    [[{ ...member, dataSaida: new Date("2026-09-30") }], cadastros.colaboradores],
+    [[member], cadastros.colaboradores.map((person) => ({ ...person, status: "INATIVO" }))],
+  ]) {
+    const rows = interpretarLinhas(
+      [{ linha: 2, valores: { ...base, status: "Pendente" } }],
+      cadastros,
+      HOJE,
+    );
+    conferirCustos(rows, {
+      equipes,
+      colaboradores,
+    });
+    assert.match(erroDe(rows[0], "projeto"), /equipe/i);
+  }
 });

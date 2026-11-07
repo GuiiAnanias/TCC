@@ -397,12 +397,27 @@ export function conferirConflitos(linhas, existentes) {
  * Avisos que não impedem a importação, mas deixam o custo incompleto no dashboard:
  * colaborador fora da equipe do projeto na data ou sem valor/hora vigente.
  */
-export function conferirCustos(linhas, { equipes = [], vigencias = [] }) {
+export function conferirCustos(linhas, { equipes = [], vigencias = [], colaboradores = [] }) {
   const naData = (inicio, fim, dia) =>
     financeDay(inicio) <= dia && (!fim || financeDay(fim) >= dia);
   for (const item of linhas) {
     item.avisos = [];
     if (!item.data || !item.colaborador || !item.projeto) continue;
+    const operationalTeam = equipes.some(
+      (member) =>
+        member.projetoId === item.projeto.id &&
+        naData(member.dataEntrada, member.dataSaida, item.data) &&
+        colaboradores.some(
+          (person) => person.id === member.colaboradorId && person.status === "ATIVO",
+        ),
+    );
+    if (!operationalTeam)
+      item.erros.push({
+        campo: "projeto",
+        coluna: "Projeto",
+        mensagem:
+          "Vincule ao menos um colaborador ativo à equipe do projeto na data das horas antes de lançar apontamentos.",
+      });
     const naEquipe = equipes.some(
       (vinculo) =>
         vinculo.projetoId === item.projeto.id &&

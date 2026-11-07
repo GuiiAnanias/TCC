@@ -28,6 +28,21 @@ async function validate(data, previous = {}, db) {
     if (project.status !== "ATIVO")
       throw new HttpError(409, "Selecione um projeto ativo para lançar horas.");
   }
+  // Novas horas (ou transferência para outro projeto) exigem uma equipe válida
+  // na data trabalhada. Correções no próprio projeto preservam o fluxo histórico.
+  if (
+    !previous.id ||
+    projetoId ||
+    (data.data !== undefined && financeDay(merged.data) !== financeDay(previous.data))
+  ) {
+    if (
+      !(await projetosRepository.hasOperationalTeam(merged.projetoId, financeDate(merged.data), db))
+    )
+      throw new HttpError(
+        409,
+        "Vincule ao menos um colaborador ativo à equipe do projeto, com participação na data das horas, antes de lançar apontamentos.",
+      );
+  }
   if (merged.tarefaId) {
     const task = await tarefasRepository.findById(merged.tarefaId, db);
     if (!task) throw new HttpError(404, "Tarefa não encontrada.");

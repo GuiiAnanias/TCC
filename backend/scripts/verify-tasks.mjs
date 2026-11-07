@@ -106,6 +106,14 @@ try {
         dataEntrada: new Date("2026-09-01"),
       },
     });
+  await client.projetoColaborador.create({
+    data: {
+      projetoId: other.id,
+      colaboradorId: people[1].id,
+      papel: "QA",
+      dataEntrada: new Date("2026-09-01"),
+    },
+  });
   const rate = await client.itemTabelaRemuneracao.create({
     data: { nivel: "Júnior I", valorHora: 45 },
   });
