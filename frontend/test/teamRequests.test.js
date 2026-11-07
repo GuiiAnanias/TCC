@@ -24,7 +24,7 @@ test("uma gravação antiga não recarrega nem publica mensagens no projeto novo
   let changes = 0;
   const view = await mount(
     React.createElement(ProjectTeamManager, {
-      project: { id: 1, nome: "Projeto A" },
+      project: { id: 1, nome: "Projeto A", status: "ATIVO" },
       onChanged: () => changes++,
     }),
   );
@@ -34,7 +34,7 @@ test("uma gravação antiga não recarrega nem publica mensagens no projeto novo
     const count = network.requests.length;
     await view.render(
       React.createElement(ProjectTeamManager, {
-        project: { id: 2, nome: "Projeto B" },
+        project: { id: 2, nome: "Projeto B", status: "ATIVO" },
         onChanged: () => changes++,
       }),
     );
@@ -67,12 +67,16 @@ test("a equipe da entidade anterior não substitui a atual nem encerra seu carre
   const cleanup = installDom(),
     network = controlRequests(api);
   const view = await mount(
-    React.createElement(ProjectTeamManager, { project: { id: 1, nome: "Projeto A" } }),
+    React.createElement(ProjectTeamManager, {
+      project: { id: 1, nome: "Projeto A", status: "ATIVO" },
+    }),
   );
   try {
     const old = [...network.requests];
     await view.render(
-      React.createElement(ProjectTeamManager, { project: { id: 2, nome: "Projeto B" } }),
+      React.createElement(ProjectTeamManager, {
+        project: { id: 2, nome: "Projeto B", status: "ATIVO" },
+      }),
     );
     const current = network.requests.slice(old.length);
     await resolveGroup(network, current, "Pessoa atual");

@@ -14,8 +14,8 @@ async function ensureProjetoExists(id, db) {
   return projeto;
 }
 
-async function ensureClienteAtivo(clienteId) {
-  const cliente = await clientesRepository.findById(clienteId);
+async function ensureClienteAtivo(clienteId, db) {
+  const cliente = await clientesRepository.findById(clienteId, db);
 
   if (!cliente) {
     throw new HttpError(404, "Cliente não encontrado.");
@@ -30,7 +30,7 @@ async function ensureClienteAtivo(clienteId) {
 
 function ensureProjetoAtivo(projeto) {
   if (projeto.status !== "ATIVO") {
-    throw new HttpError(400, "Não é possível alterar equipe de projeto inativo.");
+    throw new HttpError(400, "Reative o projeto para alterar a equipe.");
   }
 }
 
@@ -91,8 +91,23 @@ export const projetosService = {
   },
 
   async create(data) {
-    await ensureClienteAtivo(data.clienteId);
-    return projetosRepository.create(data);
+    const { equipeInicial = [], ...project } = data;
+    return projetosRepository.transaction(async (db) => {
+      await ensureClienteAtivo(project.clienteId, db);
+      for (const member of equipeInicial) await ensureColaboradorAtivo(member.colaboradorId, db);
+      return projetosRepository.create(
+        {
+          ...project,
+          equipe: {
+            create: equipeInicial.map((member) => ({
+              ...member,
+              dataEntrada: financeDate(member.dataEntrada),
+            })),
+          },
+        },
+        db,
+      );
+    });
   },
 
   async update(id, data) {
@@ -105,9 +120,9 @@ export const projetosService = {
     return projetosRepository.update(id, data);
   },
 
-  async inactivate(id) {
+  async close(id) {
     await ensureProjetoExists(id);
-    return projetosRepository.update(id, { status: "INATIVO" });
+    return projetosRepository.update(id, { status: "ENCERRADO" });
   },
 
   async listTeam(projetoId) {

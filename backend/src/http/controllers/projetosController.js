@@ -10,8 +10,20 @@ import {
 } from "../../schemas/equipeProjetoSchemas.js";
 import { projetosService } from "../../services/projetosService.js";
 import { parseId } from "../../utils/parseId.js";
+import { exclusaoProjetosRepository } from "../../repositories/exclusaoProjetosRepository.js";
 
 export const projetosController = {
+  async deletionInfo(request, response) {
+    return response.json(
+      await exclusaoProjetosRepository.inspect(parseId(request.params.id, "projeto")),
+    );
+  },
+
+  async deletePermanently(request, response) {
+    await exclusaoProjetosRepository.remove(parseId(request.params.id, "projeto"));
+    return response.status(204).end();
+  },
+
   roles(request, response) {
     return response.json(papeisProjeto);
   },
@@ -43,7 +55,7 @@ export const projetosController = {
 
   async destroy(request, response) {
     const id = parseId(request.params.id, "projeto");
-    const projeto = await projetosService.inactivate(id);
+    const projeto = await projetosService.close(id);
     return response.json(projeto);
   },
 

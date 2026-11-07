@@ -73,7 +73,9 @@ test("equipe valida colaborador e papel antes de enviar, inclusive sem validaç�
     return { data: {} };
   };
   const view = await mount(
-    React.createElement(ProjectTeamManager, { project: { id: 1, nome: "Projeto" } }),
+    React.createElement(ProjectTeamManager, {
+      project: { id: 1, nome: "Projeto", status: "ATIVO" },
+    }),
   );
   try {
     await submit(view.container.querySelector("form"));
@@ -156,7 +158,9 @@ test("troca de papel exige papel e data antes de enviar a atualização do vínc
     return { data: {} };
   };
   const view = await mount(
-    React.createElement(ProjectTeamManager, { project: { id: 1, nome: "Projeto" } }),
+    React.createElement(ProjectTeamManager, {
+      project: { id: 1, nome: "Projeto", status: "ATIVO" },
+    }),
   );
   try {
     await change(view.container.querySelector("#team-role-1"), "");

@@ -164,21 +164,21 @@ export async function seedDemo(prisma) {
         status = "ATIVO",
         start = "2026-09-01",
       ] of [
-        ["portal", "Portal do Cliente (demo)", "horizonte", "HORAS", 40, 2424],
-        ["mobile", "Aplicativo Mobile (demo)", "acme", "FECHADO", 20, 539.5],
-        ["integracao", "Integração de Dados (demo)", "marina", "FIXO", 14, 560],
-        ["auditoria", "Projeto com pendências (demo)", "acme", "HORAS", 30, 1000],
+        ["portal", "Portal do Cliente (demo)", "horizonte", "FEE_MENSAL", 40, 2424],
+        ["mobile", "Aplicativo Mobile (demo)", "acme", "ESCOPO_SEMIABERTO", 20, 539.5, "PAUSADO"],
+        ["integracao", "Integração de Dados (demo)", "marina", "SQUAD", 14, 560],
+        ["auditoria", "Projeto com pendências (demo)", "acme", "FEE_MENSAL", 30, 1000],
         [
           "planejamento",
           "Projeto em planejamento (demo)",
           "horizonte",
-          "FECHADO",
+          "ESCOPO_SEMIABERTO",
           80,
           5000,
-          "ATIVO",
+          "CANCELADO",
           "2026-11-01",
         ],
-        ["historico", "Projeto encerrado (demo)", "arquivo", "FIXO", 8, 680, "INATIVO"],
+        ["historico", "Projeto encerrado (demo)", "arquivo", "SQUAD", 8, 680, "ENCERRADO"],
       ]) {
         const clienteId = clients[client].id;
         projects[key] =

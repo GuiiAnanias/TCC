@@ -40,6 +40,7 @@ async function withRepositories({ horasNoDia = 0, record = existente } = {}, run
   };
   colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
   projetosRepository.findById = async (id) => ({ id, status: "ATIVO" });
+  projetosRepository.hasOperationalTeam = async () => true;
   try {
     await run(calls);
   } finally {
@@ -103,7 +104,7 @@ test("novos lançamentos e transferências recusam inativos, mas preservam corre
     await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
     await assert.rejects(apontamentosService.update(9, { colaboradorId: 3 }), { statusCode: 409 });
     colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
-    projetosRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    projetosRepository.findById = async (id) => ({ id, status: "ENCERRADO" });
     await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
     await assert.rejects(apontamentosService.update(9, { projetoId: 3 }), { statusCode: 409 });
     colaboradoresRepository.findById = async (id) => ({ id, status: "INATIVO" });

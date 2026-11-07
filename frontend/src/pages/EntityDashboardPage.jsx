@@ -4,6 +4,7 @@ import { Filter, RotateCcw } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
+import { projectStatusLabel } from "../config/projectOptions.js";
 import {
   AuditTable,
   IndicatorTasksTable,
@@ -166,7 +167,11 @@ export function EntityDashboardPage({ type }) {
             {(individual ? options.colaboradores : options.projetos).map((row) => (
               <option key={row.id} value={row.id}>
                 {individual ? row.nomeCompleto : row.nome}
-                {row.status === "INATIVO" ? " (inativo)" : ""}
+                {individual
+                  ? row.status === "INATIVO"
+                    ? " (inativo)"
+                    : ""
+                  : ` (${projectStatusLabel(row.status)})`}
               </option>
             ))}
           </select>
@@ -176,7 +181,12 @@ export function EntityDashboardPage({ type }) {
             {individual
               ? `${entity.cargo} · ${entity.departamento}`
               : `${entity.cliente.nome} · ${number(entity.horasContratadas)} h contratadas · Início ${date(entity.dataInicio)}`}{" "}
-            · {entity.status === "ATIVO" ? "Ativo" : "Inativo"}
+            ·{" "}
+            {individual
+              ? entity.status === "ATIVO"
+                ? "Ativo"
+                : "Inativo"
+              : projectStatusLabel(entity.status)}
           </p>
         )}
         <form

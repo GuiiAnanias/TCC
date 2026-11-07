@@ -78,7 +78,7 @@ try {
   const customer = await client.cliente.create({ data: { nome: "Cliente de teste" } });
   const projectData = {
     clienteId: customer.id,
-    tipoContrato: "FECHADO",
+    tipoContrato: "ESCOPO_SEMIABERTO",
     horasContratadas: 100,
     valorProjeto: 1000,
     dataInicio: new Date("2026-09-01"),
@@ -106,6 +106,14 @@ try {
         dataEntrada: new Date("2026-09-01"),
       },
     });
+  await client.projetoColaborador.create({
+    data: {
+      projetoId: other.id,
+      colaboradorId: people[1].id,
+      papel: "QA",
+      dataEntrada: new Date("2026-09-01"),
+    },
+  });
   const rate = await client.itemTabelaRemuneracao.create({
     data: { nivel: "Júnior I", valorHora: 45 },
   });
@@ -300,7 +308,7 @@ try {
   await hours.update(initial.id, { tarefaId: null });
   assert.equal(await client.apontamentoHora.count(), 2);
   assert.equal(Number((await repo.findAll({ projetoId: project.id }))[0].horasRealizadas), 2.12);
-  await client.projeto.update({ where: { id: project.id }, data: { status: "INATIVO" } });
+  await client.projeto.update({ where: { id: project.id }, data: { status: "ENCERRADO" } });
   await assert.rejects(repo.save(task.id, { titulo: "Bloqueado" }), { statusCode: 409 });
   assert.equal((await repo.findAll({ projetoId: project.id })).length, 1);
   await assert.rejects(client.tarefa.delete({ where: { id: task.id } }), /Foreign key/);

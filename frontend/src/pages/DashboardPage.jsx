@@ -19,10 +19,17 @@ import { AuditTable, OperationalMetrics } from "../components/OperationalDashboa
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { Link } from "react-router-dom";
 import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
+import { projectStatusOptions, projectStatusLabel } from "../config/projectOptions.js";
 
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
 
-const emptyFilters = { dataInicio: "", dataFim: "", clienteId: "", equipe: "", statusProjeto: "" };
+const emptyFilters = {
+  dataInicio: "",
+  dataFim: "",
+  clienteId: "",
+  equipe: "",
+  statusProjeto: "ATIVO",
+};
 const number = (value) =>
   new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value);
 const money = (value) =>
@@ -134,7 +141,7 @@ export function DashboardPage() {
   }
 
   const summary = data?.resumo;
-  const filtered = Object.values(applied).some(Boolean);
+  const filtered = Object.keys(emptyFilters).some((key) => applied[key] !== emptyFilters[key]);
   const changed = Object.keys(filters).some((key) => filters[key] !== applied[key]);
   const cards = [
     {
@@ -275,9 +282,12 @@ export function DashboardPage() {
               onChange={updateFilter}
               disabled={loading}
             >
-              <option value="">Ativos e inativos</option>
-              <option value="ATIVO">Ativos</option>
-              <option value="INATIVO">Inativos</option>
+              <option value="">Todos os estados</option>
+              {projectStatusOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </label>
           <div className="dashboard-filter-actions">
@@ -320,7 +330,7 @@ export function DashboardPage() {
               ? "Há filtros alterados. Clique em Aplicar filtros para atualizar os dados."
               : filtered
                 ? "Exibindo o recorte aplicado. O período considera a data dos apontamentos."
-                : "Todos os períodos, clientes e equipes. Inclui projetos ativos e inativos."}
+                : "Projetos ativos em todos os períodos, clientes e equipes. Outros estados estão disponíveis no filtro."}
         </p>
         {optionsError && (
           <div className="feedback error" role="alert">
@@ -443,7 +453,7 @@ export function DashboardPage() {
                                   <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
                                 </td>
                                 <td>{row.cliente}</td>
-                                <td>{row.status === "ATIVO" ? "Ativo" : "Inativo"}</td>
+                                <td>{projectStatusLabel(row.status)}</td>
                                 <td>{number(row.horas)} h</td>
                                 <td>{money(row.custoBase)}</td>
                                 <td>

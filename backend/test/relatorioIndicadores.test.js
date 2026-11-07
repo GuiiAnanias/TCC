@@ -65,7 +65,7 @@ const projetos = [
   {
     id: 11,
     nome: "Mobile",
-    status: "INATIVO",
+    status: "ENCERRADO",
     clienteId: 2,
     cliente: { id: 2, nome: "Cliente B" },
     valorProjeto: "500",
@@ -159,7 +159,7 @@ test("relatório usa o recorte do dashboard e soma igual aos indicadores", async
   assert.equal(projetosAba.getTable("Projetos").table.tableRef, "A1:N3");
   const portal = linhaDe(projetosAba, 2);
   assert.deepEqual(portal.slice(0, 8), ["Portal", "Cliente A", "Ativo", 1100, 1100, 1000, 100, 20]);
-  assert.equal(linhaDe(projetosAba, 3)[2], "Inativo");
+  assert.equal(linhaDe(projetosAba, 3)[2], "Encerrado");
 
   const apontamentos = pasta.getWorksheet("Apontamentos");
   const primeira = linhaDe(apontamentos, 2);

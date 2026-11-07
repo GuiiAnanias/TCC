@@ -1,11 +1,14 @@
 import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
+import { paginationQuerySchema } from "./commonSchemas.js";
+import { statusProjetoSchema } from "./statusProjetoSchema.js";
+import { equipeInicialSchema } from "./equipeProjetoSchemas.js";
 
-export const tipoContratoSchema = z.enum(["FIXO", "HORAS", "FECHADO"], {
+export const tipoContratoSchema = z.enum(["FEE_MENSAL", "ESCOPO_SEMIABERTO", "SQUAD"], {
   message: "Tipo de contrato invalido.",
 });
 
 export const projetoQuerySchema = paginationQuerySchema.extend({
+  status: statusProjetoSchema.optional(),
   clienteId: z.coerce.number().int().positive().optional(),
 });
 
@@ -16,9 +19,11 @@ export const projetoCreateSchema = z.object({
   horasContratadas: z.coerce.number().positive("Horas contratadas devem ser maiores que zero."),
   valorProjeto: z.coerce.number().positive("Valor do projeto deve ser maior que zero."),
   dataInicio: z.coerce.date(),
-  status: optionalStatusSchema,
+  status: z.literal("ATIVO").optional(),
+  equipeInicial: equipeInicialSchema.optional(),
 });
 
 export const projetoUpdateSchema = projetoCreateSchema
+  .extend({ status: statusProjetoSchema.optional(), equipeInicial: z.never().optional() })
   .partial()
   .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");

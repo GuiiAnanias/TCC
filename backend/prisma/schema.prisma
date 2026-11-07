@@ -18,9 +18,16 @@ enum TipoPessoa {
 }
 
 enum TipoContrato {
-  FIXO
-  HORAS
-  FECHADO
+  FEE_MENSAL
+  ESCOPO_SEMIABERTO
+  SQUAD
+}
+
+enum StatusProjeto {
+  ATIVO
+  PAUSADO
+  ENCERRADO
+  CANCELADO
 }
 
 enum TipoBonificacao {
@@ -195,9 +202,10 @@ model Projeto {
   horasContratadas  Decimal                @db.Decimal(10, 2)
   valorProjeto      Decimal                @db.Decimal(12, 2)
   dataInicio        DateTime
-  status            Status                 @default(ATIVO)
+  status            StatusProjeto          @default(ATIVO)
   cliente           Cliente                @relation(fields: [clienteId], references: [id])
   equipe            ProjetoColaborador[]
+  avaliacoes        ProjetoAvaliacao[]
   apontamentos      ApontamentoHora[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
@@ -337,6 +345,7 @@ model AvaliacaoPremiacao {
   status String @default("RASCUNHO")
   regraId Int
   conteudo Json
+  projetos ProjetoAvaliacao[]
   criadoPorId Int
   concluidoPorId Int?
   concluidoEm DateTime?
@@ -351,4 +360,15 @@ model AvaliacaoPremiacao {
   updatedAt DateTime @updatedAt
   @@unique([colaboradorId, competencia, categoria, versao])
   @@map("avaliacoes_premiacao")
+}
+
+model ProjetoAvaliacao {
+  projetoId Int
+  avaliacaoId Int
+  projeto Projeto @relation(fields: [projetoId], references: [id], onDelete: Restrict)
+  avaliacao AvaliacaoPremiacao @relation(fields: [avaliacaoId], references: [id], onDelete: Restrict)
+
+  @@id([projetoId, avaliacaoId])
+  @@index([avaliacaoId])
+  @@map("projetos_avaliacoes")
 }

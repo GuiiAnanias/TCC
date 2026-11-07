@@ -1,3 +1,4 @@
+import { ProjectDeletionDialog } from "../components/ProjectDeletionDialog.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
@@ -12,6 +13,7 @@ import {
   Save,
   Search,
   Trash2,
+  Archive,
   UsersRound,
   WalletCards,
   X,
@@ -24,6 +26,7 @@ import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
 import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
+import { InitialProjectTeam } from "../components/InitialProjectTeam.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -87,6 +90,7 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 
 export function CrudPage({ config }) {
   const requestScope = useRequestScope(config);
+  const [deletingProject, setDeletingProject] = useState(null);
   const isClient = config.key === "clientes";
   const [query] = useSearchParams();
   const handledNavigation = useRef("");
@@ -125,6 +129,7 @@ export function CrudPage({ config }) {
   const [error, setError] = useState("");
   const [fieldErrors, setFieldErrors] = useState({});
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [initialTeam, setInitialTeam] = useState([]);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
   const [consultingCep, setConsultingCep] = useState(false);
   const [cepFeedback, setCepFeedback] = useState("");
@@ -316,6 +321,7 @@ export function CrudPage({ config }) {
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
+    setDeletingProject(null);
     setSelectedRecord(null);
     setSaving(false);
     setRecords([]);
@@ -323,6 +329,7 @@ export function CrudPage({ config }) {
     setProjetos([]);
     setColaboradores([]);
     setCatalog({ cargos: [], niveisRemuneracao: [], departamentos: [] });
+    setInitialTeam([]);
     setConsultingCnpj(false);
     setConsultingCep(false);
     setCepFeedback("");
@@ -383,6 +390,7 @@ export function CrudPage({ config }) {
   function resetForm() {
     requestScope.cancel("mutation");
     setSaving(false);
+    setInitialTeam([]);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -417,6 +425,7 @@ export function CrudPage({ config }) {
   function handleEdit(record) {
     requestScope.cancel("mutation");
     setSaving(false);
+    setInitialTeam([]);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -489,6 +498,7 @@ export function CrudPage({ config }) {
       }
 
       if (isClient && !isEditing) payload.tipoPessoa = clientKind;
+      if (config.teamManager && !isEditing) payload.equipeInicial = initialTeam;
 
       if (isEditing) {
         await api.put(`${config.endpoint}/${editingId}`, payload);
@@ -554,7 +564,7 @@ export function CrudPage({ config }) {
 
   async function handleInactivate(record) {
     const deleting = config.deleteMode === "delete";
-    const confirmMessage = `${deleting ? "Excluir definitivamente" : "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
+    const confirmMessage = `${deleting ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
 
     if (!window.confirm(confirmMessage)) {
       return;
@@ -568,7 +578,9 @@ export function CrudPage({ config }) {
       await api.delete(`${config.endpoint}/${record.id}`);
       if (!request.isCurrent()) return;
       if (editingId === record.id) resetForm();
-      setMessage(`${config.singular} ${deleting ? "excluído" : "inativado"} com sucesso.`);
+      setMessage(
+        `${config.singular} ${deleting ? "excluído" : config.inactivatedLabel || "inativado"} com sucesso.`,
+      );
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
@@ -875,6 +887,11 @@ export function CrudPage({ config }) {
                 <section>
                   <h3>Equipe do projeto</h3>
                   <p>
+                    Na criação, selecione vários colaboradores e preencha papel e entrada. O projeto
+                    pode ser salvo sem equipe para planejamento; novas horas exigem ao menos um
+                    colaborador ativo com participação válida na data trabalhada.
+                  </p>
+                  <p>
                     Use a ação Equipe na lista para vincular colaboradores, definir o papel e as
                     datas de participação. A ajuda do painel de equipe explica as alterações de
                     papel.
@@ -1043,6 +1060,31 @@ export function CrudPage({ config }) {
               </div>
             )}
 
+            {config.teamManager &&
+              (isEditing ? (
+                <div className="initial-project-team">
+                  <strong>Equipe vinculada</strong>
+                  <p>
+                    Alterar os dados do projeto preserva a equipe existente. Entradas, saídas e
+                    mudanças de papel são registradas no gerenciamento de equipe.
+                  </p>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={saving}
+                    onClick={() => setSelectedRecord(originalRecord)}
+                  >
+                    Gerenciar equipe do projeto
+                  </button>
+                </div>
+              ) : (
+                <InitialProjectTeam
+                  members={initialTeam}
+                  onChange={setInitialTeam}
+                  projectStart={formData.dataInicio}
+                  disabled={saving}
+                />
+              ))}
             <div className="actions-row">
               <button
                 className="primary-button"
@@ -1174,10 +1216,26 @@ export function CrudPage({ config }) {
                           type="button"
                           className="icon-button danger"
                           onClick={() => handleInactivate(record)}
-                          title={config.deleteMode === "delete" ? "Excluir" : "Inativar"}
+                          title={
+                            config.deleteMode === "delete"
+                              ? "Excluir"
+                              : config.inactivateLabel || "Inativar"
+                          }
+                          disabled={config.teamManager && record.status === "ENCERRADO"}
                         >
-                          <Trash2 size={17} />
+                          {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
                         </button>
+                        {config.key === "projetos" && (
+                          <button
+                            type="button"
+                            className="icon-button danger"
+                            title="Excluir definitivamente"
+                            aria-label={`Excluir definitivamente o projeto ${record.nome}`}
+                            onClick={() => setDeletingProject(record)}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -1189,6 +1247,20 @@ export function CrudPage({ config }) {
       </div>
 
       {config.key === "remuneracoes" && <RoleBonusManager />}
+      {config.key === "projetos" && deletingProject && (
+        <ProjectDeletionDialog
+          project={deletingProject}
+          onClose={() => setDeletingProject(null)}
+          onDeleted={async (project) => {
+            setDeletingProject(null);
+            if (editingId === project.id) resetForm();
+            if (selectedRecord?.id === project.id) setSelectedRecord(null);
+            setError("");
+            setMessage(`Projeto "${project.nome}" excluído definitivamente.`);
+            await loadRecords();
+          }}
+        />
+      )}
       <div ref={detailRegion}>
         {config.teamManager && selectedRecord ? (
           <ProjectTeamManager

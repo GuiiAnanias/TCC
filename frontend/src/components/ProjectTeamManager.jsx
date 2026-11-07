@@ -47,7 +47,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
   const [teamStatusFilter, setTeamStatusFilter] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const isInactive = project?.status === "INATIVO";
+  const isInactive = project?.status !== "ATIVO";
   const activeTeamCount = team.filter((member) => !member.dataSaida).length;
 
   const activeCollaborators = useMemo(() => {
@@ -298,7 +298,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         {isInactive ? (
           <div className="feedback warning">
             <AlertTriangle size={18} />
-            Projeto inativo: a equipe fica disponível para consulta, mas bloqueada para alterações.
+            Reative o projeto para alterar a equipe. O histórico continua disponível para consulta.
           </div>
         ) : null}
         {message ? (
