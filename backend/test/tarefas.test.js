@@ -96,6 +96,7 @@ test("linking existing time checks the merged project and task, and updates once
     colaboradorId: 2,
     tarefaId: 4,
     horas: 8,
+    data: new Date("2026-10-01"),
   });
   apontamentosRepository.update = async (id, data) => {
     writes.push(data);
@@ -105,6 +106,7 @@ test("linking existing time checks the merged project and task, and updates once
     throw new Error("Não pode duplicar apontamentos");
   };
   projetosRepository.findById = async () => ({ id: 2, status: "ATIVO" });
+  projetosRepository.hasOperationalTeam = async () => true;
   tarefasRepository.findById = async (id) => ({
     id,
     projetoId: id === 5 ? 2 : 1,

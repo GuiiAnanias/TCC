@@ -3,6 +3,7 @@ import { Plus, Save, Check, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
+import { projectStatusLabel } from "../config/projectOptions.js";
 import { IndicatorTasksTable, number, date } from "../components/OperationalDashboard.jsx";
 
 const categories = { DEV: "Dev", PO_SM: "PO/SM" };
@@ -493,7 +494,7 @@ export function AwardsPage() {
                             onChange={(e) => toggleProject(row.id, e.target.checked)}
                           />
                           {row.nome}
-                          {row.status === "INATIVO" ? " (inativo)" : ""}
+                          {` (${projectStatusLabel(row.status)})`}
                         </label>
                       ))}
                     </div>

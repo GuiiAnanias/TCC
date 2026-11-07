@@ -73,7 +73,7 @@ try {
     data: {
       nome: "Projeto de concorrência",
       clienteId: customer.id,
-      tipoContrato: "FECHADO",
+      tipoContrato: "ESCOPO_SEMIABERTO",
       horasContratadas: 100,
       valorProjeto: 1000,
       dataInicio: new Date("2026-01-01"),
@@ -91,6 +91,15 @@ try {
       }),
     ),
   );
+  // Este cenário verifica a soma de horas; manter uma equipe válida no projeto.
+  await client.projetoColaborador.create({
+    data: {
+      projetoId: project.id,
+      colaboradorId: people[2].id,
+      papel: "QA",
+      dataEntrada: new Date("2026-01-01"),
+    },
+  });
   const entry = (date, amount, person = people[0]) => ({
     projetoId: project.id,
     colaboradorId: person.id,
@@ -334,7 +343,7 @@ try {
     await client.colaborador.update({ where: { id: people[0].id }, data: { status: "INATIVO" } });
     assert.equal((await post(entry("2026-01-14", 1))).status, 409);
     await client.colaborador.update({ where: { id: people[0].id }, data: { status: "ATIVO" } });
-    await client.projeto.update({ where: { id: project.id }, data: { status: "INATIVO" } });
+    await client.projeto.update({ where: { id: project.id }, data: { status: "ENCERRADO" } });
     assert.equal((await post(entry("2026-01-14", 1))).status, 409);
     await client.colaborador.update({ where: { id: people[0].id }, data: { status: "INATIVO" } });
     await hours.update(historical.id, { horas: 1, descricao: "Correção histórica" });
@@ -352,7 +361,10 @@ try {
       const reached = Promise.withResolvers();
       const originalLock = repository.lockReferences;
       const transaction = client.$transaction(async (db) => {
-        await db[model].update({ where: { id }, data: { status: "INATIVO" } });
+        await db[model].update({
+          where: { id },
+          data: { status: model === "projeto" ? "ENCERRADO" : "INATIVO" },
+        });
         updated.resolve();
         await release.promise;
       });

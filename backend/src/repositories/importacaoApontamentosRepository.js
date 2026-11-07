@@ -1,4 +1,7 @@
 import prisma from "../config/prisma.js";
+import { projetosRepository } from "./projetosRepository.js";
+import { HttpError } from "../utils/HttpError.js";
+import { financeDate } from "../utils/financeDates.js";
 
 export const importacaoApontamentosRepository = {
   // Cadastros usados para reconhecer colaborador, projeto e tarefa de cada linha.
@@ -59,6 +62,19 @@ export const importacaoApontamentosRepository = {
       await db.$queryRaw`SELECT id FROM colaboradores WHERE id = ${id} FOR SHARE`;
     for (const id of projetos)
       await db.$queryRaw`SELECT id FROM projetos WHERE id = ${id} FOR SHARE`;
+    for (const record of registros) {
+      if (
+        !(await projetosRepository.hasOperationalTeam(
+          record.projetoId,
+          financeDate(record.data),
+          db,
+        ))
+      )
+        throw new HttpError(
+          409,
+          "Vincule uma equipe válida na data das horas antes de importar apontamentos.",
+        );
+    }
     return db.apontamentoHora.createMany({ data: registros });
   },
 };

@@ -1,11 +1,11 @@
-# Roda a cada Pull Request para develop ou main e a cada push nessas branches.
+# Roda nos PRs para integração ou funcionalidades e nos pushes para develop/main.
 # Confere formatação (Prettier), lint (ESLint), testes, migrations e build.
 # Se algum passo falhar, o PR fica marcado com X vermelho e não deve ser mergeado.
 name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, "feature/**"]
   push:
     branches: [develop, main]
 

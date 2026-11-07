@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
+import { projectStatusLabel } from "../config/projectOptions.js";
 
 const statuses = {
   PLANEJADA: "Planejada",
@@ -351,7 +352,7 @@ export function TasksPage() {
                 <p>
                   Arquivar mantém tarefas, sprints e horas para consulta. Tarefas arquivadas não
                   recebem novos vínculos de horas. Arquivar uma sprint mantém suas tarefas
-                  existentes; para novas tarefas, selecione uma sprint ativa. Projetos inativos
+                  existentes; para novas tarefas, selecione uma sprint ativa. Projetos não ativos
                   ficam disponíveis para consulta.
                 </p>
               </section>
@@ -373,8 +374,11 @@ export function TasksPage() {
             {message}
           </div>
         )}
-        {selectedProject?.status === "INATIVO" && (
-          <div className="feedback warning">Projeto inativo: disponível apenas para consulta.</div>
+        {selectedProject && selectedProject.status !== "ATIVO" && (
+          <div className="feedback warning">
+            Projeto {projectStatusLabel(selectedProject.status).toLowerCase()}: disponível apenas
+            para consulta. Reative em Projetos para fazer alterações.
+          </div>
         )}
       </div>
       <div className="form-panel">
@@ -389,7 +393,9 @@ export function TasksPage() {
             {projects.map((project) => (
               <option key={project.id} value={project.id}>
                 {project.nome}
-                {project.status === "INATIVO" ? " (inativo)" : ""}
+                {project.status !== "ATIVO"
+                  ? ` (${projectStatusLabel(project.status).toLowerCase()})`
+                  : ""}
               </option>
             ))}
           </select>

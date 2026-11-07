@@ -75,6 +75,8 @@ try {
   const { clienteCreateSchema } = await import("../src/schemas/clientesSchemas.js");
   const { dashboardService } = await import("../src/services/dashboardService.js");
   const { tarefasRepository } = await import("../src/repositories/tarefasRepository.js");
+  const { projetosService } = await import("../src/services/projetosService.js");
+  const { apontamentosService } = await import("../src/services/apontamentosService.js");
   const { cargosTi, departamentosTi, niveisRemuneracao, papeisProjeto } =
     await import("../src/schemas/cadastroOptions.js");
   const summary = await seedDemo(client);
@@ -146,6 +148,17 @@ try {
     assert.equal(initial[model].length, expected, model);
   assert.equal(initial.configuracaoFinanceira.length, 10);
   assert.equal(initial.bonificacaoPapel.length, 5);
+  assert.deepEqual([...new Set(initial.projeto.map((p) => p.status))].sort(), [
+    "ATIVO",
+    "CANCELADO",
+    "ENCERRADO",
+    "PAUSADO",
+  ]);
+  assert.deepEqual([...new Set(initial.projeto.map((p) => p.tipoContrato))].sort(), [
+    "ESCOPO_SEMIABERTO",
+    "FEE_MENSAL",
+    "SQUAD",
+  ]);
   for (const person of initial.colaborador) {
     assert.ok(cargosTi.includes(person.cargo));
     assert.ok(departamentosTi.includes(person.departamento));
@@ -206,6 +219,63 @@ try {
     initial,
     "Reexecutar o seed não deve duplicar nem alterar o banco.",
   );
+  const portalProject = initial.projeto.find((p) => p.nome === "Portal do Cliente (demo)");
+  const personId = initial.colaborador.find((p) => p.email === "ana.demo@exemplo.local").id;
+  const historicalCounts = [
+    initial.apontamentoHora.length,
+    initial.tarefa.length,
+    initial.projetoColaborador.length,
+  ];
+  for (const status of ["PAUSADO", "ENCERRADO", "CANCELADO"]) {
+    await projetosService.update(portalProject.id, { status });
+    assert.equal(
+      (await projetosService.list({ status })).some((p) => p.id === portalProject.id),
+      true,
+    );
+    assert.equal((await dashboardService.project(portalProject.id)).resumo.custo, 1212);
+    assert.equal(
+      (await dashboardService.get({ statusProjeto: status })).projetos.some(
+        (p) => p.id === portalProject.id,
+      ),
+      true,
+    );
+    await assert.rejects(
+      apontamentosService.create({
+        projetoId: portalProject.id,
+        colaboradorId: personId,
+        data: new Date("2026-10-10"),
+        horas: 1,
+        descricao: "Bloqueado",
+      }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      tarefasRepository.save(null, { projetoId: portalProject.id, titulo: "Bloqueada" }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      tarefasRepository.saveSprint(null, { projetoId: portalProject.id, nome: "Bloqueada" }),
+      { statusCode: 409 },
+    );
+    await assert.rejects(
+      projetosService.addTeamMember(portalProject.id, {
+        colaboradorId: personId,
+        papel: "Dev",
+        dataEntrada: new Date("2026-11-01"),
+      }),
+      { statusCode: 400 },
+    );
+    await projetosService.update(portalProject.id, { status: "ATIVO" });
+    assert.equal((await projetosService.getById(portalProject.id)).status, "ATIVO");
+  }
+  assert.deepEqual(
+    [
+      await client.apontamentoHora.count(),
+      await client.tarefa.count(),
+      await client.projetoColaborador.count(),
+    ],
+    historicalCounts,
+  );
   const entry = initial.apontamentoHora.find(
     (item) => item.descricao === "Demonstração: portal-login-dev",
   );
@@ -243,6 +313,91 @@ try {
     100,
   );
   assert.equal(changed.resumo.custo, 3596);
+  // Equipe no cadastro: banco real isolado, gravação aninhada e rollback.
+  const { projetoCreateSchema } = await import("../src/schemas/projetosSchemas.js");
+  const projectData = {
+    nome: "Cadastro com equipe inicial",
+    clienteId: initial.cliente.find((p) => p.status === "ATIVO").id,
+    tipoContrato: "SQUAD",
+    horasContratadas: 10,
+    valorProjeto: 1000,
+    dataInicio: "2026-09-01",
+  };
+  const initialMember = (id) => ({ colaboradorId: id, papel: "Dev", dataEntrada: "2026-10-01" });
+  const activePeople = initial.colaborador.filter((p) => p.status === "ATIVO").slice(0, 2);
+  const beforeInvalid = await client.projeto.count();
+  await assert.rejects(
+    projetosService.create(
+      projetoCreateSchema.parse({
+        ...projectData,
+        equipeInicial: [
+          initialMember(activePeople[0].id),
+          initialMember(initial.colaborador.find((p) => p.status === "INATIVO").id),
+        ],
+      }),
+    ),
+    { statusCode: 400 },
+  );
+  assert.equal(await client.projeto.count(), beforeInvalid);
+  // Forçar uma falha no segundo vínculo, além da rejeição de duplicação no DTO.
+  await assert.rejects(
+    projetosService.create({
+      ...projectData,
+      dataInicio: new Date(projectData.dataInicio),
+      equipeInicial: [initialMember(activePeople[0].id), initialMember(activePeople[0].id)],
+    }),
+  );
+  assert.equal(
+    await client.projeto.count(),
+    beforeInvalid,
+    "Falha aninhada não deixa projeto órfão.",
+  );
+  const batch = await projetosService.create(
+    projetoCreateSchema.parse({
+      ...projectData,
+      equipeInicial: activePeople.map((p) => initialMember(p.id)),
+    }),
+  );
+  assert.equal((await projetosService.listTeam(batch.id)).length, 2);
+  const teamBeforeEdit = await projetosService.listTeam(batch.id);
+  await projetosService.update(batch.id, { nome: "Cadastro alterado sem perder equipe" });
+  assert.deepEqual(await projetosService.listTeam(batch.id), teamBeforeEdit);
+  const prepared = await projetosService.create(
+    projetoCreateSchema.parse({ ...projectData, nome: "Planejamento sem equipe" }),
+  );
+  await tarefasRepository.save(null, {
+    projetoId: prepared.id,
+    titulo: "Pode planejar antes de alocar equipe",
+  });
+  const newHours = {
+    projetoId: prepared.id,
+    colaboradorId: activePeople[0].id,
+    data: new Date("2026-10-01"),
+    horas: 1,
+    descricao: "Operação após definir equipe",
+    status: "PENDENTE",
+  };
+  await assert.rejects(apontamentosService.create(newHours), { statusCode: 409 });
+  const participation = await projetosService.addTeamMember(prepared.id, {
+    ...initialMember(activePeople[1].id),
+    dataEntrada: new Date("2026-10-01"),
+  });
+  await assert.rejects(apontamentosService.create({ ...newHours, data: new Date("2026-09-30") }), {
+    statusCode: 409,
+  });
+  const recorded = await apontamentosService.create(newHours);
+  assert.equal(Number(recorded.horas), 1);
+  await projetosService.updateTeamMember(prepared.id, participation.id, {
+    dataSaida: new Date("2026-10-01"),
+  });
+  await assert.rejects(apontamentosService.create({ ...newHours, data: new Date("2026-10-02") }), {
+    statusCode: 409,
+  });
+  await apontamentosService.update(recorded.id, { descricao: "Correção histórica preservada" });
+  assert.equal(
+    (await apontamentosService.getById(recorded.id)).descricao,
+    "Correção histórica preservada",
+  );
   console.log(
     "OK: todas as tabelas populadas, cenários financeiros conciliados, tarefas compartilhadas, pendências, histórico, reexecução sem duplicatas e ajustes manuais preservados.",
   );

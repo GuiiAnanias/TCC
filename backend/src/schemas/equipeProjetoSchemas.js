@@ -8,6 +8,22 @@ export const equipeProjetoCreateSchema = z.object({
   dataEntrada: z.coerce.date(),
 });
 
+export const equipeInicialSchema = z
+  .array(equipeProjetoCreateSchema)
+  .max(100)
+  .superRefine((members, ctx) => {
+    const seen = new Set();
+    members.forEach((member, index) => {
+      if (seen.has(member.colaboradorId))
+        ctx.addIssue({
+          code: "custom",
+          path: [index, "colaboradorId"],
+          message: "Selecione cada colaborador apenas uma vez.",
+        });
+      seen.add(member.colaboradorId);
+    });
+  });
+
 export const equipeProjetoUpdateSchema = z
   .object({
     papel: z.enum(papeisProjeto, { message: "Papel do colaborador inválido." }).optional(),

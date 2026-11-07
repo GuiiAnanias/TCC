@@ -1,17 +1,16 @@
 import React from "react";
 import { BriefcaseBusiness, Building2, UsersRound, WalletCards, Clock } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge.jsx";
+import {
+  projectStatusOptions,
+  projectContractOptions,
+  projectContractLabel,
+} from "./projectOptions.js";
 import { formatCnpj, formatCep, formatCpf, formatTelefone } from "../utils/companyFormat.js";
 
 const statusOptions = [
   { label: "Ativo", value: "ATIVO" },
   { label: "Inativo", value: "INATIVO" },
-];
-
-const tipoContratoOptions = [
-  { label: "Fixo", value: "FIXO" },
-  { label: "Horas", value: "HORAS" },
-  { label: "Fechado", value: "FECHADO" },
 ];
 
 function currency(value) {
@@ -383,6 +382,8 @@ export const resources = [
     icon: BriefcaseBusiness,
     loadClientes: true,
     teamManager: true,
+    inactivateLabel: "Encerrar",
+    inactivatedLabel: "encerrado",
     fields: [
       {
         name: "nome",
@@ -396,8 +397,8 @@ export const resources = [
         name: "tipoContrato",
         label: "Tipo de contrato",
         type: "select",
-        options: tipoContratoOptions,
-        defaultValue: "FECHADO",
+        options: [{ label: "Selecione…", value: "" }, ...projectContractOptions],
+        required: true,
       },
       {
         name: "horasContratadas",
@@ -420,7 +421,7 @@ export const resources = [
         name: "status",
         label: "Status",
         type: "select",
-        options: statusOptions,
+        options: projectStatusOptions,
         defaultValue: "ATIVO",
         hiddenOnCreate: true,
       },
@@ -428,7 +429,11 @@ export const resources = [
     columns: [
       { key: "nome", label: "Projeto" },
       { key: "cliente", label: "Cliente", render: (item) => item.cliente?.nome || "-" },
-      { key: "tipoContrato", label: "Contrato" },
+      {
+        key: "tipoContrato",
+        label: "Contrato",
+        render: (item) => projectContractLabel(item.tipoContrato),
+      },
       { key: "horasContratadas", label: "Horas", render: (item) => decimal(item.horasContratadas) },
       { key: "valorProjeto", label: "Valor", render: (item) => currency(item.valorProjeto) },
       {
@@ -436,7 +441,7 @@ export const resources = [
         label: "Equipe",
         render: (item) => {
           const total = activeTeamCount(item);
-          return `${total} ativo${total === 1 ? "" : "s"}`;
+          return total ? `${total} vigente${total === 1 ? "" : "s"} hoje` : "Sem equipe vigente";
         },
       },
       { key: "dataInicio", label: "Início", render: (item) => date(item.dataInicio) },
