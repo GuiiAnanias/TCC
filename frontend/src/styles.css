@@ -322,6 +322,27 @@ input::placeholder {
 .login-form button {
   margin-top: 8px;
 }
+.login-remember label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.login-remember input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--primary);
+}
+.login-remember small {
+  display: block;
+  margin: 6px 0 0 28px;
+  color: var(--muted);
+  line-height: 1.5;
+}
 .login-link {
   display: inline-block;
   margin-top: 16px;
