@@ -48,6 +48,6 @@ Exemplo: `GET /api/dashboard?projetoIds=10,12&colaboradorId=5&statusProjeto=ATIV
 
 No Excel, a aba Resumo lista os filtros aplicados. Com vários projetos, a linha Projetos traz os nomes separados por ponto e vírgula.
 
-## Decisão pendente
+## Equipe é o departamento
 
-O filtro Equipe continua sendo o departamento do colaborador (cadastro do colaborador). A documentação do TCC também pode ser lida como a equipe do projeto (participações com papel e período). Essa escolha muda o resultado do filtro e precisa ser definida antes de qualquer alteração.
+Decisão de 07/11/2026: o filtro Equipe é o departamento do cadastro do colaborador, e não a equipe do projeto (participações com papel e período).
