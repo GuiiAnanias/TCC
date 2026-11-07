@@ -3,9 +3,8 @@ import { AlertTriangle, Check, Copy, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
+import { todayBusinessDate as today } from "../utils/businessDates.js";
 
-const today = () =>
-  new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" }).format(new Date());
 const inputDate = (value) => (value ? String(value).slice(0, 10) : "");
 const formatDate = (value) =>
   value ? new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";

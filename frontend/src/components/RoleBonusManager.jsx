@@ -3,7 +3,7 @@ import { HelpDialog } from "./HelpDialog.jsx";
 import { api } from "../api/client.js";
 
 const date = (value) => new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
-const today = () => new Date().toLocaleDateString("en-CA");
+import { todayBusinessDate as today } from "../utils/businessDates.js";
 
 export function RoleBonusManager() {
   const [rows, setRows] = useState([]);
