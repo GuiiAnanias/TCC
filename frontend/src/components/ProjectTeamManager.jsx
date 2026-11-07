@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
 import { api } from "../api/client.js";
+import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 import { todayBusinessDate as today } from "../utils/businessDates.js";
@@ -26,6 +27,10 @@ function memberName(vinculo) {
 }
 
 export function ProjectTeamManager({ project, onChanged, onClose }) {
+  const requestScope = useRequestScope(project?.id);
+  const callbacks = useLatestValue({ onChanged });
+  const [loadError, setLoadError] = useState("");
+  const [selectionErrors, setSelectionErrors] = useState({});
   const [team, setTeam] = useState([]);
   const [collaborators, setCollaborators] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -70,16 +75,19 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    const request = requestScope.begin("load");
+    setLoadError("");
     setLoading(true);
     setError("");
 
     try {
       const [teamResponse, collaboratorsResponse, rolesResponse] = await Promise.all([
-        api.get(`/projetos/${project.id}/equipe`),
-        api.get("/colaboradores", { params: { status: "ATIVO" } }),
-        api.get("/projetos/papeis"),
+        api.get(`/projetos/${project.id}/equipe`, { signal: request.signal }),
+        api.get("/colaboradores", { params: { status: "ATIVO" }, signal: request.signal }),
+        api.get("/projetos/papeis", { signal: request.signal }),
       ]);
 
+      if (!request.isCurrent()) return;
       setTeam(teamResponse.data);
       setCollaborators(collaboratorsResponse.data);
       setRoles(rolesResponse.data);
@@ -92,16 +100,28 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         ),
       );
     } catch (requestError) {
-      setError(
+      if (!request.isCurrent()) return;
+      setTeam([]);
+      setCollaborators([]);
+      setRoles([]);
+      setLoadError(
         requestError.response?.data?.message || "Não foi possível carregar a equipe do projeto.",
       );
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [project?.id]);
+  }, [project?.id, requestScope]);
 
   useEffect(() => {
     setTeam([]);
+    setCollaborators([]);
+    setRoles([]);
+    setEditingRoles({});
+    setEditingEntryDates({});
+    setRoleEffectiveDate(today());
+    setSelectionErrors({});
+    setSaving(false);
+    setLoadError("");
     setMessage("");
     setError("");
     setTeamStatusFilter("");
@@ -116,16 +136,27 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
   async function handleSubmit(event) {
     event.preventDefault();
 
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
+    const missing = {};
+    if (!activeCollaborators.some((person) => String(person.id) === String(formData.colaboradorId)))
+      missing.colaboradorId = "Selecione um colaborador disponível.";
+    if (!roles.includes(formData.papel)) missing.papel = "Selecione um papel no projeto.";
+    setSelectionErrors(missing);
+    if (Object.keys(missing).length) {
+      document.getElementById(`team-${Object.keys(missing)[0]}`)?.focus();
+      return;
+    }
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
     setError("");
 
     try {
       await api.post(`/projetos/${project.id}/equipe`, formData);
+      if (!request.isCurrent()) return;
       setMessage("Colaborador vinculado ao projeto.");
       setFormData({
         colaboradorId: "",
@@ -133,23 +164,38 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         dataEntrada: today(),
       });
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       const response = requestError.response?.data;
       const validationMessage = response?.errors?.[0]?.message;
       setError(
         validationMessage || response?.message || "Não foi possível vincular o colaborador.",
       );
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
   async function updateRole(member) {
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
+    if (!String(editingRoles[member.id] ?? "").trim()) {
+      setSelectionErrors((current) => ({ ...current, [`role-${member.id}`]: true }));
+      setError("Selecione o papel do vínculo antes de salvar.");
+      document.getElementById(`team-role-${member.id}`)?.focus();
+      return;
+    }
+    if (editingRoles[member.id] !== member.papel && !roleEffectiveDate) {
+      setSelectionErrors((current) => ({ ...current, vigencia: true }));
+      setError("Informe a vigência da troca de papel.");
+      document.getElementById("team-role-date")?.focus();
+      return;
+    }
+    const request = requestScope.begin("mutation");
+    setSaving(true);
     setMessage("");
     setError("");
 
@@ -159,16 +205,20 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           ? { papel: editingRoles[member.id], dataVigencia: roleEffectiveDate }
           : { dataEntrada: editingEntryDates[member.id] }),
       });
+      if (!request.isCurrent()) return;
       setMessage("Vínculo atualizado. Trocas de papel preservam o histórico.");
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       setError(requestError.response?.data?.message || "Não foi possível atualizar o papel.");
+    } finally {
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
   async function closeParticipation(member) {
-    if (isInactive) {
+    if (isInactive || saving || loading || loadError) {
       return;
     }
 
@@ -176,16 +226,22 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
+    setSaving(true);
     setMessage("");
     setError("");
 
     try {
       await api.delete(`/projetos/${project.id}/equipe/${member.id}`);
+      if (!request.isCurrent()) return;
       setMessage("Participação encerrada e histórico preservado.");
       await loadTeam();
-      await onChanged?.();
+      if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       setError(requestError.response?.data?.message || "Não foi possível encerrar a participação.");
+    } finally {
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
@@ -231,6 +287,14 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       </header>
 
       <div className="feedback-row">
+        {loadError && (
+          <div className="feedback error" role="alert">
+            {loadError}
+            <button type="button" onClick={loadTeam}>
+              Tentar novamente
+            </button>
+          </div>
+        )}
         {isInactive ? (
           <div className="feedback warning">
             <AlertTriangle size={18} />
@@ -244,7 +308,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
           </div>
         ) : null}
         {error ? (
-          <div className="feedback error">
+          <div className="feedback error" id="team-operation-error" role="alert">
             <X size={18} />
             {error}
           </div>
@@ -255,12 +319,18 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         <label className="field">
           <span>Colaborador</span>
           <select
+            id="team-colaboradorId"
+            aria-invalid={Boolean(selectionErrors.colaboradorId)}
+            aria-describedby={
+              selectionErrors.colaboradorId ? "team-colaboradorId-error" : undefined
+            }
             value={formData.colaboradorId}
             required
-            disabled={isInactive || loading}
-            onChange={(event) =>
-              setFormData((current) => ({ ...current, colaboradorId: event.target.value }))
-            }
+            disabled={isInactive || loading || saving || Boolean(loadError)}
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, colaboradorId: "" }));
+              setFormData((current) => ({ ...current, colaboradorId: event.target.value }));
+            }}
           >
             <option value="">Selecione</option>
             {activeCollaborators.map((collaborator) => (
@@ -269,17 +339,26 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
               </option>
             ))}
           </select>
+          {selectionErrors.colaboradorId && (
+            <small id="team-colaboradorId-error" role="alert">
+              {selectionErrors.colaboradorId}
+            </small>
+          )}
         </label>
 
         <label className="field">
           <span>Papel no projeto</span>
           <select
+            id="team-papel"
+            aria-invalid={Boolean(selectionErrors.papel)}
+            aria-describedby={selectionErrors.papel ? "team-papel-error" : undefined}
             value={formData.papel}
             required
-            disabled={isInactive || loading}
-            onChange={(event) =>
-              setFormData((current) => ({ ...current, papel: event.target.value }))
-            }
+            disabled={isInactive || loading || saving || Boolean(loadError)}
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, papel: "" }));
+              setFormData((current) => ({ ...current, papel: event.target.value }));
+            }}
           >
             <option value="">Selecione</option>
             {roles.map((role) => (
@@ -288,6 +367,11 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
               </option>
             ))}
           </select>
+          {selectionErrors.papel && (
+            <small id="team-papel-error" role="alert">
+              {selectionErrors.papel}
+            </small>
+          )}
         </label>
 
         <label className="field">
@@ -296,7 +380,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             type="date"
             value={formData.dataEntrada}
             required
-            disabled={isInactive || loading}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
             onChange={(event) =>
               setFormData((current) => ({ ...current, dataEntrada: event.target.value }))
             }
@@ -306,7 +390,13 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
         <button
           className="primary-button"
           type="submit"
-          disabled={isInactive || saving || loading || activeCollaborators.length === 0}
+          disabled={
+            isInactive ||
+            saving ||
+            loading ||
+            Boolean(loadError) ||
+            activeCollaborators.length === 0
+          }
           title="Vincular"
         >
           <Link2 size={18} />
@@ -321,8 +411,14 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
             type="date"
             required
             value={roleEffectiveDate}
-            onChange={(event) => setRoleEffectiveDate(event.target.value)}
-            disabled={isInactive}
+            id="team-role-date"
+            aria-invalid={Boolean(selectionErrors.vigencia)}
+            aria-describedby={selectionErrors.vigencia ? "team-operation-error" : undefined}
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, vigencia: false }));
+              setRoleEffectiveDate(event.target.value);
+            }}
+            disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
         <select
@@ -366,18 +462,28 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                       member.papel
                     ) : (
                       <select
-                        value={editingRoles[member.id] || member.papel}
-                        disabled={isInactive}
-                        onChange={(event) =>
+                        id={`team-role-${member.id}`}
+                        aria-invalid={Boolean(selectionErrors[`role-${member.id}`])}
+                        aria-describedby={
+                          selectionErrors[`role-${member.id}`] ? "team-operation-error" : undefined
+                        }
+                        value={editingRoles[member.id] ?? member.papel}
+                        disabled={isInactive || loading || saving || Boolean(loadError)}
+                        onChange={(event) => {
+                          setSelectionErrors((current) => ({
+                            ...current,
+                            [`role-${member.id}`]: false,
+                          }));
                           setEditingRoles((current) => ({
                             ...current,
                             [member.id]: event.target.value,
-                          }))
-                        }
+                          }));
+                        }}
                       >
                         {!roles.includes(member.papel) && (
                           <option value={member.papel}>{member.papel}</option>
                         )}
+                        <option value="">Selecione o papel</option>
                         {roles.map((role) => (
                           <option key={role} value={role}>
                             {role}
@@ -416,6 +522,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                             className="icon-button"
                             onClick={() => updateRole(member)}
                             title="Salvar vínculo"
+                            disabled={saving || loading || Boolean(loadError)}
                           >
                             <Save size={17} />
                           </button>
@@ -424,6 +531,7 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
                             className="icon-button danger"
                             onClick={() => closeParticipation(member)}
                             title="Encerrar participação"
+                            disabled={saving || loading || Boolean(loadError)}
                           >
                             <UserMinus size={17} />
                           </button>

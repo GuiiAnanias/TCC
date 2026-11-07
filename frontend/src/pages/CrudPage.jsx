@@ -25,6 +25,7 @@ import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
+import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { InitialProjectTeam } from "../components/InitialProjectTeam.jsx";
 
 function getInitialForm(fields, isEditing = false) {
@@ -88,6 +89,7 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 }
 
 export function CrudPage({ config }) {
+  const requestScope = useRequestScope(config);
   const [deletingProject, setDeletingProject] = useState(null);
   const isClient = config.key === "clientes";
   const [query] = useSearchParams();
@@ -111,11 +113,13 @@ export function CrudPage({ config }) {
   const [tarefas, setTarefas] = useState([]);
   const [loadingTarefas, setLoadingTarefas] = useState(false);
   const [taskLoadError, setTaskLoadError] = useState("");
+  const [taskLoadVersion, setTaskLoadVersion] = useState(0);
   const [colaboradores, setColaboradores] = useState([]);
   const [catalog, setCatalog] = useState({ cargos: [], niveisRemuneracao: [], departamentos: [] });
   const [optionErrors, setOptionErrors] = useState({});
   const [loadingOptions, setLoadingOptions] = useState({});
   const [filters, setFilters] = useState({ busca: "", status: "" });
+  const currentFilters = useLatestValue(filters);
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
   const [originalRecord, setOriginalRecord] = useState(null);
@@ -123,6 +127,7 @@ export function CrudPage({ config }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [initialTeam, setInitialTeam] = useState([]);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
@@ -157,15 +162,14 @@ export function CrudPage({ config }) {
       .catch((err) => {
         if (!controller.signal.aborted)
           setTaskLoadError(
-            err.response?.data?.message ||
-              "Não foi possível carregar as tarefas do projeto. Atualize a página para tentar novamente.",
+            err.response?.data?.message || "Não foi possível carregar as tarefas do projeto.",
           );
       })
       .finally(() => {
         if (!controller.signal.aborted) setLoadingTarefas(false);
       });
     return () => controller.abort();
-  }, [config.key, formData.projetoId]);
+  }, [config.key, formData.projetoId, taskLoadVersion]);
 
   const visibleFields = useMemo(
     () => formFields.filter((field) => !field.hiddenOnCreate || isEditing),
@@ -173,17 +177,20 @@ export function CrudPage({ config }) {
   );
 
   const loadRecords = useCallback(async () => {
+    const request = requestScope.begin("records");
     setLoading(true);
     setError("");
 
     try {
       const { data } = await api.get(config.endpoint, {
+        signal: request.signal,
         params: {
-          busca: filters.busca || undefined,
-          status: filters.status || undefined,
+          busca: currentFilters.current.busca || undefined,
+          status: currentFilters.current.status || undefined,
         },
       });
 
+      if (!request.isCurrent()) return;
       setRecords(data);
       setSelectedRecord((current) => {
         if (!current || (!config.teamManager && !config.financeManager)) {
@@ -193,98 +200,115 @@ export function CrudPage({ config }) {
         return data.find((record) => record.id === current.id) || null;
       });
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível carregar os dados.");
+      if (request.isCurrent())
+        setError(requestError.response?.data?.message || "Não foi possível carregar os dados.");
     } finally {
-      setLoading(false);
+      if (request.isCurrent()) setLoading(false);
     }
-  }, [config.endpoint, filters.busca, filters.status]);
+  }, [config.endpoint, config.teamManager, config.financeManager, currentFilters, requestScope]);
 
   const loadClientes = useCallback(async () => {
     if (!config.loadClientes) {
       return;
     }
 
+    const request = requestScope.begin("clientes");
     setLoadingOptions((current) => ({ ...current, clientes: true }));
     setOptionErrors((current) => ({ ...current, clientes: "" }));
     try {
       const { data } = await api.get("/clientes", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
 
+      if (!request.isCurrent()) return;
       setClientes(data);
     } catch {
+      if (!request.isCurrent()) return;
       setClientes([]);
       setOptionErrors((current) => ({
         ...current,
         clientes: "Não foi possível carregar os clientes.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, clientes: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, clientes: false }));
     }
-  }, [config.loadClientes]);
+  }, [config.loadClientes, requestScope]);
 
   const loadProjetos = useCallback(async () => {
     if (!config.loadProjetos) {
       return;
     }
 
+    const request = requestScope.begin("projetos");
     setLoadingOptions((current) => ({ ...current, projetos: true }));
     setOptionErrors((current) => ({ ...current, projetos: "" }));
     try {
       const { data } = await api.get("/projetos", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
+      if (!request.isCurrent()) return;
       setProjetos(data);
     } catch {
+      if (!request.isCurrent()) return;
       setProjetos([]);
       setOptionErrors((current) => ({
         ...current,
         projetos: "Não foi possível carregar os projetos.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, projetos: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, projetos: false }));
     }
-  }, [config.loadProjetos]);
+  }, [config.loadProjetos, requestScope]);
 
   const loadColaboradores = useCallback(async () => {
     if (!config.loadColaboradores) {
       return;
     }
 
+    const request = requestScope.begin("colaboradores");
     setLoadingOptions((current) => ({ ...current, colaboradores: true }));
     setOptionErrors((current) => ({ ...current, colaboradores: "" }));
     try {
       const { data } = await api.get("/colaboradores", {
         params: { status: "ATIVO" },
+        signal: request.signal,
       });
+      if (!request.isCurrent()) return;
       setColaboradores(data);
     } catch {
+      if (!request.isCurrent()) return;
       setColaboradores([]);
       setOptionErrors((current) => ({
         ...current,
         colaboradores: "Não foi possível carregar os colaboradores.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, colaboradores: false }));
+      if (request.isCurrent())
+        setLoadingOptions((current) => ({ ...current, colaboradores: false }));
     }
-  }, [config.loadColaboradores]);
+  }, [config.loadColaboradores, requestScope]);
 
   const loadCatalog = useCallback(async () => {
     if (!config.fields.some((field) => field.type === "catalog-select")) return;
+    const request = requestScope.begin("catalog");
     setLoadingOptions((current) => ({ ...current, catalog: true }));
     setOptionErrors((current) => ({ ...current, catalog: "" }));
     try {
-      const { data } = await api.get("/opcoes-cadastro");
+      const { data } = await api.get("/opcoes-cadastro", { signal: request.signal });
+      if (!request.isCurrent()) return;
       setCatalog(data);
     } catch {
+      if (!request.isCurrent()) return;
       setOptionErrors((current) => ({
         ...current,
         catalog: "Não foi possível carregar as opções de cadastro.",
       }));
     } finally {
-      setLoadingOptions((current) => ({ ...current, catalog: false }));
+      if (request.isCurrent()) setLoadingOptions((current) => ({ ...current, catalog: false }));
     }
-  }, [config.fields]);
+  }, [config.fields, requestScope]);
 
   useEffect(() => {
     setFormData(getInitialForm(config.fields));
@@ -293,11 +317,18 @@ export function CrudPage({ config }) {
     clientDrafts.current = {};
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
     setFilters({ busca: "", status: "" });
     setDeletingProject(null);
     setSelectedRecord(null);
+    setSaving(false);
+    setRecords([]);
+    setClientes([]);
+    setProjetos([]);
+    setColaboradores([]);
+    setCatalog({ cargos: [], niveisRemuneracao: [], departamentos: [] });
     setInitialTeam([]);
     setConsultingCnpj(false);
     setConsultingCep(false);
@@ -308,11 +339,14 @@ export function CrudPage({ config }) {
 
   useEffect(() => {
     loadRecords();
+  }, [loadRecords, filters.busca, filters.status]);
+
+  useEffect(() => {
     loadClientes();
     loadProjetos();
     loadColaboradores();
     loadCatalog();
-  }, [loadRecords, loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
+  }, [loadClientes, loadProjetos, loadColaboradores, loadCatalog]);
 
   function cancelCepLookup() {
     cepRequest.current?.abort();
@@ -354,6 +388,8 @@ export function CrudPage({ config }) {
   }
 
   function resetForm() {
+    requestScope.cancel("mutation");
+    setSaving(false);
     setInitialTeam([]);
     cancelCepLookup();
     cnpjRequest.current?.abort();
@@ -363,11 +399,14 @@ export function CrudPage({ config }) {
     clientDrafts.current = {};
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
 
   function chooseClientKind(kind) {
+    requestScope.cancel("mutation");
+    setSaving(false);
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
@@ -378,11 +417,14 @@ export function CrudPage({ config }) {
     setFormOpen(true);
     setEditingId(null);
     setOriginalRecord(null);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
 
   function handleEdit(record) {
+    requestScope.cancel("mutation");
+    setSaving(false);
     setInitialTeam([]);
     cancelCepLookup();
     cnpjRequest.current?.abort();
@@ -412,12 +454,37 @@ export function CrudPage({ config }) {
     setFormData(nextForm);
     setEditingId(record.id);
     setOriginalRecord(record);
+    setFieldErrors({});
     setMessage("");
     setError("");
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (
+      saving ||
+      Object.values(loadingOptions).some(Boolean) ||
+      Object.values(optionErrors).some(Boolean) ||
+      loadingTarefas ||
+      taskLoadError
+    )
+      return;
+    const missing = {};
+    for (const field of formFields) {
+      if (
+        (field.required || (field.requiredOnCreate && !isEditing)) &&
+        ["cliente", "projeto", "colaborador", "catalog-select", "select"].includes(field.type) &&
+        !String(formData[field.name] ?? "").trim()
+      )
+        missing[field.name] = `Selecione ${field.label.toLocaleLowerCase("pt-BR")}.`;
+    }
+    setFieldErrors(missing);
+    if (Object.keys(missing).length) {
+      setError("Confira os campos obrigatórios indicados no formulário.");
+      document.getElementById(Object.keys(missing)[0])?.focus();
+      return;
+    }
+    const request = requestScope.begin("mutation");
     setSaving(true);
     setError("");
     setMessage("");
@@ -439,16 +506,18 @@ export function CrudPage({ config }) {
         await api.post(config.endpoint, payload);
       }
 
+      if (!request.isCurrent()) return;
       resetForm();
       setMessage(`${config.singular} ${isEditing ? "atualizado" : "cadastrado"} com sucesso.`);
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
+      if (!request.isCurrent()) return;
       const response = requestError.response?.data;
       const validationMessage = response?.errors?.[0]?.message;
       setError(validationMessage || response?.message || "Não foi possível salvar o registro.");
     } finally {
-      setSaving(false);
+      if (request.isCurrent()) setSaving(false);
     }
   }
 
@@ -501,11 +570,13 @@ export function CrudPage({ config }) {
       return;
     }
 
+    const request = requestScope.begin("mutation");
     setError("");
     setMessage("");
 
     try {
       await api.delete(`${config.endpoint}/${record.id}`);
+      if (!request.isCurrent()) return;
       if (editingId === record.id) resetForm();
       setMessage(
         `${config.singular} ${deleting ? "excluído" : config.inactivatedLabel || "inativado"} com sucesso.`,
@@ -513,7 +584,8 @@ export function CrudPage({ config }) {
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
-      setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
+      if (request.isCurrent())
+        setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
     }
   }
 
@@ -525,12 +597,15 @@ export function CrudPage({ config }) {
       pattern: field.pattern,
       value: formData[field.name] ?? "",
       required: field.required || (field.requiredOnCreate && !isEditing),
+      "aria-invalid": Boolean(fieldErrors[field.name]),
+      "aria-describedby": fieldErrors[field.name] ? `${field.name}-error` : undefined,
       disabled: consultingCnpj || saving,
       onChange: (event) => {
         const raw = field.noNumbers
           ? event.target.value.replace(/\p{N}/gu, "")
           : event.target.value;
         const value = field.format ? field.format(raw) : raw;
+        setFieldErrors((current) => ({ ...current, [field.name]: "" }));
         setFormData((current) => ({ ...current, [field.name]: value }));
         if (isClient && field.name === "cep") handleCepChange(value);
       },
@@ -585,7 +660,12 @@ export function CrudPage({ config }) {
       return (
         <select
           {...commonProps}
-          disabled={commonProps.disabled || (options.length === 0 && !legacy.length)}
+          disabled={
+            commonProps.disabled ||
+            loadingOptions.catalog ||
+            Boolean(optionErrors.catalog) ||
+            (options.length === 0 && !legacy.length)
+          }
         >
           <option value="">Selecione...</option>
           {legacy.map((option) => (
@@ -636,11 +716,10 @@ export function CrudPage({ config }) {
           name={field.name}
           options={clienteOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({ ...current, [field.name]: event.target.value }))
-          }
+          onChange={commonProps.onChange}
           placeholder="Buscar cliente..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.clientes || Boolean(optionErrors.clientes)}
         />
       );
@@ -666,15 +745,13 @@ export function CrudPage({ config }) {
           name={field.name}
           options={projetoOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({
-              ...current,
-              [field.name]: event.target.value,
-              tarefaId: "",
-            }))
-          }
+          onChange={(event) => {
+            commonProps.onChange(event);
+            setFormData((current) => ({ ...current, tarefaId: "" }));
+          }}
           placeholder="Buscar projeto..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.projetos || Boolean(optionErrors.projetos)}
         />
       );
@@ -721,11 +798,10 @@ export function CrudPage({ config }) {
           name={field.name}
           options={colaboradorOptions}
           value={formData[field.name] ?? ""}
-          onChange={(event) =>
-            setFormData((current) => ({ ...current, [field.name]: event.target.value }))
-          }
+          onChange={commonProps.onChange}
           placeholder="Buscar colaborador..."
           required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingOptions.colaboradores || Boolean(optionErrors.colaboradores)}
         />
       );
@@ -883,6 +959,9 @@ export function CrudPage({ config }) {
         {taskLoadError && (
           <div className="feedback error" role="alert">
             {taskLoadError}
+            <button type="button" onClick={() => setTaskLoadVersion((value) => value + 1)}>
+              Tentar novamente
+            </button>
           </div>
         )}
       </div>
@@ -955,6 +1034,11 @@ export function CrudPage({ config }) {
                             </span>
                           </label>
                           {renderField(field)}
+                          {fieldErrors[field.name] && (
+                            <small id={`${field.name}-error`} role="alert">
+                              {fieldErrors[field.name]}
+                            </small>
+                          )}
                         </div>
                       ))}
                   </div>
@@ -966,6 +1050,11 @@ export function CrudPage({ config }) {
                   <label key={field.name} className="field">
                     <span>{field.label}</span>
                     {renderField(field)}
+                    {fieldErrors[field.name] && (
+                      <small id={`${field.name}-error`} role="alert">
+                        {fieldErrors[field.name]}
+                      </small>
+                    )}
                   </label>
                 ))}
               </div>
@@ -1175,6 +1264,7 @@ export function CrudPage({ config }) {
       <div ref={detailRegion}>
         {config.teamManager && selectedRecord ? (
           <ProjectTeamManager
+            key={selectedRecord.id}
             project={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}
@@ -1183,6 +1273,7 @@ export function CrudPage({ config }) {
 
         {config.financeManager && selectedRecord ? (
           <CollaboratorFinanceManager
+            key={selectedRecord.id}
             collaborator={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}

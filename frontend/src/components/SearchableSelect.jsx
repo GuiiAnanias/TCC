@@ -10,6 +10,7 @@ export function SearchableSelect({
   placeholder = "Selecione...",
   required = false,
   disabled = false,
+  error = "",
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -61,6 +62,7 @@ export function SearchableSelect({
 
     setOpen(false);
     setQuery("");
+    rootRef.current?.querySelector(".searchable-select__control")?.focus();
   }
 
   function handleKeyDown(event) {
@@ -83,6 +85,8 @@ export function SearchableSelect({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-required={required}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? `${id || name}-error` : undefined}
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
@@ -104,6 +108,7 @@ export function SearchableSelect({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Digite para buscar..."
+              aria-label={`Buscar opções de ${name || "seleção"}`}
               autoComplete="off"
             />
           </div>
