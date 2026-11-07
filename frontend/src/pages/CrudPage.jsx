@@ -1,3 +1,4 @@
+import { ProjectDeletionDialog } from "../components/ProjectDeletionDialog.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
@@ -24,7 +25,6 @@ import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
-import { ProjectDeletionDialog } from "../components/ProjectDeletionDialog.jsx";
 
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
@@ -87,6 +87,7 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 }
 
 export function CrudPage({ config }) {
+  const [deletingProject, setDeletingProject] = useState(null);
   const isClient = config.key === "clientes";
   const [query] = useSearchParams();
   const handledNavigation = useRef("");
@@ -120,7 +121,6 @@ export function CrudPage({ config }) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [selectedRecord, setSelectedRecord] = useState(null);
-  const [deletingProject, setDeletingProject] = useState(null);
   const [consultingCnpj, setConsultingCnpj] = useState(false);
   const [consultingCep, setConsultingCep] = useState(false);
   const [cepFeedback, setCepFeedback] = useState("");
