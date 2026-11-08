@@ -339,3 +339,63 @@ test("personalizar cancela sem gravar, valida seleção, mantém erros no modal 
     cleanup();
   }
 });
+
+test("os arquivos são baixados da fotografia, com aviso de sucesso ou do erro da API", async () => {
+  const cleanup = installDom();
+  const pedidos = [];
+  const api = simularApi({
+    get: (url, config) => {
+      if (url === "/relatorios/7") return { data: gerado };
+      if (url === "/relatorios/7/pdf") {
+        pedidos.push([url, config.responseType]);
+        return {
+          data: new window.Blob(["%PDF-"]),
+          headers: {
+            "content-disposition": 'attachment; filename="relatorio-7-portal-desde-2026-10-01.pdf"',
+          },
+        };
+      }
+      if (url === "/relatorios/7/xlsx") {
+        pedidos.push([url, config.responseType]);
+        const error = new Error("409");
+        // Com responseType "blob", até o erro chega como Blob (o mesmo Blob global do app).
+        error.response = {
+          data: new Blob([JSON.stringify({ message: "Formato não suportado." })]),
+        };
+        throw error;
+      }
+      return null;
+    },
+  });
+  // O download em si é do navegador; aqui basta conferir o pedido e o aviso.
+  window.HTMLAnchorElement.prototype.click = () => {};
+  window.URL.createObjectURL = () => "blob:teste";
+  window.URL.revokeObjectURL = () => {};
+  globalThis.URL.createObjectURL = window.URL.createObjectURL;
+  globalThis.URL.revokeObjectURL = window.URL.revokeObjectURL;
+  const view = await mount(rotas("/relatorios/7"));
+  try {
+    await esperar();
+    const raiz = view.container;
+    await click(botao(raiz, "Baixar PDF"));
+    await esperar();
+    assert.match(
+      raiz.querySelector(".report-download-feedback[role='status']").textContent,
+      /relatorio-7-portal-desde-2026-10-01\.pdf baixado/,
+    );
+    await click(botao(raiz, "Baixar Excel"));
+    await esperar();
+    assert.match(
+      raiz.querySelector(".report-download-feedback[role='alert']").textContent,
+      /Formato não suportado/,
+    );
+    assert.deepEqual(pedidos, [
+      ["/relatorios/7/pdf", "blob"],
+      ["/relatorios/7/xlsx", "blob"],
+    ]);
+  } finally {
+    api.restaurar();
+    await view.unmount();
+    cleanup();
+  }
+});

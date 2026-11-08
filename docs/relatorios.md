@@ -47,13 +47,28 @@ O banco impede alterar ou excluir uma fotografia, inclusive por fora da API. Os 
 
 Qualquer conta ativa pode gerar relatórios e abrir os já gerados, como no restante do sistema. O relatório contém custos internos e valor/hora: é de uso interno.
 
-Exportar a fotografia em PDF ou Excel e listar o histórico de relatórios ainda não fazem parte desta tela. A exportação **Exportar Excel** do Dashboard Geral continua igual e não grava fotografia.
+Listar o histórico de relatórios ainda não faz parte desta tela. O **Exportar Excel** do Dashboard Geral continua igual e não grava fotografia.
+
+## Baixar em PDF e Excel
+
+Ao lado de **Personalizar relatório**, os botões **Baixar PDF** e **Baixar Excel** geram o arquivo no servidor a partir da fotografia aberta: os números são os da prévia, mesmo que os dados tenham mudado depois, e entram só os blocos escolhidos. O download usa o login atual. A tela avisa o nome do arquivo baixado ou o motivo da falha.
+
+O nome do arquivo traz o número do relatório, os clientes ou projetos e o período, por exemplo `relatorio-12-portal-do-cliente-2026-10-01-a-2026-10-31.pdf`, `relatorio-13-cliente-marina-oliveira-todos-os-periodos.xlsx`, `relatorio-14-3-projetos-desde-2026-09-01.pdf` ou `relatorio-15-todos-os-projetos-ate-2026-10-31.pdf`.
+
+| Formato | Conteúdo                                                                                                                                                                                                                                                    |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PDF     | A4 deitado. Primeira página com número, data, autor, versão, período, clientes, projetos e blocos; depois cada bloco com seus indicadores e tabelas. Linhas não são cortadas entre páginas, o cabeçalho das tabelas se repete e o rodapé numera as páginas. |
+| Excel   | Aba Relatório com o cabeçalho e os projetos do recorte, e uma aba por bloco escolhido (Horas totais ganha também a aba Horas por colaborador). As listas são Tabelas do Excel, com valores numéricos e formato de moeda, número e percentual.               |
+
+Os dois arquivos trazem o aviso de uso interno, porque contêm custos e valor/hora. Fotografias dos formatos 1 e 2 são exportadas; um formato que esta versão do sistema não conhece responde 409, em vez de gerar um arquivo com números trocados.
 
 ## API
 
 ```txt
 POST /api/relatorios        projetoIds, clienteIds, dataInicio, dataFim, blocos → 201 com a fotografia
 GET  /api/relatorios/:id    a mesma fotografia, sem recalcular
+GET  /api/relatorios/:id/pdf    arquivo PDF da fotografia
+GET  /api/relatorios/:id/xlsx   arquivo Excel da fotografia
 ```
 
 Exemplo:
@@ -79,6 +94,6 @@ corepack pnpm exec prisma migrate deploy
 corepack pnpm run prisma:generate
 ```
 
-`corepack pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto e a API autenticada.
+`corepack pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto, os arquivos PDF e Excel lidos da fotografia (inclusive depois de mudar os dados) e a API autenticada.
 
 O CI também executa esse teste, incluindo geração por cliente sem duplicação e geração de outra fotografia com um recorte menor.

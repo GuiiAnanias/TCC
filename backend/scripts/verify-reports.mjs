@@ -73,6 +73,7 @@ try {
   const { dashboardService } = await import("../src/services/dashboardService.js");
   const { exclusaoProjetosRepository } =
     await import("../src/repositories/exclusaoProjetosRepository.js");
+  const { lerPasta } = await import("../src/utils/planilha.js");
   const user = await client.usuario.findUnique({ where: { email: "admin@sistema.local" } });
   const gerar = (dados) => service.gerar(relatorioCreateSchema.parse(dados), user);
   const portal = await client.projeto.findFirst({ where: { nome: "Portal do Cliente (demo)" } });
@@ -226,6 +227,51 @@ try {
     assert.equal(lido.status, 200);
     assert.deepEqual((await lido.json()).conteudo, json.conteudo);
     assert.equal((await request("/99999999")).status, 404);
+    // Arquivos: leem a fotografia, não os dados atuais (o Portal já mudou para R$ 1.317).
+    const pdf = await request(`/${doPortal.id}/pdf`);
+    assert.equal(pdf.status, 200);
+    assert.equal(pdf.headers.get("content-type"), "application/pdf");
+    assert.match(
+      pdf.headers.get("content-disposition"),
+      new RegExp(`relatorio-${doPortal.id}-portal-do-cliente-demo-todos-os-periodos\\.pdf`),
+    );
+    assert.equal(
+      Buffer.from(await pdf.arrayBuffer())
+        .subarray(0, 5)
+        .toString(),
+      "%PDF-",
+    );
+    const xlsx = await request(`/${doPortal.id}/xlsx`);
+    assert.equal(xlsx.status, 200);
+    const pasta = await lerPasta(Buffer.from(await xlsx.arrayBuffer()));
+    assert.deepEqual(
+      pasta.worksheets.map((aba) => aba.name),
+      [
+        "Relatório",
+        "Projetos",
+        "Clientes",
+        "Horas totais",
+        "Horas por colaborador",
+        "Custo total",
+        "Inconsistências",
+      ],
+    );
+    assert.equal(pasta.getWorksheet("Custo total").getCell("B1").value, 1212);
+    assert.equal(pasta.getWorksheet("Projetos").getCell("H2").value, 1212);
+    const soHoras = await lerPasta(
+      Buffer.from(await (await request(`/${json.id}/xlsx`)).arrayBuffer()),
+    );
+    assert.deepEqual(
+      soHoras.worksheets.map((aba) => aba.name),
+      ["Relatório", "Horas totais", "Horas por colaborador"],
+      "Só os blocos escolhidos.",
+    );
+    const porClienteArquivo = await request(`/${porCliente.id}/pdf`);
+    assert.match(porClienteArquivo.headers.get("content-disposition"), /relatorio-\d+-cliente-/);
+    assert.equal((await request(`/${doPortal.id}/pdf`, { autenticado: false })).status, 401);
+    assert.equal((await request(`/${doPortal.id}/xlsx`, { autenticado: false })).status, 401);
+    assert.equal((await request("/99999999/pdf")).status, 404);
+    assert.equal((await request("/99999999/xlsx")).status, 404);
     assert.equal((await request("/abc")).status, 400);
     assert.equal(
       (await request("", { method: "POST", body: { blocos: ["HORAS"] } })).status,
@@ -253,7 +299,7 @@ try {
     await new Promise((resolve) => server.close(resolve));
   }
   console.log(
-    "OK: fotografia com os números do dashboard, blocos escolhidos, recorte por período, recorte vazio recusado, cópia imutável no banco, projetos protegidos contra exclusão e API autenticada.",
+    "OK: fotografia com os números do dashboard, blocos escolhidos, recorte por período, recorte vazio recusado, cópia imutável no banco, projetos protegidos contra exclusão, PDF e Excel lidos da fotografia e API autenticada.",
   );
 } finally {
   await client?.$disconnect();
