@@ -227,6 +227,15 @@ function ProtectedLayout() {
             <FileUp size={19} aria-hidden="true" />
             <span className="sidebar-label">Importar horas</span>
           </NavLink>
+          <NavLink
+            to="/relatorios"
+            className="nav-link"
+            title="Relatórios e prévia"
+            aria-label="Relatórios e prévia"
+          >
+            <FileText size={19} aria-hidden="true" />
+            <span className="sidebar-label">Relatórios</span>
+          </NavLink>
         </nav>
         <div className="sidebar-actions-slot" aria-hidden="true" />
         <div className="session-panel">
