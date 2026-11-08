@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import {
+  CABECALHOS_MODELO,
   COLUNAS,
   LIMITE_LINHAS,
   conferirConflitos,
@@ -418,23 +419,43 @@ test("validar só confere; importar grava tudo numa transação ou nada", async 
   assert.equal(banco.chamadas.criar.length, 1, "Com erro, nada mais é gravado.");
 });
 
-test("o modelo traz instruções, listas de cadastros ativos e validações", async () => {
+test("o modelo traz tutorial, listas de cadastros ativos, validações e cores", async () => {
   const pasta = new ExcelJS.Workbook();
-  await pasta.xlsx.load(await montarModelo(cadastros));
+  await pasta.xlsx.load(await montarModelo(cadastros, { hoje: "2026-10-20" }));
   assert.deepEqual(
     pasta.worksheets.map((aba) => aba.name),
-    ["Instruções", "Apontamentos", "Listas"],
+    ["Como usar", "Apontamentos", "Listas"],
   );
+  const textos = [];
+  pasta
+    .getWorksheet("Como usar")
+    .eachRow((linha) => linha.eachCell((celula) => textos.push(celula.text)));
+  const tutorial = textos.join(" ");
+  assert.match(tutorial, /Como fazer, em 4 passos/);
+  assert.match(tutorial, /Importar horas/);
+  assert.match(tutorial, /Modelo gerado pelo CODE BI em 20\/10\/2026/);
+
   const apontamentos = pasta.getWorksheet("Apontamentos");
-  assert.deepEqual(
-    apontamentos.getRow(1).values.slice(1),
-    COLUNAS.map((coluna) => coluna.titulo),
-  );
-  assert.equal(
-    apontamentos.rowCount,
-    1,
-    "O modelo não traz linhas de exemplo para não serem importadas.",
-  );
+  assert.deepEqual(apontamentos.getRow(1).values.slice(1, 8), CABECALHOS_MODELO);
+  assert.deepEqual(CABECALHOS_MODELO, [
+    "Data (dd/mm/aaaa)",
+    "E-mail do colaborador",
+    "Projeto",
+    "Tarefa (opcional)",
+    "Horas (ex.: 7,5)",
+    "Status (opcional)",
+    "Descrição",
+  ]);
+  for (let numero = 2; numero <= 20; numero++)
+    for (let coluna = 1; coluna <= 7; coluna++)
+      assert.equal(
+        apontamentos.getCell(numero, coluna).value,
+        null,
+        "O modelo não traz linhas de exemplo para não serem importadas.",
+      );
+  assert.equal(apontamentos.getCell("I1").value, "Resumo da planilha");
+  assert.match(apontamentos.getCell("J2").value.formula, /^SUMPRODUCT/);
+
   const listas = pasta.getWorksheet("Listas");
   const coluna = (numero) =>
     listas
@@ -447,22 +468,52 @@ test("o modelo traz instruções, listas de cadastros ativos e validações", as
     ["Portal do Cliente", "Mobile [#11]", "Mobile [#12]"],
     "Nomes repetidos levam o código.",
   );
-  assert.deepEqual(coluna(7), [
-    "Tela de login",
-    "Tela de login",
-    "Revisão [#102]",
-    "Revisão [#103]",
+  assert.deepEqual(
+    coluna(7),
+    ["Revisão [#102]", "Revisão [#103]", "Tela de login", "Tela de login"],
+    "Tarefas agrupadas por projeto: a lista de cada linha mostra só as do projeto escolhido.",
+  );
+  assert.deepEqual(coluna(8), [
+    "Portal do Cliente",
+    "Portal do Cliente",
+    "Portal do Cliente",
+    "Mobile [#11]",
   ]);
+  assert.ok(listas.sheetProtection?.sheet, "A aba Listas fica protegida contra edição acidental.");
+  assert.deepEqual(pasta.definedNames.getRanges("ListaEmails").ranges, ["Listas!$A$2:$A$4"]);
+  assert.deepEqual(pasta.definedNames.getRanges("ListaProjetos").ranges, ["Listas!$D$2:$D$4"]);
+  assert.deepEqual(pasta.definedNames.getRanges("ListaProjetoDaTarefa").ranges, [
+    "Listas!$H$2:$H$5",
+  ]);
+
   // Ao ler o arquivo, o ExcelJS expande cada intervalo célula a célula.
   const validacoes = apontamentos.dataValidations.model;
   for (const linhaFinal of [2, 2001]) {
     assert.equal(validacoes[`A${linhaFinal}`].type, "date");
-    assert.equal(validacoes[`B${linhaFinal}`].formulae[0], "Listas!$A$2:$A$4");
-    assert.equal(validacoes[`C${linhaFinal}`].formulae[0], "Listas!$D$2:$D$4");
+    assert.equal(validacoes[`B${linhaFinal}`].formulae[0], "ListaEmails");
+    assert.equal(validacoes[`C${linhaFinal}`].formulae[0], "ListaProjetos");
+    assert.match(validacoes[`D${linhaFinal}`].formulae[0], /^OFFSET\(.*ListaProjetoDaTarefa/);
     assert.deepEqual(validacoes[`E${linhaFinal}`].formulae, [0.01, 24]);
     assert.equal(validacoes[`F${linhaFinal}`].formulae[0], '"Pendente,Aprovado,Faturado"');
+    assert.equal(validacoes[`G${linhaFinal}`].type, "textLength");
+    assert.equal(validacoes[`B${linhaFinal}`].showInputMessage, true, "Cada coluna tem uma dica.");
   }
   assert.equal(validacoes.B2002, undefined);
+
+  const cores = apontamentos.conditionalFormattings.map((regra) => regra.ref);
+  for (const letra of ["A", "B", "C", "D", "E", "F", "G"])
+    assert.ok(cores.includes(`${letra}2:${letra}2001`), `Coluna ${letra} fica vermelha se errada.`);
+});
+
+test("o modelo sem cadastros continua válido", async () => {
+  const pasta = new ExcelJS.Workbook();
+  await pasta.xlsx.load(
+    await montarModelo({ colaboradores: [], projetos: [], tarefas: [] }, { hoje: HOJE }),
+  );
+  const validacoes = pasta.getWorksheet("Apontamentos").dataValidations.model;
+  assert.equal(validacoes.B2, undefined, "Sem lista vazia apontando para nada.");
+  assert.equal(validacoes.D2, undefined);
+  assert.equal(pasta.definedNames.getRanges("ListaEmails").ranges.length, 0);
 });
 
 test("o modelo preenchido volta pela importação", async (t) => {
@@ -471,7 +522,8 @@ test("o modelo preenchido volta pela importação", async (t) => {
   const pasta = new ExcelJS.Workbook();
   await pasta.xlsx.load(await montarModelo(cadastros));
   const aba = pasta.getWorksheet("Apontamentos");
-  aba.getRow(2).values = [
+  // Célula a célula, como no Excel: o resumo ao lado (colunas I e J) continua na linha.
+  [
     new Date(Date.UTC(2026, 9, 5)),
     "carla1@codebi.local",
     "Mobile [#12]",
@@ -479,10 +531,14 @@ test("o modelo preenchido volta pela importação", async (t) => {
     3,
     "Aprovado",
     "Reunião",
-  ];
+  ].forEach((valor, indice) => {
+    aba.getCell(2, indice + 1).value = valor;
+  });
+  assert.equal(aba.getCell("I2").value, "Linhas preenchidas");
   const resultado = await service.validar(Buffer.from(await pasta.xlsx.writeBuffer()));
   assert.equal(resultado.aba, "Apontamentos");
   assert.deepEqual(resultado.erros, []);
+  assert.equal(resultado.resumo.linhas, 1, "O tutorial e o resumo ao lado não viram apontamentos.");
   assert.deepEqual(resultado.linhas[0].projeto, { id: 12, nome: "Mobile" });
 });
 
