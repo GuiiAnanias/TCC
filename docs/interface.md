@@ -33,7 +33,7 @@ As fórmulas estão em [indicadores.md](indicadores.md), os filtros em [filtros.
 
 ## Outras telas
 
-- **Relatórios**: busca de projetos e clientes, período e blocos; Gerar grava uma cópia dos dados e mostra a prévia, que pode ser personalizada e baixada em PDF ou Excel ([relatorios.md](relatorios.md)).
+- **Relatórios**: busca de projetos e clientes, período e blocos; Gerar grava uma cópia dos dados e mostra a prévia, que pode ser personalizada e baixada em PDF ou Excel. A aba Histórico lista os relatórios gerados, com filtros, paginação e download de cada um ([relatorios.md](relatorios.md)).
 - **Tarefas e sprints**: escolha do projeto, abas de tarefas e sprints, formulário, filtros e arquivamento ([tarefas-sprints.md](tarefas-sprints.md)).
 - **Premiação**: publicação de regras e avaliação mensal por categoria ([premiacao.md](premiacao.md)).
 - **Importar horas**: download do modelo, conferência linha a linha e importação da planilha (README, seção "Importação e exportação em Excel").

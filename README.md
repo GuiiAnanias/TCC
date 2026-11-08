@@ -115,7 +115,7 @@ Funcionalidades disponíveis:
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
 - Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
-- Relatórios com prévia: escolha de projetos ou clientes, período e blocos, com uma cópia gravada dos dados de cada geração e download em PDF e Excel, descritos em `docs/relatorios.md`.
+- Relatórios com prévia: escolha de projetos ou clientes, período e blocos, com uma cópia gravada dos dados de cada geração, download em PDF e Excel e histórico paginado dos relatórios gerados, descritos em `docs/relatorios.md`.
 - Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
 - Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar.
 - Consulta visual dos dados do banco pelo Prisma Studio.
