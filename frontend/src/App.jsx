@@ -3,6 +3,7 @@ import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
 import { TasksPage } from "./pages/TasksPage.jsx";
 import { ImportacaoPage } from "./pages/ImportacaoPage.jsx";
 import { RelatoriosPage } from "./pages/RelatoriosPage.jsx";
+import { RelatoriosHistoricoPage } from "./pages/RelatoriosHistoricoPage.jsx";
 import React, { useState } from "react";
 import { NavLink, Navigate, Route, Routes, Outlet, useLocation } from "react-router-dom";
 import {
@@ -80,6 +81,7 @@ function AppRoutes() {
         <Route path="/tarefas" element={<TasksPage />} />
         <Route path="/importacao" element={<ImportacaoPage />} />
         <Route path="/relatorios" element={<RelatoriosPage />} />
+        <Route path="/relatorios/historico" element={<RelatoriosHistoricoPage />} />
         <Route path="/relatorios/:id" element={<RelatoriosPage />} />
         {resources.map((resource) => (
           <Route

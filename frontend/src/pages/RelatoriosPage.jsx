@@ -6,6 +6,7 @@ import { FloatingActions } from "../components/FloatingActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { ReportScopeSelect } from "../components/ReportScopeSelect.jsx";
 import { ReportCustomizationDialog } from "../components/ReportCustomizationDialog.jsx";
+import { ReportTabs } from "../components/ReportTabs.jsx";
 import { BLOCOS } from "../config/reportBlocks.js";
 export { BLOCOS } from "../config/reportBlocks.js";
 import { projectStatusLabel } from "../config/projectOptions.js";
@@ -255,6 +256,7 @@ export function RelatoriosPage() {
           loading={carregando || gerando}
         />
       </header>
+      <ReportTabs />
 
       <form className="dashboard-overview report-form" onSubmit={gerar} noValidate>
         <div className="dashboard-filters report-filters">
