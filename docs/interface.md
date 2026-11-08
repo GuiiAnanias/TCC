@@ -4,7 +4,7 @@ O front é uma aplicação React em português, com tema escuro (padrão) e clar
 
 ## Estrutura comum
 
-- **Menu lateral**: Dashboard Geral, Visão por projeto, Visão por colaborador, Clientes, Colaboradores, Remuneração, Projetos, Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas. No rodapé ficam o usuário logado e o botão Sair.
+- **Menu lateral**: Dashboard Geral, Visão por projeto, Visão por colaborador, Relatórios, Clientes, Colaboradores, Remuneração, Projetos, Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas. No rodapé ficam o usuário logado e o botão Sair.
 - O menu pode ser recolhido para mostrar só os ícones. A escolha fica salva no navegador; em telas de até 860 px ele começa recolhido.
 - **Ações da página**: os botões **Atualizar** (recarrega os dados da tela) e de tema ficam no canto superior direito. Ao rolar a página, eles se acomodam no menu lateral, acima do usuário. O tema escolhido fica salvo no navegador.
 - **Ajuda**: o botão "?" ao lado do título abre a explicação da tela, com as regras e fórmulas usadas. Fecha com Esc ou pelo botão de fechar.
@@ -33,6 +33,7 @@ As fórmulas estão em [indicadores.md](indicadores.md), os filtros em [filtros.
 
 ## Outras telas
 
+- **Relatórios**: busca de projetos e clientes, período e blocos; Gerar grava uma cópia dos dados e mostra a prévia, que pode ser personalizada e baixada em PDF ou Excel ([relatorios.md](relatorios.md)).
 - **Tarefas e sprints**: escolha do projeto, abas de tarefas e sprints, formulário, filtros e arquivamento ([tarefas-sprints.md](tarefas-sprints.md)).
 - **Premiação**: publicação de regras e avaliação mensal por categoria ([premiacao.md](premiacao.md)).
 - **Importar horas**: download do modelo, conferência linha a linha e importação da planilha (README, seção "Importação e exportação em Excel").
