@@ -47,7 +47,7 @@ O banco impede alterar ou excluir uma fotografia, inclusive por fora da API. Os 
 
 Qualquer conta ativa pode gerar relatórios e abrir os já gerados, como no restante do sistema. O relatório contém custos internos e valor/hora: é de uso interno.
 
-Listar o histórico de relatórios ainda não faz parte desta tela. O **Exportar Excel** do Dashboard Geral continua igual e não grava fotografia.
+O **Exportar Excel** do Dashboard Geral continua igual e não grava fotografia.
 
 ## Baixar em PDF e Excel
 
@@ -62,13 +62,36 @@ O nome do arquivo traz o número do relatório, os clientes ou projetos e o per�
 
 Os dois arquivos trazem o aviso de uso interno, porque contêm custos e valor/hora. Fotografias dos formatos 1 e 2 são exportadas; um formato que esta versão do sistema não conhece responde 409, em vez de gerar um arquivo com números trocados.
 
+## Histórico
+
+A aba **Histórico**, ao lado de **Gerar relatório** (endereço `/relatorios/historico`), lista os relatórios gerados, do mais recente para o mais antigo, 20 por página. Cada linha mostra:
+
+| Coluna    | Conteúdo                                                                                                    |
+| --------- | ----------------------------------------------------------------------------------------------------------- |
+| Relatório | Número (abre a fotografia), data e hora de Brasília da geração e autor                                      |
+| Período   | O período escolhido, ou Todos os períodos                                                                   |
+| Recorte   | Os clientes ou projetos escolhidos (a lista completa aparece ao passar o mouse) e quantos projetos entraram |
+| Blocos    | Os blocos gravados                                                                                          |
+| Downloads | Quantas vezes o PDF e o Excel já foram baixados                                                             |
+| Ações     | Abrir, Baixar PDF e Baixar Excel                                                                            |
+
+Os filtros são o projeto (relatórios em que ele entrou no recorte), os dias de geração (data inicial e final, em dias de Brasília) e **Só os que eu gerei**. Todas as contas ativas veem o histórico completo, como na geração.
+
+Decisões desta etapa:
+
+- **Arquivos regenerados, não guardados.** O sistema não armazena os PDFs e as planilhas. Cada download monta o arquivo de novo a partir da fotografia imutável, então os números são sempre os mesmos; só a aparência pode mudar se o layout do PDF ou do Excel for melhorado numa versão futura. Isso evita guardar arquivos no banco ou em disco e não deixa um arquivo divergir da fotografia.
+- **Registro de downloads.** Cada download bem-sucedido grava em `relatorios_exportacoes` o relatório, o formato (`PDF` ou `XLSX`), a conta e a data. O registro também é imutável no banco.
+- **Guarda.** Não há exclusão automática nem manual de relatórios: a fotografia é permanente e mantém protegidos os projetos que entraram nela ([exclusao-projetos.md](exclusao-projetos.md)). Se o volume crescer, uma regra de retenção precisa ser definida antes, porque apagar fotografias libera exclusões de projetos.
+- **Paginação.** 20 por página na tela; a API aceita até 50 por página.
+
 ## API
 
 ```txt
 POST /api/relatorios        projetoIds, clienteIds, dataInicio, dataFim, blocos → 201 com a fotografia
-GET  /api/relatorios/:id    a mesma fotografia, sem recalcular
-GET  /api/relatorios/:id/pdf    arquivo PDF da fotografia
-GET  /api/relatorios/:id/xlsx   arquivo Excel da fotografia
+GET  /api/relatorios         histórico paginado (pagina, porPagina, autorId, projetoId, geradoDe, geradoAte)
+GET  /api/relatorios/:id     a mesma fotografia, sem recalcular
+GET  /api/relatorios/:id/pdf    arquivo PDF da fotografia; registra o download
+GET  /api/relatorios/:id/xlsx   arquivo Excel da fotografia; registra o download
 ```
 
 Exemplo:
@@ -84,9 +107,11 @@ Exemplo:
 
 Respostas de erro: 400 para pedido inválido (sem filtro, sem bloco, período invertido, projeto inexistente, campo desconhecido), 422 para recorte sem dados, 404 para relatório inexistente e 401 sem login. A resposta traz `id`, `versao`, `filtros`, `blocos`, `autor`, `criadoEm` e `conteudo`.
 
+O histórico responde `{ pagina, porPagina, total, paginas, itens }`. `porPagina` vai de 1 a 50 (padrão 20); `geradoDe` e `geradoAte` são datas `AAAA-MM-DD` em dias de Brasília, com `geradoAte` inclusivo. Cada item traz `id`, `versao`, `criadoEm`, `autor`, `autorId`, `blocos`, `periodo`, `clientes`, `projetosSelecionados`, `projetosNoRecorte` e `exportacoes` (`PDF`, `XLSX` e `ultima`), sem o conteúdo dos blocos. Parâmetro desconhecido ou fora do limite responde 400.
+
 ## Migração e validação
 
-A migração `20261108010000_relatorios_gerados` cria as duas tabelas e os gatilhos; não altera dados existentes. Aplique-a e gere o Prisma Client antes de iniciar a versão atualizada:
+A migração `20261108010000_relatorios_gerados` cria as duas tabelas e os gatilhos; `20261108020000_relatorios_exportacoes` cria o registro de downloads, seu gatilho e o índice por autor. Nenhuma altera dados existentes. Aplique-as e gere o Prisma Client antes de iniciar a versão atualizada:
 
 ```powershell
 cd backend
@@ -94,6 +119,6 @@ corepack pnpm exec prisma migrate deploy
 corepack pnpm run prisma:generate
 ```
 
-`corepack pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto, os arquivos PDF e Excel lidos da fotografia (inclusive depois de mudar os dados) e a API autenticada.
+`corepack pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto, os arquivos PDF e Excel lidos da fotografia (inclusive depois de mudar os dados), o histórico paginado e filtrado com a contagem de downloads, a proteção do registro de downloads e a API autenticada.
 
 O CI também executa esse teste, incluindo geração por cliente sem duplicação e geração de outra fotografia com um recorte menor.

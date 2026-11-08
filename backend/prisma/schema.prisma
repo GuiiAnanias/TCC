@@ -68,6 +68,7 @@ model Usuario {
   avaliacoesCriadas AvaliacaoPremiacao[] @relation("AutorAvaliacao")
   avaliacoesConcluidas AvaliacaoPremiacao[] @relation("ConclusaoAvaliacao")
   relatoriosGerados RelatorioGerado[]
+  exportacoesRelatorios RelatorioExportacao[]
 
   @@map("usuarios")
 }
@@ -386,9 +387,11 @@ model RelatorioGerado {
   criadoPorId Int
   criadoPor   Usuario            @relation(fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
   projetos    ProjetoRelatorio[]
+  exportacoes RelatorioExportacao[]
   createdAt   DateTime           @default(now())
 
   @@index([createdAt])
+  @@index([criadoPorId])
   @@map("relatorios_gerados")
 }
 
@@ -401,4 +404,19 @@ model ProjetoRelatorio {
   @@id([projetoId, relatorioId])
   @@index([relatorioId])
   @@map("relatorios_projetos")
+}
+
+// Cada download de PDF ou Excel de um relatório gerado: o histórico mostra os formatos já
+// exportados. O arquivo não é guardado; é gerado de novo a partir da fotografia.
+model RelatorioExportacao {
+  id          Int             @id @default(autoincrement())
+  relatorioId Int
+  formato     String
+  usuarioId   Int
+  relatorio   RelatorioGerado @relation(fields: [relatorioId], references: [id], onDelete: Restrict)
+  usuario     Usuario         @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt   DateTime        @default(now())
+
+  @@index([relatorioId])
+  @@map("relatorios_exportacoes")
 }

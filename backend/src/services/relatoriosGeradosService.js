@@ -135,7 +135,51 @@ function formatar(registro) {
   };
 }
 
+/** Linha do histórico: o que foi pedido, quem gerou e quais formatos já foram baixados. */
+export function resumoDoHistorico(registro, exportacoes = []) {
+  const { conteudo, filtros = {} } = registro;
+  const projetos = conteudo?.projetos ?? [];
+  const escolhidos = new Set(filtros.projetoIds ?? []);
+  const clientes = new Set(filtros.clienteIds ?? []);
+  const proprias = exportacoes.filter((row) => row.relatorioId === registro.id);
+  const contar = (formato) => proprias.find((row) => row.formato === formato)?._count?._all ?? 0;
+  const ultimas = proprias.map((row) => row._max?.createdAt).filter(Boolean);
+  return {
+    id: registro.id,
+    versao: registro.versao,
+    criadoEm: registro.createdAt,
+    autor: registro.criadoPor?.nomeUsuario ?? null,
+    autorId: registro.criadoPor?.id ?? registro.criadoPorId ?? null,
+    blocos: registro.blocos,
+    periodo: { dataInicio: filtros.dataInicio ?? null, dataFim: filtros.dataFim ?? null },
+    clientes: [
+      ...new Map(
+        projetos
+          .filter((row) => clientes.has(row.clienteId))
+          .map((row) => [row.clienteId, row.cliente]),
+      ).values(),
+    ],
+    projetosSelecionados: projetos.filter((row) => escolhidos.has(row.id)).map((row) => row.nome),
+    projetosNoRecorte: projetos.length,
+    exportacoes: {
+      PDF: contar("PDF"),
+      XLSX: contar("XLSX"),
+      ultima: ultimas.length ? new Date(Math.max(...ultimas.map((data) => +new Date(data)))) : null,
+    },
+  };
+}
+
 export const relatoriosGeradosService = {
+  async listar(filtros) {
+    const { total, registros, exportacoes } = await relatoriosGeradosRepository.list(filtros);
+    return {
+      pagina: filtros.pagina,
+      porPagina: filtros.porPagina,
+      total,
+      paginas: Math.max(1, Math.ceil(total / filtros.porPagina)),
+      itens: registros.map((registro) => resumoDoHistorico(registro, exportacoes)),
+    };
+  },
   async gerar(dados, usuario, agora = new Date()) {
     const { projetoIds: escolhidos, clienteIds = [], blocos } = dados;
     if (

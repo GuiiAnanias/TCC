@@ -2538,3 +2538,60 @@ tbody tr:hover {
 .report-download-feedback {
   margin-top: 12px;
 }
+.report-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.report-tab {
+  text-decoration: none;
+}
+.report-tab.is-active {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.report-history-mine {
+  align-self: end;
+  min-height: 40px;
+}
+.report-history {
+  margin-top: 18px;
+}
+.report-history-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.report-history-actions .secondary-button {
+  text-decoration: none;
+  white-space: nowrap;
+}
+.report-history-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.report-history-number {
+  color: var(--primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.report-history-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.report-history-choice {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
