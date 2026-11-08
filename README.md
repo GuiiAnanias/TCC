@@ -533,7 +533,10 @@ _Obter dados > Excel_. A planilha contém custos internos e valor/hora: é para 
 não para enviar ao cliente.
 
 **Importar.** Em **Importar horas**, baixe o modelo, preencha uma linha por apontamento e
-envie o arquivo. O modelo já traz os colaboradores, projetos e tarefas ativos na aba Listas.
+envie o arquivo. O modelo abre na aba **Como usar** (passo a passo curto), marca em vermelho
+o que estiver faltando ou errado enquanto você preenche, mostra um resumo ao lado da tabela e
+já traz os colaboradores, projetos e tarefas ativos na aba Listas, com a lista de tarefas
+filtrada pelo projeto escolhido.
 
 - Colunas: Data, E-mail do colaborador, Projeto, Tarefa (opcional), Horas, Status (opcional) e
   Descrição. Horas aceitam `7,5` ou `07:30`; status em branco entra como Pendente.
