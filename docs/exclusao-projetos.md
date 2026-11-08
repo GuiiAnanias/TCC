@@ -6,7 +6,7 @@ O modal consulta os vínculos antes de habilitar a confirmação. Mostra o nome 
 
 ## Restrições e API
 
-Qualquer participação de equipe, tarefa, sprint, apontamento ou referência em avaliação de premiação impede a exclusão. Entradas futuras, participações encerradas, tarefas/sprints arquivadas e avaliações em rascunho também contam. O estado do projeto não dispensa essas restrições.
+Qualquer participação de equipe, tarefa, sprint, apontamento, referência em avaliação de premiação ou relatório gerado impede a exclusão. Entradas futuras, participações encerradas, tarefas/sprints arquivadas e avaliações em rascunho também contam. O estado do projeto não dispensa essas restrições.
 
 - `GET /api/projetos/:id/exclusao`: retorna `id`, `nome`, `podeExcluir` e as contagens em `vinculos`.
 - `DELETE /api/projetos/:id/permanente`: revalida os vínculos na transação e retorna 204 somente quando remove o projeto. Retorna 409 quando há histórico/conflito e 404 quando o projeto não existe.
@@ -27,7 +27,7 @@ A migração `20261107010000_referencias_projetos_avaliacoes` cria `projetos_ava
 
 Um trigger registra as referências de novas avaliações e alterações de rascunho, inclusive escritas diretas no banco. Referências já registradas permanecem: trocar os projetos de um rascunho não libera para exclusão um projeto que já foi utilizado. As chaves estrangeiras impedem que uma avaliação e uma exclusão concorrentes confirmem deixando uma referência órfã.
 
-Esta entrega não cria histórico persistido de relatórios. Os relatórios Excel atuais são consultas/exportações sem registro persistido de geração. Quando esse histórico for implementado, suas referências aos projetos também deverão ser protegidas por chaves estrangeiras antes de disponibilizar a funcionalidade.
+Os relatórios gerados na tela Relatórios registram os projetos do recorte em `relatorios_projetos`, com chaves estrangeiras restritivas, e por isso também bloqueiam a exclusão ([relatorios.md](relatorios.md)). O **Exportar Excel** do dashboard continua sendo só uma exportação, sem registro gravado.
 
 ## Validação
 
