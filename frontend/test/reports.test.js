@@ -23,6 +23,10 @@ const linhas = (tabela) =>
   );
 
 const opcoes = {
+  clientes: [
+    { id: 1, nome: "Cliente A" },
+    { id: 2, nome: "Cliente B" },
+  ],
   projetos: [
     { id: 10, nome: "Portal", clienteId: 1, status: "ATIVO" },
     { id: 11, nome: "Mobile", clienteId: 1, status: "PAUSADO" },
@@ -228,6 +232,107 @@ test("o endereço com o número abre a fotografia gravada", async () => {
     await esperar();
     assert.match(view.container.querySelector('[role="alert"]').textContent, /não encontrado/);
     assert.equal(view.container.querySelector(".report-preview"), null);
+  } finally {
+    api.restaurar();
+    await view.unmount();
+    cleanup();
+  }
+});
+
+test("a busca unificada distingue clientes de projetos e combina as escolhas", async () => {
+  const cleanup = installDom();
+  const api = simularApi({ post: async () => ({ data: gerado }) });
+  const view = await mount(rotas());
+  try {
+    await esperar();
+    const raiz = view.container;
+    await click(raiz.querySelector("#relatorio-projetos"));
+    const busca = raiz.querySelector('input[aria-label="Buscar seleções"]');
+    await change(busca, "Cliente A");
+    assert.equal(
+      raiz.querySelectorAll('[role="option"]').length,
+      3,
+      "Busca também encontra o cliente indicado em cada projeto.",
+    );
+    await click(opcao(raiz, "Cliente: Cliente A"));
+    await change(busca, "Portal");
+    await click(opcao(raiz, "Projeto: Portal"));
+    await click(botao(raiz, "Gerar"));
+    await esperar();
+    const chamada = api.chamadas.find(([metodo]) => metodo === "POST");
+    assert.deepEqual(chamada[2].clienteIds, [1]);
+    assert.deepEqual(chamada[2].projetoIds, [10]);
+  } finally {
+    api.restaurar();
+    await view.unmount();
+    cleanup();
+  }
+});
+
+test("personalizar cancela sem gravar, valida seleção, mantém erros no modal e gera outra fotografia", async () => {
+  const cleanup = installDom();
+  window.HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute("open", "");
+  };
+  window.HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute("open");
+  };
+  const original = structuredClone(gerado);
+  original.conteudo.projetos = [
+    { id: 10, nome: "Portal", clienteId: 1, cliente: "Cliente A" },
+    { id: 11, nome: "Mobile", clienteId: 1, cliente: "Cliente A" },
+    { id: 12, nome: "Site", clienteId: 2, cliente: "Cliente A" },
+  ];
+  let tentativas = 0;
+  const api = simularApi({
+    get: () => ({ data: original }),
+    post: async () => {
+      tentativas++;
+      if (tentativas === 1) throw { response: { data: { message: "Conflito. Tente novamente." } } };
+      return { data: { ...gerado, id: 8 } };
+    },
+  });
+  const view = await mount(rotas("/relatorios/7"));
+  try {
+    await esperar();
+    const raiz = view.container;
+    await click(botao(raiz, "Personalizar relatório"));
+    let modal = document.querySelector("dialog.report-customization");
+    assert.ok(modal.open);
+    await click(botao(modal, "Cancelar"));
+    assert.equal(document.querySelector("dialog.report-customization"), null);
+    assert.equal(api.chamadas.filter(([m]) => m === "POST").length, 0);
+    await click(botao(raiz, "Personalizar relatório"));
+    modal = document.querySelector("dialog.report-customization");
+    const clientes = modal.querySelectorAll('input[aria-label="Cliente: Cliente A"]');
+    assert.equal(clientes.length, 2, "Mesmo nome, IDs diferentes: os clientes são independentes.");
+    await click(clientes[0]);
+    assert.equal(modal.querySelector('input[aria-label="Projeto: Portal"]').checked, false);
+    assert.equal(modal.querySelector('input[aria-label="Projeto: Site"]').checked, true);
+    await click(clientes[1]);
+    await click(botao(modal, "Gerar nova prévia"));
+    assert.match(modal.querySelector('[role="alert"]').textContent, /ao menos um projeto/);
+    assert.equal(tentativas, 0);
+    await click(modal.querySelector('input[aria-label="Projeto: Portal"]'));
+    assert.equal(clientes[0].indeterminate, true);
+    await click(botao(modal, "Gerar nova prévia"));
+    await esperar();
+    assert.match(modal.querySelector('[role="alert"]').textContent, /Conflito/);
+    assert.equal(modal.querySelector('input[aria-label="Projeto: Portal"]').checked, true);
+    assert.match(raiz.querySelector(".report-preview h2").textContent, /nº 7/);
+    await click(botao(modal, "Gerar nova prévia"));
+    await esperar();
+    assert.equal(document.querySelector("dialog.report-customization"), null);
+    assert.match(raiz.querySelector(".report-preview h2").textContent, /nº 8/);
+    const corpo = api.chamadas.filter(([m]) => m === "POST")[1][2];
+    assert.deepEqual(corpo, {
+      projetoIds: [10],
+      dataInicio: "2026-10-01",
+      dataFim: null,
+      blocos: ["HORAS", "CUSTO"],
+    });
+    assert.equal(original.id, 7, "O original não foi alterado.");
+    assert.equal(original.conteudo.projetos.length, 3);
   } finally {
     api.restaurar();
     await view.unmount();

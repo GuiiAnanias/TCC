@@ -2455,6 +2455,41 @@ tbody tr:hover {
   gap: 18px;
   margin-top: 18px;
 }
+.report-preview-actions,
+.report-customization-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.report-customization-fields {
+  min-width: 0;
+  margin: 20px 0;
+  padding: 0;
+  border: 0;
+}
+.report-customization-fields legend {
+  font-weight: 750;
+}
+.report-client-group {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow-wrap: anywhere;
+}
+.report-client-group .tasks-check {
+  margin: 0;
+  align-items: flex-start;
+}
+.report-client-group .report-project-choice {
+  margin: 12px 0 0 24px;
+}
+.report-projects > small {
+  color: var(--muted);
+  line-height: 1.5;
+}
 .report-preview-header {
   display: flex;
   gap: 12px;
