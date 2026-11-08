@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import { relatoriosGeradosService } from "./relatoriosGeradosService.js";
+import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
 import {
   FORMATOS,
@@ -586,16 +587,27 @@ export async function montarPdfRelatorio(relatorio, { compress = true } = {}) {
   return pronto;
 }
 
+// O download fica registrado no histórico só depois que o arquivo foi montado.
+async function registrar(relatorioId, formato, usuario) {
+  if (usuario?.id)
+    await relatoriosGeradosRepository.registrarExportacao({
+      relatorioId,
+      formato,
+      usuarioId: usuario.id,
+    });
+}
+
 export const relatoriosArquivosService = {
-  async pdf(id) {
+  async pdf(id, usuario) {
     const relatorio = await relatoriosGeradosService.buscar(id);
-    return { arquivo: await montarPdfRelatorio(relatorio), nome: nomeArquivo(relatorio, "pdf") };
+    const arquivo = await montarPdfRelatorio(relatorio);
+    await registrar(relatorio.id, "PDF", usuario);
+    return { arquivo, nome: nomeArquivo(relatorio, "pdf") };
   },
-  async xlsx(id) {
+  async xlsx(id, usuario) {
     const relatorio = await relatoriosGeradosService.buscar(id);
-    return {
-      arquivo: await montarExcelRelatorio(relatorio),
-      nome: nomeArquivo(relatorio, "xlsx"),
-    };
+    const arquivo = await montarExcelRelatorio(relatorio);
+    await registrar(relatorio.id, "XLSX", usuario);
+    return { arquivo, nome: nomeArquivo(relatorio, "xlsx") };
   },
 };

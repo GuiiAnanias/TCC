@@ -272,6 +272,48 @@ try {
     assert.equal((await request(`/${doPortal.id}/xlsx`, { autenticado: false })).status, 401);
     assert.equal((await request("/99999999/pdf")).status, 404);
     assert.equal((await request("/99999999/xlsx")).status, 404);
+    // Histórico: do mais recente para o mais antigo, com os downloads de cada relatório.
+    const totalGerados = await client.relatorioGerado.count();
+    const historico = await (await request("?porPagina=50")).json();
+    assert.equal(historico.total, totalGerados);
+    assert.equal(
+      historico.itens[0].id,
+      (await client.relatorioGerado.findFirst({ orderBy: { id: "desc" } })).id,
+    );
+    assert.ok(
+      historico.itens.every((item, i, lista) => i === 0 || lista[i - 1].criadoEm >= item.criadoEm),
+    );
+    const linhaPortal = historico.itens.find((item) => item.id === doPortal.id);
+    assert.deepEqual(
+      { PDF: linhaPortal.exportacoes.PDF, XLSX: linhaPortal.exportacoes.XLSX },
+      { PDF: 1, XLSX: 1 },
+      "Só os downloads concluídos contam; 401 e 404 não.",
+    );
+    assert.equal(linhaPortal.autor, "admin");
+    assert.equal("conteudo" in linhaPortal, false);
+    const linhaCliente = historico.itens.find((item) => item.id === porCliente.id);
+    assert.equal(linhaCliente.clientes.length, 1);
+    const primeiraPagina = await (await request("?porPagina=2")).json();
+    assert.equal(primeiraPagina.itens.length, 2);
+    assert.equal(primeiraPagina.paginas, Math.ceil(totalGerados / 2));
+    const segunda = await (await request("?porPagina=2&pagina=2")).json();
+    assert.ok(
+      segunda.itens.every((item) => !primeiraPagina.itens.some((row) => row.id === item.id)),
+    );
+    const doVazio = await (await request(`?projetoId=${vazio.id}`)).json();
+    assert.deepEqual(
+      doVazio.itens.map((item) => item.id),
+      [soDoVazio.id],
+      "Filtra pelos projetos registrados na fotografia.",
+    );
+    assert.equal((await (await request(`?autorId=${user.id}`)).json()).total, totalGerados);
+    assert.equal((await (await request("?geradoAte=2000-01-01")).json()).total, 0);
+    assert.equal((await request("?porPagina=51")).status, 400);
+    assert.equal((await request("", { autenticado: false })).status, 401);
+    await assert.rejects(
+      client.relatorioExportacao.deleteMany({ where: { relatorioId: doPortal.id } }),
+      /CODEBI_EXPORTACAO_IMUTAVEL/,
+    );
     assert.equal((await request("/abc")).status, 400);
     assert.equal(
       (await request("", { method: "POST", body: { blocos: ["HORAS"] } })).status,
@@ -299,7 +341,7 @@ try {
     await new Promise((resolve) => server.close(resolve));
   }
   console.log(
-    "OK: fotografia com os números do dashboard, blocos escolhidos, recorte por período, recorte vazio recusado, cópia imutável no banco, projetos protegidos contra exclusão, PDF e Excel lidos da fotografia e API autenticada.",
+    "OK: fotografia com os números do dashboard, blocos escolhidos, recorte por período, recorte vazio recusado, cópia imutável no banco, projetos protegidos contra exclusão, PDF e Excel lidos da fotografia, histórico paginado com os downloads e API autenticada.",
   );
 } finally {
   await client?.$disconnect();

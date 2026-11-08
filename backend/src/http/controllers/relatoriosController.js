@@ -2,7 +2,7 @@ import { relatoriosService } from "../../services/relatoriosService.js";
 import { relatoriosGeradosService } from "../../services/relatoriosGeradosService.js";
 import { relatoriosArquivosService } from "../../services/relatoriosArquivosService.js";
 import { dashboardQuerySchema } from "../../schemas/dashboardSchemas.js";
-import { relatorioCreateSchema } from "../../schemas/relatoriosSchemas.js";
+import { relatorioCreateSchema, relatorioListaSchema } from "../../schemas/relatoriosSchemas.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { parseId } from "../../utils/parseId.js";
 import { XLSX_MIME } from "../../utils/planilha.js";
@@ -34,14 +34,18 @@ export const relatoriosController = {
   pdf: asyncHandler(async (request, response) => {
     const { arquivo, nome } = await relatoriosArquivosService.pdf(
       parseId(request.params.id, "relatório"),
+      request.user,
     );
     enviarArquivo(response, { arquivo, nome, tipo: "application/pdf" });
   }),
   xlsx: asyncHandler(async (request, response) => {
     enviarPlanilha(
       response,
-      await relatoriosArquivosService.xlsx(parseId(request.params.id, "relatório")),
+      await relatoriosArquivosService.xlsx(parseId(request.params.id, "relatório"), request.user),
     );
+  }),
+  listar: asyncHandler(async (request, response) => {
+    response.json(await relatoriosGeradosService.listar(relatorioListaSchema.parse(request.query)));
   }),
   buscar: asyncHandler(async (request, response) => {
     response.json(await relatoriosGeradosService.buscar(parseId(request.params.id, "relatório")));

@@ -41,3 +41,25 @@ export const relatorioCreateSchema = z
     path: ["dataFim"],
     message: "A data final não pode ser anterior à inicial.",
   });
+
+// Dias do histórico no horário de Brasília (sem horário de verão desde 2019).
+const diaDeBrasilia = z
+  .string()
+  .date("Data inválida.")
+  .transform((value) => new Date(`${value}T00:00:00.000-03:00`));
+
+export const LIMITE_POR_PAGINA_HISTORICO = 50;
+export const relatorioListaSchema = z
+  .object({
+    pagina: z.coerce.number().int().min(1).default(1),
+    porPagina: z.coerce.number().int().min(1).max(LIMITE_POR_PAGINA_HISTORICO).default(20),
+    autorId: z.coerce.number().int().positive().optional(),
+    projetoId: z.coerce.number().int().positive().optional(),
+    geradoDe: diaDeBrasilia.optional(),
+    geradoAte: diaDeBrasilia.optional(),
+  })
+  .strict()
+  .refine((data) => !data.geradoDe || !data.geradoAte || data.geradoDe <= data.geradoAte, {
+    path: ["geradoAte"],
+    message: "A data final não pode ser anterior à inicial.",
+  });

@@ -19,4 +19,43 @@ export const relatoriosGeradosRepository = {
   findById(id) {
     return prisma.relatorioGerado.findUnique({ where: { id }, include });
   },
+  /** Página do histórico, do mais recente para o mais antigo, com os downloads de cada um. */
+  async list({ pagina, porPagina, autorId, projetoId, geradoDe, geradoAte }) {
+    const dia = 24 * 60 * 60 * 1000;
+    const where = {
+      ...(autorId ? { criadoPorId: autorId } : {}),
+      ...(projetoId ? { projetos: { some: { projetoId } } } : {}),
+      ...(geradoDe || geradoAte
+        ? {
+            createdAt: {
+              ...(geradoDe ? { gte: geradoDe } : {}),
+              // A data final vale o dia inteiro.
+              ...(geradoAte ? { lt: new Date(geradoAte.getTime() + dia) } : {}),
+            },
+          }
+        : {}),
+    };
+    const [total, registros] = await Promise.all([
+      prisma.relatorioGerado.count({ where }),
+      prisma.relatorioGerado.findMany({
+        where,
+        include,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (pagina - 1) * porPagina,
+        take: porPagina,
+      }),
+    ]);
+    const exportacoes = registros.length
+      ? await prisma.relatorioExportacao.groupBy({
+          by: ["relatorioId", "formato"],
+          where: { relatorioId: { in: registros.map((registro) => registro.id) } },
+          _count: { _all: true },
+          _max: { createdAt: true },
+        })
+      : [];
+    return { total, registros, exportacoes };
+  },
+  registrarExportacao({ relatorioId, formato, usuarioId }) {
+    return prisma.relatorioExportacao.create({ data: { relatorioId, formato, usuarioId } });
+  },
 };
