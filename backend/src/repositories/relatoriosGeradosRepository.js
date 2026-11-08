@@ -3,6 +3,12 @@ import prisma from "../config/prisma.js";
 const include = { criadoPor: { select: { id: true, nomeUsuario: true } } };
 
 export const relatoriosGeradosRepository = {
+  findClients(ids) {
+    return prisma.cliente.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, projetos: { select: { id: true }, take: 51 } },
+    });
+  },
   countProjects(ids) {
     return prisma.projeto.count({ where: { id: { in: ids } } });
   },

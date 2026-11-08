@@ -2,12 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { relatorioCreateSchema } from "../src/schemas/relatoriosSchemas.js";
 import { montarFotografia, VERSAO_RELATORIO } from "../src/services/relatoriosGeradosService.js";
+import { relatoriosGeradosService } from "../src/services/relatoriosGeradosService.js";
+import { relatoriosGeradosRepository } from "../src/repositories/relatoriosGeradosRepository.js";
+import { dashboardService } from "../src/services/dashboardService.js";
 
 const mensagens = (resultado) => resultado.error.issues.map((issue) => issue.message);
 
 test("o pedido de relatório exige filtro e bloco, e normaliza projetos e blocos", () => {
   assert.deepEqual(mensagens(relatorioCreateSchema.safeParse({ blocos: ["CUSTO"] })), [
-    "Informe ao menos um filtro: projetos ou período.",
+    "Informe ao menos um filtro: projetos, clientes ou período.",
   ]);
   assert.deepEqual(mensagens(relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: [] })), [
     "Selecione ao menos um bloco.",
@@ -210,4 +213,49 @@ test("os blocos de horas e inconsistências fecham com os totais do recorte", ()
     data: null,
     descricao: "Tarefa sem estimativa.",
   });
+});
+
+test("clientes e projetos compõem uma união sem duplicatas, com limite e recorte vazio protegido", async () => {
+  const originalRepo = { ...relatoriosGeradosRepository };
+  const originalReport = dashboardService.report;
+  const consultas = [];
+  let gravado;
+  relatoriosGeradosRepository.countProjects = async (ids) => (ids.includes(99) ? 0 : ids.length);
+  relatoriosGeradosRepository.findClients = async (ids) =>
+    ids.map((id) => ({
+      id,
+      projetos: id === 9 ? [{ id: 1 }, { id: 2 }] : [],
+    }));
+  relatoriosGeradosRepository.create = async (data) => {
+    gravado = data;
+    return { ...data, id: 7, createdAt: geradoEm, criadoPor: { nomeUsuario: "admin" } };
+  };
+  dashboardService.report = async (filtros) => {
+    consultas.push(filtros);
+    return relatorio;
+  };
+  const gerar = (dados) =>
+    relatoriosGeradosService.gerar(relatorioCreateSchema.parse(dados), { id: 3 }, geradoEm);
+  try {
+    await gerar({ clienteIds: [9, 9], projetoIds: [1], blocos: ["HORAS", "CUSTO"] });
+    assert.deepEqual(consultas[0], { projetoIds: [1, 2] });
+    assert.deepEqual(gravado.filtros.clienteIds, [9]);
+    assert.deepEqual(gravado.filtros.projetoIds, [1, 2]);
+    assert.equal(gravado.conteudo.dados.CUSTO.total, 700);
+    assert.equal(gravado.conteudo.dados.HORAS.total, 10);
+    assert.equal(gravado.conteudo.projetos[0].clienteId, 9);
+    await assert.rejects(gerar({ clienteIds: [8], blocos: ["HORAS"] }), { statusCode: 422 });
+    assert.equal(consultas.length, 1, "Cliente sem projeto nunca consulta todos os projetos.");
+    await assert.rejects(gerar({ projetoIds: [99], blocos: ["HORAS"] }), { statusCode: 400 });
+    relatoriosGeradosRepository.findClients = async () => [];
+    await assert.rejects(gerar({ clienteIds: [99], blocos: ["HORAS"] }), { statusCode: 400 });
+    relatoriosGeradosRepository.findClients = async () => [
+      { id: 9, projetos: Array.from({ length: 51 }, (_, id) => ({ id: id + 1 })) },
+    ];
+    await assert.rejects(gerar({ clienteIds: [9], blocos: ["HORAS"] }), { statusCode: 400 });
+    assert.equal(consultas.length, 1);
+  } finally {
+    Object.assign(relatoriosGeradosRepository, originalRepo);
+    dashboardService.report = originalReport;
+  }
 });

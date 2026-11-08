@@ -16,6 +16,11 @@ export const relatorioCreateSchema = z
       .max(LIMITE_PROJETOS_RELATORIO, `Selecione até ${LIMITE_PROJETOS_RELATORIO} projetos.`)
       .default([])
       .transform((ids) => [...new Set(ids)].sort((a, b) => a - b)),
+    clienteIds: z
+      .array(z.number().int().positive())
+      .max(LIMITE_PROJETOS_RELATORIO, "Selecione até 50 clientes.")
+      .default([])
+      .transform((ids) => [...new Set(ids)].sort((a, b) => a - b)),
     dataInicio: dia.nullable().optional(),
     dataFim: dia.nullable().optional(),
     blocos: z
@@ -24,10 +29,14 @@ export const relatorioCreateSchema = z
       .transform((blocos) => BLOCOS_RELATORIO.filter((bloco) => blocos.includes(bloco))),
   })
   .strict()
-  .refine((data) => data.projetoIds.length > 0 || data.dataInicio || data.dataFim, {
-    path: ["projetoIds"],
-    message: "Informe ao menos um filtro: projetos ou período.",
-  })
+  .refine(
+    (data) =>
+      data.projetoIds.length > 0 || data.clienteIds.length > 0 || data.dataInicio || data.dataFim,
+    {
+      path: ["projetoIds"],
+      message: "Informe ao menos um filtro: projetos, clientes ou período.",
+    },
+  )
   .refine((data) => !data.dataInicio || !data.dataFim || data.dataInicio <= data.dataFim, {
     path: ["dataFim"],
     message: "A data final não pode ser anterior à inicial.",

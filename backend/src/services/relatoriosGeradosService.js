@@ -2,10 +2,11 @@ import { dashboardService } from "./dashboardService.js";
 import { round } from "./operationalIndicators.js";
 import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
+import { LIMITE_PROJETOS_RELATORIO } from "../schemas/relatoriosSchemas.js";
 
 // Versão do formato da fotografia. Mudanças no conteúdo gravado exigem outra versão,
 // para que relatórios antigos continuem sendo lidos como foram gerados.
-export const VERSAO_RELATORIO = 1;
+export const VERSAO_RELATORIO = 2;
 const TIPOS_OCORRENCIA = [
   "SEM_REMUNERACAO",
   "SEM_VINCULO",
@@ -50,6 +51,7 @@ const montarBloco = {
       id: row.id,
       nome: row.nome,
       cliente: row.cliente,
+      clienteId: row.clienteId,
       status: row.status,
       orcamento: row.orcamento,
       horas: row.horas,
@@ -114,6 +116,7 @@ export function montarFotografia(relatorio, { filtros, blocos, geradoEm }) {
       id: row.id,
       nome: row.nome,
       cliente: row.cliente,
+      clienteId: row.clienteId,
       status: row.status,
     })),
     dados: Object.fromEntries(blocos.map((bloco) => [bloco, montarBloco[bloco](relatorio)])),
@@ -134,14 +137,35 @@ function formatar(registro) {
 
 export const relatoriosGeradosService = {
   async gerar(dados, usuario, agora = new Date()) {
-    const { projetoIds, blocos } = dados;
+    const { projetoIds: escolhidos, clienteIds = [], blocos } = dados;
     if (
-      projetoIds.length &&
-      (await relatoriosGeradosRepository.countProjects(projetoIds)) !== projetoIds.length
+      escolhidos.length &&
+      (await relatoriosGeradosRepository.countProjects(escolhidos)) !== escolhidos.length
     )
       throw new HttpError(400, "Um dos projetos escolhidos não existe mais. Atualize a lista.");
+    const clientes = clienteIds.length
+      ? await relatoriosGeradosRepository.findClients(clienteIds)
+      : [];
+    if (clientes.length !== clienteIds.length)
+      throw new HttpError(400, "Um dos clientes escolhidos não existe mais. Atualize a lista.");
+    // Clientes e projetos são escolhas aditivas. A união por ID evita duplicar custos.
+    const projetoIds = [
+      ...new Set([
+        ...escolhidos,
+        ...clientes.flatMap((cliente) => cliente.projetos.map((projeto) => projeto.id)),
+      ]),
+    ].sort((a, b) => a - b);
+    if (projetoIds.length > LIMITE_PROJETOS_RELATORIO)
+      throw new HttpError(
+        400,
+        "O recorte inclui mais de 50 projetos. Selecione projetos individualmente para reduzir.",
+      );
+    // Cliente sem projetos não pode virar uma consulta sem filtro de projeto.
+    if (clienteIds.length && !projetoIds.length)
+      throw new HttpError(422, "Os clientes escolhidos não têm projetos para gerar o relatório.");
     const filtros = {
       projetoIds,
+      ...(clienteIds.length ? { clienteIds } : {}),
       dataInicio: dia(dados.dataInicio),
       dataFim: dia(dados.dataFim),
     };

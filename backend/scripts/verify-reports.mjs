@@ -78,11 +78,33 @@ try {
   const portal = await client.projeto.findFirst({ where: { nome: "Portal do Cliente (demo)" } });
   const todos = ["PROJETOS", "CLIENTES", "HORAS", "CUSTO", "INCONSISTENCIAS"];
 
+  // A busca por cliente inclui os projetos dele; escolhas repetidas não duplicam dados.
+  const porCliente = await gerar({
+    clienteIds: [portal.clienteId],
+    projetoIds: [portal.id],
+    blocos: todos,
+  });
+  const projetosCliente = await client.projeto.findMany({ where: { clienteId: portal.clienteId } });
+  const painelCliente = await dashboardService.get({
+    projetoIds: projetosCliente.map((p) => p.id),
+  });
+  assert.deepEqual(
+    porCliente.filtros.projetoIds,
+    projetosCliente.map((p) => p.id).sort((a, b) => a - b),
+  );
+  assert.equal(porCliente.conteudo.dados.CUSTO.total, painelCliente.resumo.custo);
+  assert.equal(porCliente.conteudo.dados.HORAS.total, painelCliente.resumo.horas);
+  assert.ok(porCliente.conteudo.projetos.every((p) => p.clienteId === portal.clienteId));
+  const personalizado = await gerar({ projetoIds: [portal.id], blocos: ["HORAS", "CUSTO"] });
+  assert.notEqual(personalizado.id, porCliente.id);
+  assert.equal(personalizado.conteudo.dados.HORAS.total, 22);
+  assert.deepEqual((await service.buscar(porCliente.id)).conteudo, porCliente.conteudo);
+
   // Os números da fotografia são os mesmos do dashboard no mesmo recorte.
   const doPortal = await gerar({ projetoIds: [portal.id], blocos: todos });
   const painel = await dashboardService.get({ projetoIds: [portal.id] });
   assert.equal(doPortal.autor, "admin");
-  assert.equal(doPortal.versao, 1);
+  assert.equal(doPortal.versao, 2);
   assert.deepEqual(doPortal.blocos, todos);
   assert.equal(doPortal.conteudo.dados.CUSTO.total, 1212);
   assert.equal(doPortal.conteudo.dados.CUSTO.total, painel.resumo.custo);
