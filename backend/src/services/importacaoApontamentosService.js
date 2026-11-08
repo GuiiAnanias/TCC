@@ -7,8 +7,6 @@ import {
   dataBr,
   dataUtc,
   diaIso,
-  escreverTitulo,
-  estilizarCabecalho,
   lerPasta,
   normalizarTexto,
   novaPasta,
@@ -87,7 +85,7 @@ export async function lerPlanilha(buffer) {
   }
   const aba =
     pasta.getWorksheet(ABA_APONTAMENTOS) ??
-    pasta.worksheets.find((item) => !["Instruções", "Listas"].includes(item.name));
+    pasta.worksheets.find((item) => !ABAS_DE_APOIO.includes(item.name));
   if (!aba) throw new HttpError(400, `A planilha não tem a aba "${ABA_APONTAMENTOS}".`);
 
   const mapa = new Map();
@@ -503,61 +501,215 @@ async function analisar(planilha, cadastros, db) {
 
 // ---------------------------------------------------------------- modelo para download
 
-function abaInstrucoes(pasta) {
-  const aba = pasta.addWorksheet("Instruções", { properties: { tabColor: { argb: "FF1F4E5F" } } });
-  escreverTitulo(
-    aba,
-    "CODE BI — Importação de apontamentos de horas",
-    "Preencha a aba Apontamentos (uma linha por apontamento) e envie o arquivo em Importar horas.",
-  );
-  const passos = [
-    "1. Preencha a aba Apontamentos a partir da linha 2. Não mude o cabeçalho da linha 1.",
-    "2. Use o e-mail do colaborador e o nome do projeto exatamente como aparecem na aba Listas.",
-    "3. No sistema, clique em Validar arquivo: os erros aparecem por linha, sem gravar nada.",
-    "4. Corrija o que for apontado e envie de novo. Com tudo certo, clique em Importar.",
-    "A importação é tudo ou nada: se uma linha tiver erro, nenhuma é gravada.",
-  ];
-  passos.forEach((texto, indice) => (aba.getCell(`A${4 + indice}`).value = texto));
+export const ABA_COMO_USAR = "Como usar";
+const ABA_LISTAS = "Listas";
+// Abas que nunca têm apontamentos ("Instruções" é a do modelo antigo).
+const ABAS_DE_APOIO = [ABA_COMO_USAR, "Instruções", ABA_LISTAS];
 
-  const cabecalho = aba.getRow(10);
-  cabecalho.values = ["Coluna", "Obrigatória", "Como preencher"];
-  estilizarCabecalho(cabecalho, 3);
-  const regras = [
-    ["Data", "Sim", "Dia trabalhado, no formato dd/mm/aaaa. Não pode ser depois de hoje."],
-    ["E-mail do colaborador", "Sim", "E-mail cadastrado do colaborador (aba Listas)."],
-    [
-      "Projeto",
-      "Sim",
-      "Nome do projeto como na aba Listas. Nomes repetidos levam o código: Nome [#12].",
-    ],
-    [
-      "Tarefa (opcional)",
-      "Não",
-      "Título de uma tarefa ativa do mesmo projeto. Em branco, o apontamento fica sem tarefa.",
-    ],
-    [
-      "Horas",
-      "Sim",
-      "Número com até duas casas (7,5) ou horas e minutos (07:30). Máximo de 24 h por colaborador no dia, somando o que já está no sistema.",
-    ],
-    ["Status (opcional)", "Não", "Pendente, Aprovado ou Faturado. Em branco, entra como Pendente."],
-    ["Descrição", "Sim", "O que foi feito, com pelo menos 3 caracteres."],
-  ];
-  regras.forEach((valores, indice) => {
-    const linha = aba.getRow(11 + indice);
-    linha.values = valores;
-    linha.alignment = { vertical: "top", wrapText: true };
+// Cores do CODE BI (as mesmas variáveis do front, em ARGB).
+const COR = {
+  marca: "FF007F73",
+  marcaEscura: "FF00675D",
+  marcaTexto: "FF004C46",
+  marcaClara: "FFE6F4F1",
+  marcaLinha: "FFB9DAD4",
+  texto: "FF202733",
+  cinza: "FF667085",
+  linha: "FFD8DEE4",
+  fundo: "FFF5F7F8",
+  branco: "FFFFFFFF",
+  erro: "FFBD2B39",
+  erroClaro: "FFFFF0F1",
+  ok: "FF1F7A4D",
+  okClaro: "FFEDF8F1",
+  aba: "FF98A2B3",
+};
+const FONTE = "Calibri";
+// Títulos do modelo com uma dica entre parênteses; a leitura ignora o que está entre parênteses.
+const CABECALHO_MODELO = { data: "Data (dd/mm/aaaa)", horas: "Horas (ex.: 7,5)" };
+export const CABECALHOS_MODELO = COLUNAS.map(
+  (coluna) => CABECALHO_MODELO[coluna.chave] ?? coluna.titulo,
+);
+const LARGURAS = [14, 32, 32, 32, 13, 15, 56];
+const LETRAS = ["A", "B", "C", "D", "E", "F", "G"];
+const ULTIMA_LINHA = LIMITE_LINHAS + 1;
+
+const solido = (argb) => ({ type: "pattern", pattern: "solid", fgColor: { argb } });
+const fonte = (extra = {}) => ({ name: FONTE, size: 11, color: { argb: COR.texto }, ...extra });
+const traco = (argb, style = "thin") => ({ style, color: { argb } });
+
+/** Texto com trechos em **negrito**, no estilo do resto da célula. */
+function rico(texto, base) {
+  return {
+    richText: texto
+      .split(/(\*\*[^*]+\*\*)/)
+      .filter(Boolean)
+      .map((parte) =>
+        parte.startsWith("**")
+          ? { text: parte.slice(2, -2), font: { ...base, bold: true } }
+          : { text: parte, font: base },
+      ),
+  };
+}
+
+function estiloTitulo(celula, obrigatoria) {
+  celula.font = fonte({ bold: true, color: { argb: obrigatoria ? COR.branco : COR.marcaTexto } });
+  celula.fill = solido(obrigatoria ? COR.marca : COR.marcaLinha);
+  celula.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  celula.border = { bottom: traco(COR.marcaEscura, "medium"), right: traco(COR.branco) };
+}
+
+function faixa(aba, linha, texto, estilo, altura) {
+  aba.mergeCells(`B${linha}:H${linha}`);
+  const celula = aba.getCell(`B${linha}`);
+  Object.assign(celula, { value: texto, ...estilo });
+  if (altura) aba.getRow(linha).height = altura;
+  return celula;
+}
+
+function secao(aba, linha, texto) {
+  faixa(
+    aba,
+    linha,
+    texto,
+    {
+      font: fonte({ bold: true, size: 13, color: { argb: COR.marcaTexto } }),
+      alignment: { vertical: "bottom" },
+      border: { bottom: traco(COR.marca, "medium") },
+    },
+    24,
+  );
+}
+
+/** Linha numerada ou com marcador: o selo na coluna B e o texto de C a H. */
+function item(aba, linha, selo, texto, { seloCheio = true } = {}) {
+  const marcador = aba.getCell(`B${linha}`);
+  marcador.value = selo;
+  marcador.font = fonte({
+    bold: true,
+    size: seloCheio ? 14 : 13,
+    color: { argb: seloCheio ? COR.branco : COR.marca },
   });
-  aba.getCell("A19").value =
-    `Limite: ${LIMITE_LINHAS.toLocaleString("pt-BR")} apontamentos e 5 MB por arquivo. Linhas iguais a apontamentos já gravados são recusadas, para evitar importação repetida.`;
-  aba.getCell("A19").font = { italic: true, color: { argb: "FF555555" } };
-  aba.getColumn(1).width = 26;
-  aba.getColumn(2).width = 13;
-  aba.getColumn(3).width = 90;
+  marcador.fill = solido(seloCheio ? COR.marca : COR.marcaClara);
+  marcador.alignment = { vertical: "middle", horizontal: "center" };
+  marcador.border = { bottom: traco(COR.branco, "medium") };
+  aba.mergeCells(`C${linha}:H${linha}`);
+  const celula = aba.getCell(`C${linha}`);
+  celula.value = rico(texto, fonte());
+  celula.fill = solido(COR.fundo);
+  celula.alignment = { vertical: "middle", wrapText: true, indent: 1 };
+  celula.border = { bottom: traco(COR.branco, "medium") };
+  aba.getRow(linha).height = 33;
+}
+
+function abaComoUsar(pasta, hoje) {
+  const aba = pasta.addWorksheet(ABA_COMO_USAR, {
+    properties: { tabColor: { argb: COR.marca } },
+    views: [{ showGridLines: false }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+  [2, 15, 30, 28, 28, 14, 14, 44].forEach((largura, indice) => {
+    aba.getColumn(indice + 1).width = largura;
+  });
+  aba.getRow(1).height = 10;
+
+  faixa(
+    aba,
+    2,
+    "CODE BI  ·  Importar horas pelo Excel",
+    {
+      font: fonte({ bold: true, size: 20, color: { argb: COR.branco } }),
+      fill: solido(COR.marca),
+      alignment: { vertical: "middle", indent: 1 },
+    },
+    42,
+  );
+  faixa(
+    aba,
+    3,
+    "Lance as horas de várias pessoas e projetos de uma vez, sem digitar uma por uma no sistema.",
+    {
+      font: fonte({ color: { argb: COR.marcaTexto } }),
+      fill: solido(COR.marcaClara),
+      alignment: { vertical: "middle", indent: 1 },
+    },
+    24,
+  );
+
+  secao(aba, 5, "Como fazer, em 4 passos");
+  [
+    "Preencha a aba **Apontamentos** a partir da linha 2: uma linha por pessoa, dia e projeto.",
+    "Clique na **setinha** de cada célula para escolher e-mail, projeto, tarefa e status. As opções vêm do sistema.",
+    "No CODE BI, abra **Importar horas** e escolha este arquivo. Nada é gravado antes de você conferir.",
+    "Viu algum erro? Corrija a linha indicada e envie de novo. Tudo certo? Clique em **Importar**.",
+  ].forEach((texto, indice) => item(aba, 6 + indice, indice + 1, texto));
+
+  secao(aba, 11, "Exemplo de linha preenchida");
+  const titulos = aba.getRow(12);
+  const exemplo = aba.getRow(13);
+  const valores = [
+    dataUtc(hoje),
+    "maria.souza@empresa.com",
+    "Portal do Cliente",
+    "Tela de login",
+    7.5,
+    "Aprovado",
+    "Ajustes no layout da tela de login",
+  ];
+  COLUNAS.forEach((coluna, indice) => {
+    const titulo = titulos.getCell(indice + 2);
+    titulo.value = CABECALHOS_MODELO[indice];
+    estiloTitulo(titulo, coluna.obrigatoria);
+    const celula = exemplo.getCell(indice + 2);
+    celula.value = valores[indice];
+    celula.font = fonte({ italic: true, color: { argb: COR.cinza } });
+    celula.alignment = {
+      vertical: "middle",
+      horizontal: indice === 4 ? "center" : "left",
+      wrapText: true,
+    };
+    celula.border = { bottom: traco(COR.linha), right: traco(COR.linha), left: traco(COR.linha) };
+  });
+  exemplo.getCell(2).numFmt = FORMATOS.data;
+  titulos.height = 34;
+  exemplo.height = 22;
+  faixa(
+    aba,
+    14,
+    rico(
+      "Título **verde-escuro** = obrigatório. Título **verde-claro** = opcional (Status em branco entra como Pendente).",
+      fonte({ size: 10, color: { argb: COR.cinza } }),
+    ),
+    {
+      alignment: { vertical: "top", wrapText: true },
+    },
+    20,
+  );
+
+  secao(aba, 16, "Bom saber");
+  [
+    "**Horas** em número, com até duas casas: 7,5 = sete horas e meia. No máximo 24 h por pessoa no dia, somando o que já está no sistema.",
+    "**Célula vermelha** na aba Apontamentos = falta preencher ou o valor não é aceito. O resumo ao lado da tabela conta as linhas incompletas.",
+    "**Tudo ou nada:** se uma linha tiver erro, nenhuma é gravada. Linha igual a um apontamento já gravado é recusada.",
+    `**Limite:** ${LIMITE_LINHAS.toLocaleString("pt-BR")} linhas e 5 MB por arquivo. Não mude os títulos da linha 1 da aba Apontamentos.`,
+  ].forEach((texto, indice) => item(aba, 17 + indice, "✓", texto, { seloCheio: false }));
+
+  faixa(
+    aba,
+    22,
+    `Modelo gerado pelo CODE BI em ${dataBr(hoje)}. As listas trazem os cadastros ativos nesse dia: se algo mudar, baixe o modelo de novo.`,
+    {
+      font: fonte({ size: 9, italic: true, color: { argb: COR.cinza } }),
+      alignment: { vertical: "bottom", wrapText: true },
+    },
+    28,
+  );
 }
 
 function prepararListas(cadastros) {
   const nomesProjetos = referencias(cadastros.projetos, (item) => item.nome);
+  const projetos = cadastros.projetos.filter((item) => item.status === "ATIVO");
+  const ordemProjeto = new Map(projetos.map((item, indice) => [item.id, indice]));
   const tarefas = cadastros.tarefas.filter(
     (item) => item.statusRegistro === "ATIVO" && item.projeto?.status === "ATIVO",
   );
@@ -566,112 +718,339 @@ function prepararListas(cadastros) {
     for (const [id, titulo] of referencias(grupo, (item) => item.titulo)) titulos.set(id, titulo);
   return {
     colaboradores: cadastros.colaboradores.filter((item) => item.status === "ATIVO"),
-    projetos: cadastros.projetos
-      .filter((item) => item.status === "ATIVO")
-      .map((item) => ({ nome: nomesProjetos.get(item.id), cliente: item.cliente?.nome ?? null })),
-    tarefas: tarefas.map((item) => ({
-      titulo: titulos.get(item.id),
-      projeto: nomesProjetos.get(item.projetoId),
+    projetos: projetos.map((item) => ({
+      nome: nomesProjetos.get(item.id),
+      cliente: item.cliente?.nome ?? null,
     })),
+    // Agrupadas por projeto: a lista de tarefas da aba Apontamentos mostra só o bloco do
+    // projeto escolhido na linha.
+    tarefas: tarefas
+      .map((item) => ({
+        titulo: titulos.get(item.id),
+        projeto: nomesProjetos.get(item.projetoId),
+        ordem: ordemProjeto.get(item.projetoId) ?? Number.MAX_SAFE_INTEGER,
+      }))
+      .sort((a, b) => a.ordem - b.ordem || a.titulo.localeCompare(b.titulo, "pt-BR"))
+      .map(({ titulo, projeto }) => ({ titulo, projeto })),
   };
 }
 
-function abaListas(pasta, listas) {
-  const aba = pasta.addWorksheet("Listas");
-  const cabecalho = aba.getRow(1);
-  cabecalho.values = [
-    "E-mail do colaborador",
-    "Colaborador",
-    "",
-    "Projeto",
-    "Cliente",
-    "",
-    "Tarefa",
-    "Projeto da tarefa",
+// Nomes definidos: as setinhas e as cores da aba Apontamentos apontam para cá.
+const NOMES = {
+  emails: "ListaEmails",
+  colaboradores: "ListaColaboradores",
+  projetos: "ListaProjetos",
+  tarefas: "ListaTarefas",
+  projetoDaTarefa: "ListaProjetoDaTarefa",
+};
+
+async function abaListas(pasta, listas) {
+  const aba = pasta.addWorksheet(ABA_LISTAS, {
+    properties: { tabColor: { argb: COR.aba } },
+    views: [{ state: "frozen", ySplit: 1, showGridLines: false }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+  const colunas = [
+    {
+      titulo: "E-mail do colaborador",
+      largura: 32,
+      itens: listas.colaboradores,
+      campo: "email",
+      nome: NOMES.emails,
+    },
+    {
+      titulo: "Colaborador",
+      largura: 30,
+      itens: listas.colaboradores,
+      campo: "nomeCompleto",
+      nome: NOMES.colaboradores,
+    },
+    null,
+    { titulo: "Projeto", largura: 36, itens: listas.projetos, campo: "nome", nome: NOMES.projetos },
+    { titulo: "Cliente", largura: 30, itens: listas.projetos, campo: "cliente" },
+    null,
+    { titulo: "Tarefa", largura: 40, itens: listas.tarefas, campo: "titulo", nome: NOMES.tarefas },
+    {
+      titulo: "Projeto da tarefa",
+      largura: 36,
+      itens: listas.tarefas,
+      campo: "projeto",
+      nome: NOMES.projetoDaTarefa,
+    },
   ];
-  estilizarCabecalho(cabecalho, 8);
-  listas.colaboradores.forEach((item, indice) => {
-    const linha = aba.getRow(indice + 2);
-    linha.getCell(1).value = item.email;
-    linha.getCell(2).value = item.nomeCompleto;
+  aba.getRow(1).height = 30;
+  colunas.forEach((coluna, indice) => {
+    const numero = indice + 1;
+    aba.getColumn(numero).width = coluna?.largura ?? 3;
+    if (!coluna) return;
+    const titulo = aba.getCell(1, numero);
+    titulo.value = coluna.titulo;
+    titulo.font = fonte({ bold: true, color: { argb: COR.marcaTexto } });
+    titulo.fill = solido(COR.marcaClara);
+    titulo.alignment = { vertical: "middle", indent: 1 };
+    titulo.border = { bottom: traco(COR.marca, "medium") };
+    coluna.itens.forEach((registro, posicao) => {
+      const celula = aba.getCell(posicao + 2, numero);
+      celula.value = registro[coluna.campo];
+      celula.font = fonte();
+      celula.alignment = { indent: 1 };
+      celula.border = { bottom: traco(COR.linha) };
+    });
+    if (coluna.nome && coluna.itens.length) {
+      const letra = aba.getColumn(numero).letter;
+      pasta.definedNames.add(
+        `${ABA_LISTAS}!$${letra}$2:$${letra}$${coluna.itens.length + 1}`,
+        coluna.nome,
+      );
+    }
   });
-  listas.projetos.forEach((item, indice) => {
-    const linha = aba.getRow(indice + 2);
-    linha.getCell(4).value = item.nome;
-    linha.getCell(5).value = item.cliente;
-  });
-  listas.tarefas.forEach((item, indice) => {
-    const linha = aba.getRow(indice + 2);
-    linha.getCell(7).value = item.titulo;
-    linha.getCell(8).value = item.projeto;
-  });
-  [32, 30, 3, 36, 28, 3, 40, 36].forEach((largura, indice) => {
-    aba.getColumn(indice + 1).width = largura;
-  });
-  aba.views = [{ state: "frozen", ySplit: 1 }];
+  aba.getColumn(10).width = 48;
+  const aviso = aba.getCell("J1");
+  aviso.value = "Só para consulta";
+  aviso.font = fonte({ bold: true, color: { argb: COR.marcaTexto } });
+  aviso.alignment = { vertical: "middle", indent: 1 };
+  aba.mergeCells("J2:J4");
+  const explicacao = aba.getCell("J2");
+  explicacao.value =
+    "As setinhas da aba Apontamentos usam estas listas. Para incluir alguém, um projeto ou uma tarefa, cadastre no CODE BI e baixe o modelo de novo.";
+  explicacao.font = fonte({ size: 10, color: { argb: COR.cinza } });
+  explicacao.alignment = { vertical: "top", wrapText: true, indent: 1 };
+  // Protegida sem senha: evita apagar uma lista sem querer; quem precisar pode desproteger.
+  await aba.protect("", { selectLockedCells: true, selectUnlockedCells: true, autoFilter: true });
 }
 
-function abaApontamentos(pasta, listas) {
-  const aba = pasta.addWorksheet(ABA_APONTAMENTOS);
-  const cabecalho = aba.getRow(1);
-  cabecalho.values = COLUNAS.map((coluna) => coluna.titulo);
-  estilizarCabecalho(cabecalho, COLUNAS.length);
-  [13, 32, 34, 30, 9, 16, 50].forEach((largura, indice) => {
-    aba.getColumn(indice + 1).width = largura;
+/** Regras de cor que o próprio Excel aplica enquanto a pessoa preenche. */
+function coresDeConferencia(aba, listas) {
+  const iniciada = "COUNTA($A2:$G2)>0";
+  const faltando = (letra) => `AND(${iniciada},${letra}2="")`;
+  const regras = {
+    A: `OR(${faltando("A")},AND(A2<>"",OR(NOT(ISNUMBER(A2)),A2>TODAY(),A2<DATE(2000,1,1))))`,
+    B: listas.colaboradores.length
+      ? `OR(${faltando("B")},AND(B2<>"",COUNTIF(${NOMES.emails},B2)+COUNTIF(${NOMES.colaboradores},B2)=0))`
+      : faltando("B"),
+    C: listas.projetos.length
+      ? `OR(${faltando("C")},AND(C2<>"",COUNTIF(${NOMES.projetos},C2)=0))`
+      : faltando("C"),
+    D: listas.tarefas.length
+      ? `AND(D2<>"",COUNTIFS(${NOMES.tarefas},D2,${NOMES.projetoDaTarefa},C2)=0)`
+      : `D2<>""`,
+    E: `OR(${faltando("E")},AND(ISNUMBER(E2),OR(E2<=0,E2>${LIMITE_HORAS_DIA})))`,
+    F: `AND(F2<>"",NOT(OR(F2="Pendente",F2="Aprovado",F2="Faturado")))`,
+    G: `OR(${faltando("G")},AND(G2<>"",LEN(TRIM(G2))<3))`,
+  };
+  const vermelho = {
+    fill: { type: "pattern", pattern: "solid", bgColor: { argb: COR.erroClaro } },
+    font: { color: { argb: COR.erro }, bold: true },
+  };
+  Object.entries(regras).forEach(([letra, formula], indice) => {
+    aba.addConditionalFormatting({
+      ref: `${letra}2:${letra}${ULTIMA_LINHA}`,
+      rules: [{ type: "expression", priority: indice + 1, formulae: [formula], style: vermelho }],
+    });
   });
-  aba.views = [{ state: "frozen", ySplit: 1 }];
-  const ultima = LIMITE_LINHAS + 1;
-  const intervalo = (coluna) => `${coluna}2:${coluna}${ultima}`;
-  const aviso = (titulo, mensagem) => ({
+  // Listras para facilitar a leitura (prioridade menor que o vermelho).
+  aba.addConditionalFormatting({
+    ref: `A2:G${ULTIMA_LINHA}`,
+    rules: [
+      {
+        type: "expression",
+        priority: 20,
+        formulae: ["MOD(ROW(),2)=0"],
+        style: { fill: { type: "pattern", pattern: "solid", bgColor: { argb: COR.fundo } } },
+      },
+    ],
+  });
+}
+
+function validacoes(aba, listas) {
+  const regra = (titulo, erro, dica) => ({
+    allowBlank: true,
     showErrorMessage: true,
     errorStyle: "warning",
     errorTitle: titulo,
-    error: mensagem,
+    error: erro,
+    showInputMessage: true,
+    promptTitle: titulo,
+    prompt: dica,
   });
-  aba.getColumn(1).numFmt = FORMATOS.data;
-  aba.getColumn(5).numFmt = "0.00";
+  const intervalo = (letra) => `${letra}2:${letra}${ULTIMA_LINHA}`;
   aba.dataValidations.add(intervalo("A"), {
     type: "date",
     operator: "greaterThan",
-    allowBlank: true,
     formulae: [dataUtc(DATA_MINIMA)],
-    ...aviso("Data", "Informe a data no formato dd/mm/aaaa."),
+    ...regra(
+      "Data",
+      "Informe a data no formato dd/mm/aaaa.",
+      "Dia trabalhado, como 15/10/2026. Não pode ser depois de hoje.",
+    ),
   });
   if (listas.colaboradores.length)
     aba.dataValidations.add(intervalo("B"), {
       type: "list",
-      allowBlank: true,
-      formulae: [`Listas!$A$2:$A$${listas.colaboradores.length + 1}`],
-      ...aviso("Colaborador", "Use um e-mail da aba Listas."),
+      formulae: [NOMES.emails],
+      ...regra(
+        "Colaborador",
+        "Use um e-mail da aba Listas.",
+        "Clique na setinha e escolha o e-mail de quem trabalhou.",
+      ),
     });
   if (listas.projetos.length)
     aba.dataValidations.add(intervalo("C"), {
       type: "list",
-      allowBlank: true,
-      formulae: [`Listas!$D$2:$D$${listas.projetos.length + 1}`],
-      ...aviso("Projeto", "Use um projeto da aba Listas."),
+      formulae: [NOMES.projetos],
+      ...regra(
+        "Projeto",
+        "Use um projeto da aba Listas.",
+        "Clique na setinha e escolha o projeto.",
+      ),
+    });
+  if (listas.tarefas.length)
+    aba.dataValidations.add(intervalo("D"), {
+      type: "list",
+      // Só as tarefas do projeto da linha: o bloco dele na lista (agrupada por projeto).
+      formulae: [
+        `OFFSET(INDEX(${NOMES.tarefas},1),MATCH($C2,${NOMES.projetoDaTarefa},0)-1,0,COUNTIF(${NOMES.projetoDaTarefa},$C2),1)`,
+      ],
+      ...regra(
+        "Tarefa (opcional)",
+        "Use uma tarefa do projeto escolhido (aba Listas).",
+        "Opcional. Escolha o projeto antes: a setinha mostra só as tarefas dele.",
+      ),
     });
   aba.dataValidations.add(intervalo("E"), {
     type: "decimal",
     operator: "between",
-    allowBlank: true,
     formulae: [0.01, LIMITE_HORAS_DIA],
-    ...aviso("Horas", `Informe de 0,01 a ${LIMITE_HORAS_DIA} horas.`),
+    ...regra(
+      "Horas",
+      `Informe de 0,01 a ${LIMITE_HORAS_DIA} horas.`,
+      "Horas trabalhadas no dia. Ex.: 7,5 = sete horas e meia.",
+    ),
   });
   aba.dataValidations.add(intervalo("F"), {
     type: "list",
-    allowBlank: true,
     formulae: ['"Pendente,Aprovado,Faturado"'],
-    ...aviso("Status", "Use Pendente, Aprovado ou Faturado."),
+    ...regra(
+      "Status (opcional)",
+      "Use Pendente, Aprovado ou Faturado.",
+      "Opcional. Em branco, entra como Pendente.",
+    ),
+  });
+  aba.dataValidations.add(intervalo("G"), {
+    type: "textLength",
+    operator: "between",
+    formulae: [3, 1000],
+    ...regra(
+      "Descrição",
+      "Descreva a atividade com 3 a 1.000 caracteres.",
+      "O que foi feito, em poucas palavras.",
+    ),
   });
 }
 
-export async function montarModelo(cadastros) {
+/** Resumo ao lado da tabela, calculado pelo Excel. A leitura usa só as colunas A a G. */
+function resumoLateral(aba) {
+  const faixaDe = (letra) => `${letra}2:${letra}${ULTIMA_LINHA}`;
+  const preenchida = `LEN(${LETRAS.map(faixaDe).join("&")})>0`;
+  const incompleta = `((${["A", "B", "C", "E", "G"].map((letra) => `(${faixaDe(letra)}="")`).join("+")})>0)`;
+  aba.getColumn(8).width = 3;
+  aba.getColumn(9).width = 24;
+  aba.getColumn(10).width = 14;
+  aba.mergeCells("I1:J1");
+  const titulo = aba.getCell("I1");
+  titulo.value = "Resumo da planilha";
+  titulo.font = fonte({ bold: true, color: { argb: COR.branco } });
+  titulo.fill = solido(COR.marcaEscura);
+  titulo.alignment = { vertical: "middle", horizontal: "center" };
+  const linhas = [
+    ["Linhas preenchidas", `SUMPRODUCT(--(${preenchida}))`, FORMATOS.inteiro],
+    ["Total de horas", `SUM(${faixaDe("E")})`, "0.##"],
+    ["Primeiro dia", `IF(COUNT(${faixaDe("A")})=0,"-",MIN(${faixaDe("A")}))`, FORMATOS.data],
+    ["Último dia", `IF(COUNT(${faixaDe("A")})=0,"-",MAX(${faixaDe("A")}))`, FORMATOS.data],
+    ["Linhas incompletas", `SUMPRODUCT((${preenchida})*${incompleta})`, FORMATOS.inteiro],
+  ];
+  linhas.forEach(([rotulo, formula, formato], indice) => {
+    const linha = aba.getRow(indice + 2);
+    const nome = linha.getCell(9);
+    nome.value = rotulo;
+    nome.font = fonte({ color: { argb: COR.cinza } });
+    nome.fill = solido(COR.marcaClara);
+    nome.alignment = { vertical: "middle", indent: 1 };
+    const valor = linha.getCell(10);
+    valor.value = { formula };
+    valor.numFmt = formato;
+    valor.font = fonte({ bold: true, color: { argb: COR.marcaTexto } });
+    valor.fill = solido(COR.marcaClara);
+    valor.alignment = { vertical: "middle", horizontal: "right", indent: 1 };
+    for (const celula of [nome, valor]) celula.border = { bottom: traco(COR.branco) };
+  });
+  aba.addConditionalFormatting({
+    ref: "J6",
+    rules: [
+      {
+        type: "expression",
+        priority: 30,
+        formulae: ["$J$6>0"],
+        style: {
+          fill: { type: "pattern", pattern: "solid", bgColor: { argb: COR.erroClaro } },
+          font: { color: { argb: COR.erro } },
+        },
+      },
+      {
+        type: "expression",
+        priority: 31,
+        formulae: ["AND($J$2>0,$J$6=0)"],
+        style: {
+          fill: { type: "pattern", pattern: "solid", bgColor: { argb: COR.okClaro } },
+          font: { color: { argb: COR.ok } },
+        },
+      },
+    ],
+  });
+  aba.mergeCells("I8:J11");
+  const nota = aba.getCell("I8");
+  nota.value = rico(
+    "**Célula vermelha** = falta preencher ou o valor não é aceito. O CODE BI confere tudo de novo antes de gravar.",
+    fonte({ size: 10, color: { argb: COR.cinza } }),
+  );
+  nota.alignment = { vertical: "top", wrapText: true };
+}
+
+function abaApontamentos(pasta, listas) {
+  const aba = pasta.addWorksheet(ABA_APONTAMENTOS, {
+    properties: { tabColor: { argb: COR.marcaEscura }, defaultRowHeight: 20 },
+    views: [{ state: "frozen", ySplit: 1, topLeftCell: "A2", activeCell: "A2" }],
+    pageSetup: { orientation: "landscape", fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+  });
+  LARGURAS.forEach((largura, indice) => {
+    aba.getColumn(indice + 1).width = largura;
+  });
+  aba.getColumn(1).numFmt = FORMATOS.data;
+  // Horas sem formato fixo: 7,5 aparece como digitado e 07:30 vira hora no Excel.
+  aba.getColumn(5).alignment = { horizontal: "center" };
+  const cabecalho = aba.getRow(1);
+  cabecalho.height = 36;
+  COLUNAS.forEach((coluna, indice) => {
+    const celula = cabecalho.getCell(indice + 1);
+    celula.value = CABECALHOS_MODELO[indice];
+    estiloTitulo(celula, coluna.obrigatoria);
+  });
+  aba.autoFilter = "A1:G1";
+  validacoes(aba, listas);
+  coresDeConferencia(aba, listas);
+  resumoLateral(aba);
+}
+
+export async function montarModelo(cadastros, { hoje = financeDay(todayFinanceDate()) } = {}) {
   const pasta = novaPasta();
+  pasta.title = "CODE BI — Modelo de importação de horas";
+  // Sem valores guardados nas fórmulas: o Excel calcula o resumo ao abrir.
+  pasta.calcProperties.fullCalcOnLoad = true;
   const listas = prepararListas(cadastros);
-  abaInstrucoes(pasta);
+  abaComoUsar(pasta, hoje);
   abaApontamentos(pasta, listas);
-  abaListas(pasta, listas);
+  await abaListas(pasta, listas);
+  pasta.views = [{ activeTab: 0, firstSheet: 0, visibility: "visible" }];
   return paraBuffer(pasta);
 }
 

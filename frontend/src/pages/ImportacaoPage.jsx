@@ -258,7 +258,7 @@ export function ImportacaoPage() {
           <span className="import-step-number">1</span>
           <div>
             <h2>Baixe o modelo</h2>
-            <p>Já vem com os colaboradores, projetos e tarefas ativos na aba Listas.</p>
+            <p>Traz um passo a passo e as listas do sistema, e marca em vermelho o que faltar.</p>
             <button
               type="button"
               className="secondary-button"

@@ -58,7 +58,7 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
   const modelo = await abrir(respostaModelo);
   assert.deepEqual(
     modelo.worksheets.map((aba) => aba.name),
-    ["Instruções", "Apontamentos", "Listas"],
+    ["Como usar", "Apontamentos", "Listas"],
   );
   const listas = modelo.getWorksheet("Listas");
   const coluna = (numero) =>
@@ -81,7 +81,10 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
     const pasta = new ExcelJS.Workbook();
     await pasta.xlsx.load(await modelo.xlsx.writeBuffer());
     const aba = pasta.getWorksheet("Apontamentos");
-    linhas.forEach((valores, indice) => (aba.getRow(indice + 2).values = valores));
+    // Célula a célula, como no Excel: o resumo ao lado da tabela continua no arquivo.
+    linhas.forEach((valores, indice) =>
+      valores.forEach((valor, coluna) => (aba.getCell(indice + 2, coluna + 1).value = valor)),
+    );
     return Buffer.from(await pasta.xlsx.writeBuffer());
   }
 
