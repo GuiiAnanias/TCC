@@ -4,20 +4,12 @@ import { FileChartColumn, Play, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
-import { MultiSelect } from "../components/MultiSelect.jsx";
+import { ReportScopeSelect } from "../components/ReportScopeSelect.jsx";
+import { ReportCustomizationDialog } from "../components/ReportCustomizationDialog.jsx";
+import { BLOCOS } from "../config/reportBlocks.js";
+export { BLOCOS } from "../config/reportBlocks.js";
 import { projectStatusLabel } from "../config/projectOptions.js";
 
-export const BLOCOS = [
-  {
-    key: "PROJETOS",
-    label: "Projetos",
-    hint: "Orçamento, horas, custo e assertividade de cada projeto",
-  },
-  { key: "CLIENTES", label: "Clientes", hint: "Projetos, horas e custo por cliente" },
-  { key: "HORAS", label: "Horas totais", hint: "Total, por status e por colaborador" },
-  { key: "CUSTO", label: "Custo total", hint: "Custo base, bonificação e assertividade média" },
-  { key: "INCONSISTENCIAS", label: "Inconsistências", hint: "Ocorrências da auditoria por tipo" },
-];
 const TIPOS_OCORRENCIA = {
   SEM_REMUNERACAO: "Sem valor/hora",
   SEM_VINCULO: "Sem participação na equipe",
@@ -28,6 +20,7 @@ const TIPOS_OCORRENCIA = {
 const STATUS_HORAS = { PENDENTE: "Pendente", APROVADO: "Aprovado", FATURADO: "Faturado" };
 const formularioVazio = () => ({
   projetoIds: [],
+  clienteIds: [],
   dataInicio: "",
   dataFim: "",
   blocos: BLOCOS.map((bloco) => bloco.key),
@@ -55,8 +48,8 @@ export function textoPeriodo({ dataInicio, dataFim }) {
 
 /** Mensagem do primeiro problema do formulário, ou vazio quando pode gerar. */
 export function validarFormulario(form) {
-  if (!form.projetoIds.length && !form.dataInicio && !form.dataFim)
-    return "Escolha ao menos um filtro: projetos ou período.";
+  if (!form.projetoIds.length && !form.clienteIds?.length && !form.dataInicio && !form.dataFim)
+    return "Escolha ao menos um filtro: projetos, clientes ou período.";
   if (form.dataInicio && form.dataFim && form.dataFim < form.dataInicio)
     return "A data final não pode ser anterior à inicial.";
   if (!form.blocos.length) return "Escolha ao menos um bloco do relatório.";
@@ -72,6 +65,8 @@ export function RelatoriosPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState(formularioVazio);
   const [projetos, setProjetos] = useState([]);
+  const [clientes, setClientes] = useState([]);
+  const [personalizando, setPersonalizando] = useState(false);
   const [opcoesErro, setOpcoesErro] = useState("");
   const [relatorio, setRelatorio] = useState(null);
   const [carregando, setCarregando] = useState(false);
@@ -86,6 +81,7 @@ export function RelatoriosPage() {
     try {
       const { data } = await api.get("/dashboard/opcoes");
       setProjetos(data.projetos ?? []);
+      setClientes(data.clientes ?? []);
       setOpcoesErro("");
     } catch (error) {
       setOpcoesErro(mensagemDeErro(error, "Não foi possível carregar a lista de projetos."));
@@ -112,6 +108,7 @@ export function RelatoriosPage() {
   }, [carregarOpcoes]);
 
   useEffect(() => {
+    setPersonalizando(false);
     if (!id) {
       setRelatorio(null);
       return undefined;
@@ -151,27 +148,41 @@ export function RelatoriosPage() {
       setErro(problema);
       return;
     }
+    try {
+      await criarRelatorio(form);
+    } catch (error) {
+      setErro(mensagemDeErro(error, "Não foi possível gerar o relatório."));
+    }
+  }
+
+  async function criarRelatorio(escolhas) {
+    if (pedido.current) return false;
     const controller = new AbortController();
     pedido.current = controller;
     setGerando(true);
     setErro("");
+    setAviso("");
     try {
       const { data } = await api.post(
         "/relatorios",
         {
-          projetoIds: form.projetoIds.map(Number),
-          dataInicio: form.dataInicio || null,
-          dataFim: form.dataFim || null,
-          blocos: form.blocos,
+          projetoIds: escolhas.projetoIds.map(Number),
+          ...(escolhas.clienteIds?.length ? { clienteIds: escolhas.clienteIds.map(Number) } : {}),
+          dataInicio: escolhas.dataInicio || null,
+          dataFim: escolhas.dataFim || null,
+          blocos: escolhas.blocos,
         },
         { signal: controller.signal },
       );
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted) return false;
+      setForm(escolhas);
       setRelatorio(data);
+      setPersonalizando(false);
       navigate(`/relatorios/${data.id}`);
+      return true;
     } catch (error) {
-      if (controller.signal.aborted) return;
-      setErro(mensagemDeErro(error, "Não foi possível gerar o relatório."));
+      if (!controller.signal.aborted) throw error;
+      return false;
     } finally {
       if (pedido.current === controller) {
         pedido.current = null;
@@ -195,11 +206,6 @@ export function RelatoriosPage() {
     if (id) navigate("/relatorios");
   }
 
-  const projectOptions = projetos.map((row) => ({
-    value: String(row.id),
-    label: `${row.nome}${row.status && row.status !== "ATIVO" ? ` · ${projectStatusLabel(row.status).toLowerCase()}` : ""}`,
-  }));
-
   return (
     <section className="content-panel dashboard-page report-page">
       <header className="page-header">
@@ -222,20 +228,22 @@ export function RelatoriosPage() {
       <form className="dashboard-overview report-form" onSubmit={gerar} noValidate>
         <div className="dashboard-filters report-filters">
           <div className="field report-projects">
-            <span id="relatorio-projetos-rotulo">Projetos</span>
-            <MultiSelect
-              id="relatorio-projetos"
-              name="projetoIds"
-              options={projectOptions}
-              value={form.projetoIds}
-              onChange={atualizar}
-              placeholder="Todos com dados no período"
-              plural="projetos"
-              labelledBy="relatorio-projetos-rotulo"
-              disabled={gerando || Boolean(opcoesErro)}
+            <span id="relatorio-projetos-rotulo">Projetos ou clientes</span>
+            <ReportScopeSelect
+              projetos={projetos}
+              clientes={clientes}
+              form={form}
+              onChange={(escopo) => {
+                setForm((current) => ({ ...current, ...escopo }));
+                setErro("");
+              }}
+              disabled={gerando || carregando || Boolean(opcoesErro)}
             />
+            <small>
+              Clientes incluem seus projetos. As seleções se somam, sem repetir os dados.
+            </small>
           </div>
-          <fieldset className="dashboard-period" disabled={gerando}>
+          <fieldset className="dashboard-period" disabled={gerando || carregando}>
             <legend>Período</legend>
             <div>
               <label className="field">
@@ -261,7 +269,7 @@ export function RelatoriosPage() {
               </label>
             </div>
           </fieldset>
-          <fieldset className="report-blocks" disabled={gerando}>
+          <fieldset className="report-blocks" disabled={gerando || carregando}>
             <legend>Blocos do relatório</legend>
             <div>
               {BLOCOS.map((bloco) => (
@@ -280,7 +288,7 @@ export function RelatoriosPage() {
             </div>
           </fieldset>
           <div className="dashboard-filter-actions">
-            <button type="submit" className="primary-button" disabled={gerando}>
+            <button type="submit" className="primary-button" disabled={gerando || carregando}>
               <Play size={16} aria-hidden="true" />
               {gerando ? "Gerando…" : "Gerar"}
             </button>
@@ -293,7 +301,7 @@ export function RelatoriosPage() {
         <p className="dashboard-scope" role="status">
           {gerando
             ? "Gerando o relatório e gravando uma cópia dos dados…"
-            : "Escolha projetos, período ou os dois. Sem projetos, entram todos os que têm dados no período, de qualquer estado."}
+            : "Busque por projeto ou cliente e escolha os blocos. Sem seleção, informe um período para incluir todos com dados, de qualquer estado."}
         </p>
         {opcoesErro && (
           <div className="feedback error" role="alert">
@@ -317,7 +325,28 @@ export function RelatoriosPage() {
           Abrindo o relatório…
         </p>
       )}
-      {!carregando && relatorio && <RelatorioPrevia relatorio={relatorio} />}
+      {!carregando && relatorio && (
+        <>
+          <div className="report-preview-actions">
+            <button
+              type="button"
+              className="secondary-button"
+              disabled={gerando}
+              onClick={() => setPersonalizando(true)}
+            >
+              Personalizar relatório
+            </button>
+          </div>
+          <RelatorioPrevia relatorio={relatorio} />
+        </>
+      )}
+      {personalizando && relatorio && (
+        <ReportCustomizationDialog
+          relatorio={relatorio}
+          onClose={() => setPersonalizando(false)}
+          onApply={criarRelatorio}
+        />
+      )}
     </section>
   );
 }
@@ -328,14 +357,23 @@ function RelatoriosHelp() {
       <section>
         <h3>Gerar</h3>
         <p>
-          Escolha os projetos, o período ou os dois, e ao menos um bloco. Sem projetos escolhidos,
-          entram todos os projetos com apontamentos ou tarefas no período, de qualquer estado. O
-          período considera a data dos apontamentos.
+          Na mesma busca, escolha projetos ou clientes, o período e ao menos um bloco. Selecionar um
+          cliente inclui seus projetos; seleções combinadas não repetem valores. Sem projetos
+          escolhidos, entram todos os projetos com apontamentos ou tarefas no período, de qualquer
+          estado. O período considera a data dos apontamentos.
         </p>
         <p>
           Gerar grava uma cópia dos dados do recorte, com autor, data, filtros e versão. A prévia
           mostra essa cópia: mudanças posteriores em horas, equipes ou valores não alteram um
           relatório já gerado. Para ver os números atuais, gere outro.
+        </p>
+      </section>
+      <section>
+        <h3>Personalizar</h3>
+        <p>
+          Depois de gerar, abra Personalizar relatório para escolher os clientes, projetos e blocos
+          da nova prévia. Os dados serão consultados novamente e os totais recalculados juntos. A
+          nova fotografia recebe outro número; a anterior permanece preservada.
         </p>
       </section>
       <section>

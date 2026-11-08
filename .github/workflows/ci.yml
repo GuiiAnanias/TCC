@@ -5,7 +5,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [develop, main, "feature/**"]
+    branches: [develop, main, "feature/**", "fix/**"]
   push:
     branches: [develop, main]
 
@@ -75,6 +75,8 @@ jobs:
         run: pnpm run test:team-db
       - name: Testes de integração com banco (exclusão de projetos)
         run: pnpm run test:project-deletion-db
+      - name: Testes de integração com banco (relatórios)
+        run: pnpm run test:reports-db
       - name: Testes de integração com banco (tarefas)
         run: pnpm run test:tasks-db
       - name: Testes de integração com banco (concorrência de apontamentos)
