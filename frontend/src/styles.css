@@ -2535,3 +2535,6 @@ tbody tr:hover {
     grid-column: 1 / -1;
   }
 }
+.report-download-feedback {
+  margin-top: 12px;
+}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { FileChartColumn, Play, X } from "lucide-react";
+import { FileChartColumn, FileDown, FileSpreadsheet, Play, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
@@ -9,6 +9,7 @@ import { ReportCustomizationDialog } from "../components/ReportCustomizationDial
 import { BLOCOS } from "../config/reportBlocks.js";
 export { BLOCOS } from "../config/reportBlocks.js";
 import { projectStatusLabel } from "../config/projectOptions.js";
+import { mensagemDeErro as mensagemDoArquivo, salvarArquivo } from "../utils/download.js";
 
 const TIPOS_OCORRENCIA = {
   SEM_REMUNERACAO: "Sem valor/hora",
@@ -56,6 +57,8 @@ export function validarFormulario(form) {
   return "";
 }
 
+const FORMATOS_ARQUIVO = { pdf: "PDF", xlsx: "Excel" };
+
 function mensagemDeErro(error, padrao) {
   return error.response?.data?.errors?.[0]?.message || error.response?.data?.message || padrao;
 }
@@ -73,6 +76,8 @@ export function RelatoriosPage() {
   const [gerando, setGerando] = useState(false);
   const [erro, setErro] = useState("");
   const [aviso, setAviso] = useState("");
+  const [baixando, setBaixando] = useState("");
+  const [retornoArquivo, setRetornoArquivo] = useState(null);
   const pedido = useRef(null);
   const relatorioAtual = useRef(null);
   relatorioAtual.current = relatorio;
@@ -121,6 +126,32 @@ export function RelatoriosPage() {
   }, [id, carregarRelatorio]);
 
   useEffect(() => () => pedido.current?.abort(), []);
+
+  // O aviso de download vale só para o relatório em que foi feito.
+  useEffect(() => setRetornoArquivo(null), [relatorio?.id]);
+
+  // O arquivo é gerado no servidor a partir da mesma fotografia da prévia, com o login atual.
+  async function baixar(formato) {
+    setBaixando(formato);
+    setRetornoArquivo(null);
+    try {
+      const response = await api.get(`/relatorios/${relatorio.id}/${formato}`, {
+        responseType: "blob",
+      });
+      const nome = salvarArquivo(response, `relatorio-${relatorio.id}.${formato}`);
+      setRetornoArquivo({ tipo: "success", texto: `Arquivo ${nome} baixado.` });
+    } catch (error) {
+      setRetornoArquivo({
+        tipo: "error",
+        texto: await mensagemDoArquivo(
+          error,
+          `Não foi possível gerar o ${FORMATOS_ARQUIVO[formato]}. Tente novamente.`,
+        ),
+      });
+    } finally {
+      setBaixando("");
+    }
+  }
 
   function atualizar(event) {
     const { name, value } = event.target;
@@ -336,7 +367,33 @@ export function RelatoriosPage() {
             >
               Personalizar relatório
             </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => baixar("pdf")}
+              disabled={gerando || Boolean(baixando)}
+            >
+              <FileDown size={16} aria-hidden="true" />
+              {baixando === "pdf" ? "Gerando PDF…" : "Baixar PDF"}
+            </button>
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={() => baixar("xlsx")}
+              disabled={gerando || Boolean(baixando)}
+            >
+              <FileSpreadsheet size={16} aria-hidden="true" />
+              {baixando === "xlsx" ? "Gerando Excel…" : "Baixar Excel"}
+            </button>
           </div>
+          {retornoArquivo && (
+            <div
+              className={`feedback ${retornoArquivo.tipo} report-download-feedback`}
+              role={retornoArquivo.tipo === "error" ? "alert" : "status"}
+            >
+              {retornoArquivo.texto}
+            </div>
+          )}
           <RelatorioPrevia relatorio={relatorio} />
         </>
       )}
@@ -374,6 +431,14 @@ function RelatoriosHelp() {
           Depois de gerar, abra Personalizar relatório para escolher os clientes, projetos e blocos
           da nova prévia. Os dados serão consultados novamente e os totais recalculados juntos. A
           nova fotografia recebe outro número; a anterior permanece preservada.
+        </p>
+      </section>
+      <section>
+        <h3>Baixar</h3>
+        <p>
+          Baixar PDF e Baixar Excel geram o arquivo a partir da cópia gravada, com os mesmos números
+          da prévia e só os blocos escolhidos. O nome do arquivo traz o número do relatório, os
+          clientes ou projetos e o período.
         </p>
       </section>
       <section>
