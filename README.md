@@ -60,7 +60,7 @@ http://localhost:5173
 
 Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. Executar o seed novamente não redefine uma conta existente.
 
-As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há cadastro de usuários nesta etapa.
+As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há tela de cadastro de usuários: as contas vêm do seed. Sessões, limites de tentativas e regras de senha estão em [docs/seguranca.md](docs/seguranca.md).
 
 Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "admin123" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
 
@@ -115,6 +115,7 @@ Funcionalidades disponíveis:
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
 - Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
+- Relatórios com prévia: escolha de projetos, período e blocos, com uma cópia gravada dos dados de cada geração, descritos em `docs/relatorios.md`.
 - Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
 - Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar.
 - Consulta visual dos dados do banco pelo Prisma Studio.
@@ -147,6 +148,29 @@ schemas      -> validação dos dados com Zod
 ```
 
 Essa separação facilita manutenção, testes, troca de interface e evolução do produto sem espalhar regra de negócio pela aplicação inteira.
+
+---
+
+## Documentação dos módulos
+
+As regras de cada módulo ficam na pasta `docs/`:
+
+| Documento | Conteúdo |
+|---|---|
+| [docs/clientes.md](docs/clientes.md) | Clientes PF/PJ, validações e consultas de CNPJ e CEP |
+| [docs/projetos.md](docs/projetos.md) | Tipos de contrato e estados dos projetos |
+| [docs/equipe-projetos.md](docs/equipe-projetos.md) | Equipe inicial e quando as horas ficam liberadas |
+| [docs/exclusao-projetos.md](docs/exclusao-projetos.md) | Exclusão definitiva condicionada |
+| [docs/tarefas-sprints.md](docs/tarefas-sprints.md) | Tarefas e sprints manuais |
+| [docs/apontamentos.md](docs/apontamentos.md) | Apontamentos de horas e regras de faturamento |
+| [docs/composicao-financeira.md](docs/composicao-financeira.md) | Remuneração, vigências, papéis, bonificação e custo |
+| [docs/indicadores.md](docs/indicadores.md) | Fórmulas dos indicadores e da auditoria |
+| [docs/filtros.md](docs/filtros.md) | Filtros dos dashboards e da exportação |
+| [docs/dashboards.md](docs/dashboards.md) | Visões dos dashboards, ranking de inconsistências, resumo por equipe e evolução do projeto |
+| [docs/premiacao.md](docs/premiacao.md) | Avaliação de premiação Dev e PO/SM |
+| [docs/seguranca.md](docs/seguranca.md) | Login, sessões, limites e proteção dos dados |
+| [docs/login.md](docs/login.md) | Lembrar usuário e recuperação de senha |
+| [docs/interface.md](docs/interface.md) | Menu, telas e elementos comuns |
 
 ---
 
@@ -228,41 +252,40 @@ sistema-indicadores/
 | Tabela | Descrição |
 |---|---|
 | `usuarios` | Contas de acesso e recuperação de senha |
-| `clientes` | Empresas ou contratantes atendidos |
+| `sessoes` | Sessões de login, com expiração e revogação |
+| `limites_autenticacao` | Contadores do limite de tentativas de acesso |
+| `clientes` | Clientes pessoa física ou jurídica |
 | `colaboradores` | Profissionais internos ou alocados |
 | `itens_tabela_remuneracao` | Faixas de remuneração e valor/hora |
-| `configuracoes_financeiras` | Configuração financeira vigente por colaborador |
+| `configuracoes_financeiras` | Vigências de valor/hora e benefícios por colaborador |
+| `bonificacoes_papeis` | Percentual de bonificação por papel, com vigência |
 | `projetos` | Projetos contratados por cliente |
 | `projetos_colaboradores` | Relação entre projeto, colaborador, papel e período |
+| `sprints` | Sprints de cada projeto |
+| `tarefas` | Tarefas de cada projeto, com estimativa e status |
+| `tarefas_responsaveis` | Responsáveis de cada tarefa |
+| `apontamentos_horas` | Horas trabalhadas, com status e composição do custo faturado |
+| `regras_premiacao` | Versões publicadas das regras de premiação |
+| `avaliacoes_premiacao` | Avaliações mensais de premiação e suas versões |
+| `projetos_avaliacoes` | Projetos usados em cada avaliação |
 
 Regras importantes:
 
-- Registros principais são inativados por `status`, sem exclusão física.
+- Clientes, colaboradores e itens de remuneração são inativados por `status`, sem exclusão física. Projetos são encerrados; a exclusão definitiva vale só para projetos sem vínculos. Apontamentos não faturados podem ser excluídos.
 - A bonificação usada nos custos é definida por papel no projeto e por vigência, separadamente da faixa de remuneração.
 - O colaborador recebe a regra financeira ao ser vinculado a uma faixa em `configuracoes_financeiras`.
 - Ao aplicar uma nova configuração financeira, a configuração vigente anterior é encerrada com `dataFim`.
 - A equipe do projeto preserva histórico: encerrar uma participação preenche `dataSaida`.
 - Um colaborador não pode ficar ativo duas vezes no mesmo projeto ao mesmo tempo.
 - Colaboradores inativos não podem ser vinculados a novos projetos.
-- Projetos inativos ficam disponíveis para consulta, mas não permitem alterações na equipe.
+- Projetos pausados, encerrados ou cancelados ficam disponíveis para consulta, mas não permitem alterações na equipe.
 - Apontamentos com status FATURADO não podem ser editados nem excluídos, porque as horas já foram cobradas do cliente. Para corrigir, volte o status para APROVADO, salve e depois edite.
 
 ---
 
-### Clientes como empresas e consulta de CNPJ
+### Clientes PF e PJ
 
-O cadastro de clientes reúne CNPJ, razão social, nome fantasia, pessoa de contato, e-mail, telefone, endereço e informações cadastrais. **Consultar CNPJ** preenche os dados pela ReceitaWS; confira e ajuste antes de salvar. A consulta não salva automaticamente. Se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente.
-
-Novos clientes exigem CNPJ válido e único. Clientes antigos continuam disponíveis, com os novos campos vazios até serem atualizados. O status ativo/inativo no sistema é independente da situação cadastral retornada pela ReceitaWS. CNPJs numéricos e alfanuméricos são aceitos na validação e no cadastro; a consulta depende da disponibilidade do documento no provedor.
-
-A integração reutiliza `https://receitaws.com.br/v1/cnpj/{cnpj}` do GiveHope, com consulta pelo backend em `GET /api/clientes/cnpj/:cnpj` (autenticada após integrar a branch `feature/login`), timeout de 12 segundos e cache local de 10 minutos. A API pública da ReceitaWS não exige chave e permite até 3 consultas por minuto. Referência: https://developers.receitaws.com.br/.
-
-Depois de atualizar esta versão, aplique a migration e gere o cliente Prisma na pasta `backend`:
-
-```powershell
-corepack pnpm exec prisma migrate deploy
-corepack pnpm run prisma:generate
-```
+O cadastro de clientes aceita pessoa jurídica (CNPJ) e pessoa física (CPF). **Consultar CNPJ** preenche os dados pela ReceitaWS, e digitar o CEP preenche o endereço pela ViaCEP. As consultas não salvam nada; se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente. O status ativo/inativo no sistema é independente da situação cadastral da ReceitaWS. Validações, limites das consultas e API estão em [docs/clientes.md](docs/clientes.md).
 
 ## Configuração Financeira do Colaborador
 
@@ -288,6 +311,8 @@ Data de fim
 
 Essa estrutura preserva histórico. Quando uma nova configuração financeira é aplicada para o colaborador, a configuração vigente anterior é encerrada e a nova passa a ser usada como referência.
 
+As regras de datas, as travas do histórico, a bonificação por papel e a fórmula do custo estão em [docs/composicao-financeira.md](docs/composicao-financeira.md).
+
 ---
 
 ## Papéis de Projeto
@@ -301,11 +326,15 @@ GET /api/projetos/papeis
 Lista atual:
 
 ```txt
+Dev
 Product Owner
 Scrum Master
-Gerente de Projeto
 Tech Lead
 Líder Técnico
+QA
+UI/UX Designer
+DevOps
+Gerente de Projeto
 Arquiteto de Software
 Analista de Sistemas
 Analista de Negócios
@@ -315,14 +344,13 @@ Desenvolvedor Back-end
 Desenvolvedor Front-end
 Desenvolvedor Mobile
 Programador
-QA
-UI/UX Designer
-DevOps
 Engenheiro de Dados
 DBA
 Especialista em Segurança
 Suporte Técnico
 ```
+
+O papel no projeto é independente do cargo do colaborador e define a bonificação aplicada às horas.
 
 ---
 
@@ -334,6 +362,27 @@ Base URL:
 http://localhost:3333/api
 ```
 
+Exceto `/health`, `/auth/login` e `/auth/redefinir-senha`, todas as rotas exigem `Authorization: Bearer <token>`. Os documentos em `docs/` detalham parâmetros e regras de cada módulo.
+
+Autenticação:
+
+```txt
+POST   /auth/login
+GET    /auth/me
+POST   /auth/logout
+POST   /auth/redefinir-senha
+```
+
+Opções e dashboards:
+
+```txt
+GET    /opcoes-cadastro
+GET    /dashboard
+GET    /dashboard/opcoes
+GET    /dashboard/projetos/:id
+GET    /dashboard/colaboradores/:id
+```
+
 Clientes:
 
 ```txt
@@ -342,6 +391,8 @@ POST   /clientes
 GET    /clientes/:id
 PUT    /clientes/:id
 DELETE /clientes/:id
+GET    /clientes/cnpj/:cnpj
+GET    /clientes/cep/:cep
 ```
 
 Colaboradores:
@@ -377,6 +428,8 @@ POST   /projetos
 GET    /projetos/:id
 PUT    /projetos/:id
 DELETE /projetos/:id
+GET    /projetos/:id/exclusao
+DELETE /projetos/:id/permanente
 ```
 
 Equipe do projeto:
@@ -387,6 +440,47 @@ GET    /projetos/:id/equipe
 POST   /projetos/:id/equipe
 PUT    /projetos/:id/equipe/:vinculoId
 DELETE /projetos/:id/equipe/:vinculoId
+```
+
+Bonificação por papel:
+
+```txt
+GET    /bonificacoes-papeis
+POST   /bonificacoes-papeis
+```
+
+Apontamentos de horas:
+
+```txt
+GET    /apontamentos
+POST   /apontamentos
+GET    /apontamentos/:id
+PUT    /apontamentos/:id
+DELETE /apontamentos/:id
+```
+
+Tarefas e sprints:
+
+```txt
+GET    /tarefas
+POST   /tarefas
+PUT    /tarefas/:id
+GET    /sprints
+POST   /sprints
+PUT    /sprints/:id
+```
+
+Premiação:
+
+```txt
+GET    /premiacoes/modelos
+GET    /premiacoes/regras
+POST   /premiacoes/regras
+GET    /premiacoes
+POST   /premiacoes
+GET    /premiacoes/:id
+PUT    /premiacoes/:id
+POST   /premiacoes/:id/concluir
 ```
 
 Exemplo para vincular colaborador a um projeto:
@@ -744,6 +838,12 @@ corepack pnpm run test:dashboard-db
 corepack pnpm run test:tasks-db
 corepack pnpm run test:hours-db
 corepack pnpm run test:excel-db
+corepack pnpm run test:auth-db
+corepack pnpm run test:team-db
+corepack pnpm run test:finance-db
+corepack pnpm run test:invoiced-costs-db
+corepack pnpm run test:project-deletion-db
+corepack pnpm run test:awards-db
 ```
 
 As verificações de integração exigem PostgreSQL local em execução e `DATABASE_URL`
@@ -779,10 +879,8 @@ API autenticada: `GET /api/premiacoes/modelos`, `GET/POST /api/premiacoes/regras
 
 Depois de aplicar as migrações, o seed completo inclui os exemplos de avaliação.
 Em uma base demo já existente, `node scripts/seed-awards-local.mjs` acrescenta apenas
-os exemplos do passo 6. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
+os exemplos de premiação. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
 `corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
 As integrações criam e removem somente schemas temporários no PostgreSQL local.
 
-Próximas etapas: importação ClickUp e histórico (7). Os relatórios em Excel (8) estão na seção "Importação e exportação em Excel".
-A integração utiliza apenas um schema temporário local e testa as alterações manuais
-sem modificar a base utilizada pela interface.
+Critérios, cálculo e fluxo completos estão em [docs/premiacao.md](docs/premiacao.md).

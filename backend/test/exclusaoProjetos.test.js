@@ -3,7 +3,14 @@ import assert from "node:assert/strict";
 import prisma from "../src/config/prisma.js";
 import { exclusaoProjetosRepository as repository } from "../src/repositories/exclusaoProjetosRepository.js";
 
-const empty = { equipe: 0, tarefas: 0, sprints: 0, apontamentos: 0, avaliacoes: 0 };
+const empty = {
+  equipe: 0,
+  tarefas: 0,
+  sprints: 0,
+  apontamentos: 0,
+  avaliacoes: 0,
+  relatorios: 0,
+};
 test("consulta de exclusão conta todo histórico, sem filtrar status ou vigência", async () => {
   for (const key of Object.keys(empty)) {
     const info = await repository.inspect(1, {

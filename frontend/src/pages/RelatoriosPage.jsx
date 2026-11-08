@@ -1,820 +1,568 @@
-import React, { useState, useEffect, useRef } from "react";
-import { Download, Play, X, TriangleAlert, CircleCheck, Search, Edit3, Check } from "lucide-react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { FileChartColumn, Play, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
-import { number } from "../components/OperationalDashboard.jsx";
-import { mensagemDeErro } from "../utils/download.js";
+import { MultiSelect } from "../components/MultiSelect.jsx";
+import { projectStatusLabel } from "../config/projectOptions.js";
 
-function AjudaRelatorios() {
+export const BLOCOS = [
+  {
+    key: "PROJETOS",
+    label: "Projetos",
+    hint: "Orçamento, horas, custo e assertividade de cada projeto",
+  },
+  { key: "CLIENTES", label: "Clientes", hint: "Projetos, horas e custo por cliente" },
+  { key: "HORAS", label: "Horas totais", hint: "Total, por status e por colaborador" },
+  { key: "CUSTO", label: "Custo total", hint: "Custo base, bonificação e assertividade média" },
+  { key: "INCONSISTENCIAS", label: "Inconsistências", hint: "Ocorrências da auditoria por tipo" },
+];
+const TIPOS_OCORRENCIA = {
+  SEM_REMUNERACAO: "Sem valor/hora",
+  SEM_VINCULO: "Sem participação na equipe",
+  SEM_TAREFA: "Horas sem tarefa",
+  SEM_ESTIMATIVA: "Tarefa sem estimativa",
+  CONCLUIDA_SEM_HORAS: "Tarefa concluída sem horas",
+};
+const STATUS_HORAS = { PENDENTE: "Pendente", APROVADO: "Aprovado", FATURADO: "Faturado" };
+const formularioVazio = () => ({
+  projetoIds: [],
+  dataInicio: "",
+  dataFim: "",
+  blocos: BLOCOS.map((bloco) => bloco.key),
+});
+
+const number = (value) =>
+  new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(value);
+const money = (value) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+const percent = (value) => (value == null ? "Indisponível" : `${number(value)}%`);
+const dataBr = (value) => value.slice(0, 10).split("-").reverse().join("/");
+const dataHora = (value) =>
+  new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(value));
+
+export function textoPeriodo({ dataInicio, dataFim }) {
+  if (dataInicio && dataFim) return `${dataBr(dataInicio)} a ${dataBr(dataFim)}`;
+  if (dataInicio) return `A partir de ${dataBr(dataInicio)}`;
+  if (dataFim) return `Até ${dataBr(dataFim)}`;
+  return "Todos os períodos";
+}
+
+/** Mensagem do primeiro problema do formulário, ou vazio quando pode gerar. */
+export function validarFormulario(form) {
+  if (!form.projetoIds.length && !form.dataInicio && !form.dataFim)
+    return "Escolha ao menos um filtro: projetos ou período.";
+  if (form.dataInicio && form.dataFim && form.dataFim < form.dataInicio)
+    return "A data final não pode ser anterior à inicial.";
+  if (!form.blocos.length) return "Escolha ao menos um bloco do relatório.";
+  return "";
+}
+
+function mensagemDeErro(error, padrao) {
+  return error.response?.data?.errors?.[0]?.message || error.response?.data?.message || padrao;
+}
+
+export function RelatoriosPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [form, setForm] = useState(formularioVazio);
+  const [projetos, setProjetos] = useState([]);
+  const [opcoesErro, setOpcoesErro] = useState("");
+  const [relatorio, setRelatorio] = useState(null);
+  const [carregando, setCarregando] = useState(false);
+  const [gerando, setGerando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [aviso, setAviso] = useState("");
+  const pedido = useRef(null);
+  const relatorioAtual = useRef(null);
+  relatorioAtual.current = relatorio;
+
+  const carregarOpcoes = useCallback(async () => {
+    try {
+      const { data } = await api.get("/dashboard/opcoes");
+      setProjetos(data.projetos ?? []);
+      setOpcoesErro("");
+    } catch (error) {
+      setOpcoesErro(mensagemDeErro(error, "Não foi possível carregar a lista de projetos."));
+    }
+  }, []);
+
+  const carregarRelatorio = useCallback(async (relatorioId, signal) => {
+    setCarregando(true);
+    setErro("");
+    try {
+      const { data } = await api.get(`/relatorios/${relatorioId}`, { signal });
+      if (!signal?.aborted) setRelatorio(data);
+    } catch (error) {
+      if (signal?.aborted) return;
+      setRelatorio(null);
+      setErro(mensagemDeErro(error, "Não foi possível abrir o relatório."));
+    } finally {
+      if (!signal?.aborted) setCarregando(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    carregarOpcoes();
+  }, [carregarOpcoes]);
+
+  useEffect(() => {
+    if (!id) {
+      setRelatorio(null);
+      return undefined;
+    }
+    // A prévia recém-gerada já veio na resposta; só consulta ao abrir pelo endereço.
+    if (String(relatorioAtual.current?.id) === id) return undefined;
+    const controller = new AbortController();
+    carregarRelatorio(id, controller.signal);
+    return () => controller.abort();
+  }, [id, carregarRelatorio]);
+
+  useEffect(() => () => pedido.current?.abort(), []);
+
+  function atualizar(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    setErro("");
+  }
+
+  function alternarBloco(key) {
+    setForm((current) => ({
+      ...current,
+      blocos: current.blocos.includes(key)
+        ? current.blocos.filter((bloco) => bloco !== key)
+        : BLOCOS.map((bloco) => bloco.key).filter(
+            (bloco) => bloco === key || current.blocos.includes(bloco),
+          ),
+    }));
+    setErro("");
+  }
+
+  async function gerar(event) {
+    event.preventDefault();
+    const problema = validarFormulario(form);
+    setAviso("");
+    if (problema) {
+      setErro(problema);
+      return;
+    }
+    const controller = new AbortController();
+    pedido.current = controller;
+    setGerando(true);
+    setErro("");
+    try {
+      const { data } = await api.post(
+        "/relatorios",
+        {
+          projetoIds: form.projetoIds.map(Number),
+          dataInicio: form.dataInicio || null,
+          dataFim: form.dataFim || null,
+          blocos: form.blocos,
+        },
+        { signal: controller.signal },
+      );
+      if (controller.signal.aborted) return;
+      setRelatorio(data);
+      navigate(`/relatorios/${data.id}`);
+    } catch (error) {
+      if (controller.signal.aborted) return;
+      setErro(mensagemDeErro(error, "Não foi possível gerar o relatório."));
+    } finally {
+      if (pedido.current === controller) {
+        pedido.current = null;
+        setGerando(false);
+      }
+    }
+  }
+
+  function cancelar() {
+    if (pedido.current) {
+      pedido.current.abort();
+      pedido.current = null;
+      setGerando(false);
+      setAviso("Geração cancelada. Ajuste os filtros e gere de novo quando quiser.");
+      return;
+    }
+    setForm(formularioVazio());
+    setRelatorio(null);
+    setErro("");
+    setAviso("");
+    if (id) navigate("/relatorios");
+  }
+
+  const projectOptions = projetos.map((row) => ({
+    value: String(row.id),
+    label: `${row.nome}${row.status && row.status !== "ATIVO" ? ` · ${projectStatusLabel(row.status).toLowerCase()}` : ""}`,
+  }));
+
   return (
-    <HelpDialog title="Ajuda — Relatórios e Prévia">
+    <section className="content-panel dashboard-page report-page">
+      <header className="page-header">
+        <div>
+          <span className="eyebrow">Dados</span>
+          <div className="dashboard-title-row">
+            <h1>Relatórios</h1>
+            <RelatoriosHelp />
+          </div>
+        </div>
+        <FloatingActions
+          onRefresh={() => {
+            carregarOpcoes();
+            if (id) carregarRelatorio(id);
+          }}
+          loading={carregando || gerando}
+        />
+      </header>
+
+      <form className="dashboard-overview report-form" onSubmit={gerar} noValidate>
+        <div className="dashboard-filters report-filters">
+          <div className="field report-projects">
+            <span id="relatorio-projetos-rotulo">Projetos</span>
+            <MultiSelect
+              id="relatorio-projetos"
+              name="projetoIds"
+              options={projectOptions}
+              value={form.projetoIds}
+              onChange={atualizar}
+              placeholder="Todos com dados no período"
+              plural="projetos"
+              labelledBy="relatorio-projetos-rotulo"
+              disabled={gerando || Boolean(opcoesErro)}
+            />
+          </div>
+          <fieldset className="dashboard-period" disabled={gerando}>
+            <legend>Período</legend>
+            <div>
+              <label className="field">
+                <span>Data inicial</span>
+                <input
+                  type="date"
+                  name="dataInicio"
+                  value={form.dataInicio}
+                  max={form.dataFim || "9999-12-31"}
+                  onChange={atualizar}
+                />
+              </label>
+              <label className="field">
+                <span>Data final</span>
+                <input
+                  type="date"
+                  name="dataFim"
+                  value={form.dataFim}
+                  min={form.dataInicio || undefined}
+                  max="9999-12-31"
+                  onChange={atualizar}
+                />
+              </label>
+            </div>
+          </fieldset>
+          <fieldset className="report-blocks" disabled={gerando}>
+            <legend>Blocos do relatório</legend>
+            <div>
+              {BLOCOS.map((bloco) => (
+                <label className="tasks-check report-block" key={bloco.key}>
+                  <input
+                    type="checkbox"
+                    checked={form.blocos.includes(bloco.key)}
+                    onChange={() => alternarBloco(bloco.key)}
+                  />
+                  <span>
+                    <strong>{bloco.label}</strong>
+                    <small>{bloco.hint}</small>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <div className="dashboard-filter-actions">
+            <button type="submit" className="primary-button" disabled={gerando}>
+              <Play size={16} aria-hidden="true" />
+              {gerando ? "Gerando…" : "Gerar"}
+            </button>
+            <button type="button" className="secondary-button" onClick={cancelar}>
+              <X size={16} aria-hidden="true" />
+              Cancelar
+            </button>
+          </div>
+        </div>
+        <p className="dashboard-scope" role="status">
+          {gerando
+            ? "Gerando o relatório e gravando uma cópia dos dados…"
+            : "Escolha projetos, período ou os dois. Sem projetos, entram todos os que têm dados no período, de qualquer estado."}
+        </p>
+        {opcoesErro && (
+          <div className="feedback error" role="alert">
+            {opcoesErro}
+          </div>
+        )}
+        {erro && (
+          <div className="feedback error" role="alert">
+            {erro}
+          </div>
+        )}
+        {aviso && (
+          <div className="feedback warning" role="status">
+            {aviso}
+          </div>
+        )}
+      </form>
+
+      {carregando && (
+        <p className="dashboard-scope" role="status">
+          Abrindo o relatório…
+        </p>
+      )}
+      {!carregando && relatorio && <RelatorioPrevia relatorio={relatorio} />}
+    </section>
+  );
+}
+
+function RelatoriosHelp() {
+  return (
+    <HelpDialog title="Ajuda — Relatórios">
       <section>
-        <h3>Como funciona</h3>
+        <h3>Gerar</h3>
         <p>
-          Utilize a barra de pesquisa unificada para filtrar por <strong>Projeto</strong> ou{" "}
-          <strong>Cliente</strong>. Após gerar a prévia, clique em <strong>Editar Prévia</strong>{" "}
-          para selecionar exatamente quais itens deseja manter ou remover.
+          Escolha os projetos, o período ou os dois, e ao menos um bloco. Sem projetos escolhidos,
+          entram todos os projetos com apontamentos ou tarefas no período, de qualquer estado. O
+          período considera a data dos apontamentos.
+        </p>
+        <p>
+          Gerar grava uma cópia dos dados do recorte, com autor, data, filtros e versão. A prévia
+          mostra essa cópia: mudanças posteriores em horas, equipes ou valores não alteram um
+          relatório já gerado. Para ver os números atuais, gere outro.
+        </p>
+      </section>
+      <section>
+        <h3>Cancelar</h3>
+        <p>
+          Durante a geração, Cancelar para de esperar a resposta. Depois, limpa o formulário e a
+          prévia. Um relatório que já foi gravado continua registrado e pode ser aberto pelo
+          endereço com o número dele.
+        </p>
+      </section>
+      <section>
+        <h3>Números</h3>
+        <p>
+          Os valores seguem as mesmas fórmulas do Dashboard Geral. Com período, a assertividade do
+          orçamento fica indisponível, porque o orçamento integral não se compara com o custo de
+          parte do projeto. O relatório contém custos internos e é de uso interno.
         </p>
       </section>
     </HelpDialog>
   );
 }
 
-export function RelatoriosPage() {
-  const [filtros, setFiltros] = useState({
-    dataInicio: "",
-    dataFim: "",
-    projetoId: "",
-    clienteId: "",
-  });
-
-  const [listaProjetos, setListaProjetos] = useState([]);
-  const [listaClientes, setListaClientes] = useState([]);
-
-  const [termoBusca, setTermoBusca] = useState("");
-  const [mostrarSugestoes, setMostrarSugestoes] = useState(false);
-
-  const [blocos, setBlocos] = useState({
-    projetos: true,
-    clientes: true,
-    horas: true,
-    custos: true,
-    ocorrencias: true,
-  });
-
-  // Dados originais retornados pela API e dados customizados pelo usuário no modal
-  const [previaOriginal, setPreviaOriginal] = useState(null);
-  const [previaEditada, setPreviaEditada] = useState(null);
-
-  // Controle do Modal de Edição da Prévia
-  const [modalEdicaoAberto, setModalEdicaoAberto] = useState(false);
-  const [selecaoModal, setSelecaoModal] = useState({
-    projetosIds: [],
-    clientesNomes: [],
-    ocorrenciasIndices: [],
-  });
-
-  const [carregando, setCarregando] = useState(false);
-  const [salvando, setSalvando] = useState(false);
-  const [mensagemSucesso, setMensagemSucesso] = useState("");
-  const [erro, setErro] = useState("");
-
-  const containerRef = useRef(null);
-
-  useEffect(() => {
-    async function carregarDados() {
-      try {
-        const [resProjetos, resClientes] = await Promise.all([
-          api.get("/projetos"),
-          api.get("/clientes"),
-        ]);
-        setListaProjetos(resProjetos.data.dados || resProjetos.data || []);
-        setListaClientes(resClientes.data.dados || resClientes.data || []);
-      } catch {
-        // Silencia erros na listagem inicial
-      }
-    }
-    carregarDados();
-  }, []);
-
-  function toggleBloco(chave) {
-    setBlocos((prev) => ({ ...prev, [chave]: !prev[chave] }));
-  }
-
-  function selecionarItem(item) {
-    setTermoBusca(item.nome);
-    setMostrarSugestoes(false);
-
-    if (item.tipo === "projeto") {
-      const clienteNome = typeof item.cliente === "string" ? item.cliente : item.cliente?.nome;
-      const clienteObj = listaClientes.find((c) => c.nome === clienteNome);
-
-      setFiltros((prev) => ({
-        ...prev,
-        projetoId: item.id,
-        clienteId: clienteObj ? clienteObj.id : "",
-      }));
-    } else {
-      setFiltros((prev) => ({
-        ...prev,
-        clienteId: item.id,
-        projetoId: "",
-      }));
-    }
-  }
-
-  function limparBusca() {
-    setTermoBusca("");
-    setFiltros((prev) => ({ ...prev, projetoId: "", clienteId: "" }));
-  }
-
-  async function gerarPrevia(e) {
-    e.preventDefault();
-    setCarregando(true);
-    setErro("");
-    setMensagemSucesso("");
-    try {
-      const params = {};
-      if (filtros.dataInicio) params.dataInicio = filtros.dataInicio;
-      if (filtros.dataFim) params.dataFim = filtros.dataFim;
-      if (filtros.projetoId) params.projetoIds = [filtros.projetoId];
-      if (filtros.clienteId) params.clienteId = filtros.clienteId;
-
-      const response = await api.get("/relatorios/previa", { params });
-      const dados = response.data;
-
-      setPreviaOriginal(dados);
-      setPreviaEditada(dados);
-
-      // Inicializa o modal marcando todos por padrão
-      setSelecaoModal({
-        projetosIds: dados.projetos ? dados.projetos.map((p) => p.id || p.nome) : [],
-        clientesNomes: dados.clientes ? dados.clientes.map((c) => c.nome) : [],
-        ocorrenciasIndices: dados.ocorrencias ? dados.ocorrencias.map((_, idx) => idx) : [],
-      });
-    } catch (err) {
-      setErro(await mensagemDeErro(err, "Não foi possível carregar a prévia do relatório."));
-    } finally {
-      setCarregando(false);
-    }
-  }
-
-  // Abre o modal de refinamento
-  function abrirModalEdicao() {
-    setModalEdicaoAberto(true);
-  }
-
-  // Salva as alterações feitas no modal e recalcula os totais da prévia exibida
-  function salvarEdicaoModal() {
-    if (!previaOriginal) return;
-
-    const projetosFiltrados = (previaOriginal.projetos || []).filter((p) =>
-      selecaoModal.projetosIds.includes(p.id || p.nome),
-    );
-
-    const clientesFiltrados = (previaOriginal.clientes || []).filter((c) =>
-      selecaoModal.clientesNomes.includes(c.nome),
-    );
-
-    const ocorrenciasFiltradas = (previaOriginal.ocorrencias || []).filter((_, idx) =>
-      selecaoModal.ocorrenciasIndices.includes(idx),
-    );
-
-    // Recalcula horas e custos com base nos projetos mantidos
-    const totalHoras = projetosFiltrados.reduce((acc, p) => acc + (Number(p.horas) || 0), 0);
-    const totalCusto = projetosFiltrados.reduce((acc, p) => acc + (Number(p.custo) || 0), 0);
-
-    setPreviaEditada({
-      ...previaOriginal,
-      resumo: { horas: totalHoras, custo: totalCusto },
-      projetos: projetosFiltrados,
-      clientes: clientesFiltrados,
-      ocorrencias: ocorrenciasFiltradas,
-    });
-
-    setModalEdicaoAberto(false);
-    setMensagemSucesso("Prévia personalizada com sucesso!");
-  }
-
-  async function salvarFotografiaSnapshot() {
-    setSalvando(true);
-    setErro("");
-    try {
-      const params = {};
-      if (filtros.dataInicio) params.dataInicio = filtros.dataInicio;
-      if (filtros.dataFim) params.dataFim = filtros.dataFim;
-      if (filtros.projetoId) params.projetoIds = [filtros.projetoId];
-      if (filtros.clienteId) params.clienteId = filtros.clienteId;
-
-      await api.post("/relatorios/fotografia", { filtros: params });
-      setMensagemSucesso("Fotografia (snapshot) do relatório salva com sucesso no histórico!");
-    } catch (err) {
-      setErro(await mensagemDeErro(err, "Não foi possível salvar a fotografia do relatório."));
-    } finally {
-      setSalvando(false);
-    }
-  }
-
-  function limparTudo() {
-    setFiltros({ dataInicio: "", dataFim: "", projetoId: "", clienteId: "" });
-    setTermoBusca("");
-    setPreviaOriginal(null);
-    setPreviaEditada(null);
-    setErro("");
-    setMensagemSucesso("");
-  }
-
-  const itensUnificados = [
-    ...listaProjetos.map((p) => ({ ...p, tipo: "projeto", rotuloTipo: "Projeto" })),
-    ...listaClientes.map((c) => ({ ...c, tipo: "cliente", rotuloTipo: "Cliente" })),
-  ];
-
-  const sugestoesFiltradas = itensUnificados.filter((item) =>
-    item.nome.toLowerCase().includes(termoBusca.toLowerCase()),
-  );
-
+function Tabela({ caption, colunas, linhas, vazio }) {
+  if (!linhas.length) return <p className="dashboard-empty">{vazio}</p>;
   return (
-    <section className="content-panel relatorios-page" ref={containerRef}>
-      <header className="page-header">
-        <div>
-          <span className="eyebrow">Relatórios</span>
-          <div className="dashboard-title-row">
-            <h1>Gerar Relatório</h1>
-            <AjudaRelatorios />
-          </div>
-        </div>
-        <FloatingActions onRefresh={limparTudo} loading={carregando || salvando} />
-      </header>
-
-      <form onSubmit={gerarPrevia} className="form-panel">
-        <h2>Filtros e Escopo do Relatório</h2>
-
-        <div className="form-grid" style={{ marginBottom: "1.5rem" }}>
-          <label>
-            <span>Data Início</span>
-            <input
-              type="date"
-              value={filtros.dataInicio}
-              onChange={(e) => setFiltros({ ...filtros, dataInicio: e.target.value })}
-            />
-          </label>
-
-          <label>
-            <span>Data Fim</span>
-            <input
-              type="date"
-              value={filtros.dataFim}
-              onChange={(e) => setFiltros({ ...filtros, dataFim: e.target.value })}
-            />
-          </label>
-        </div>
-
-        <div style={{ marginBottom: "1.5rem", position: "relative" }}>
-          <label style={{ display: "block", marginBottom: "0.4rem" }}>
-            <span>Pesquisar por Projeto ou Cliente</span>
-          </label>
-          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-            <input
-              type="text"
-              placeholder="Digite o nome do projeto ou cliente…"
-              value={termoBusca}
-              onChange={(e) => {
-                setTermoBusca(e.target.value);
-                setMostrarSugestoes(true);
-                if (!e.target.value) limparBusca();
-              }}
-              onFocus={() => setMostrarSugestoes(true)}
-              style={{ width: "100%", paddingRight: "2.5rem" }}
-            />
-            {termoBusca ? (
-              <button
-                type="button"
-                onClick={limparBusca}
-                style={{
-                  position: "absolute",
-                  right: "0.75rem",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--text-muted)",
-                }}
+    <div className="dashboard-table">
+      <table>
+        <caption>{caption}</caption>
+        <thead>
+          <tr>
+            {colunas.map((coluna) => (
+              <th
+                key={coluna.titulo}
+                style={coluna.largura ? { minWidth: coluna.largura } : undefined}
               >
-                <X size={16} />
-              </button>
-            ) : (
-              <Search
-                size={16}
-                style={{
-                  position: "absolute",
-                  right: "0.75rem",
-                  color: "var(--text-muted)",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </div>
-
-          {mostrarSugestoes && termoBusca && sugestoesFiltradas.length > 0 && (
-            <ul
-              style={{
-                position: "absolute",
-                top: "100%",
-                left: 0,
-                right: 0,
-                background: "var(--bg-panel, #1e293b)",
-                border: "1px solid var(--border-color)",
-                borderRadius: "6px",
-                maxHeight: "220px",
-                overflowY: "auto",
-                zIndex: 10,
-                listStyle: "none",
-                padding: "0.5rem 0",
-                marginTop: "0.25rem",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-              }}
-            >
-              {sugestoesFiltradas.map((item) => (
-                <li
-                  key={`${item.tipo}-${item.id}`}
-                  onClick={() => selecionarItem(item)}
-                  style={{
-                    padding: "0.6rem 1rem",
-                    cursor: "pointer",
-                    fontSize: "0.9rem",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                >
-                  <div>
-                    <strong>{item.nome}</strong>
-                    {item.tipo === "projeto" && (
-                      <span
-                        style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)" }}
-                      >
-                        Cliente: {item.cliente?.nome || item.cliente || "Sem vínculo"}
-                      </span>
-                    )}
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "0.75rem",
-                      padding: "0.2rem 0.5rem",
-                      borderRadius: "4px",
-                      backgroundColor:
-                        item.tipo === "projeto"
-                          ? "rgba(59, 130, 246, 0.2)"
-                          : "rgba(16, 185, 129, 0.2)",
-                      color: item.tipo === "projeto" ? "#60a5fa" : "#34d399",
-                      fontWeight: "600",
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {item.rotuloTipo}
-                  </span>
-                </li>
+                {coluna.titulo}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {linhas.map((linha, indice) => (
+            <tr key={linha.chave ?? linha.id ?? indice}>
+              {colunas.map((coluna) => (
+                <td key={coluna.titulo}>{coluna.valor(linha)}</td>
               ))}
-            </ul>
-          )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Indicadores({ itens }) {
+  return (
+    <div className="dashboard-audit-metrics report-metrics">
+      {itens.map(([rotulo, valor, nota]) => (
+        <article key={rotulo}>
+          <span>{rotulo}</span>
+          <strong>{valor}</strong>
+          {nota && <small>{nota}</small>}
+        </article>
+      ))}
+    </div>
+  );
+}
+
+const conteudoDoBloco = {
+  PROJETOS: (dados) => (
+    <Tabela
+      caption="Projetos do recorte"
+      vazio="Nenhum projeto no recorte."
+      linhas={dados.linhas}
+      colunas={[
+        { titulo: "Projeto", valor: (row) => row.nome, largura: 170 },
+        { titulo: "Cliente", valor: (row) => row.cliente, largura: 220 },
+        { titulo: "Status", valor: (row) => projectStatusLabel(row.status) },
+        { titulo: "Orçamento", valor: (row) => money(row.orcamento) },
+        { titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
+        { titulo: "Custo base", valor: (row) => money(row.custoBase) },
+        { titulo: "Bonificação", valor: (row) => money(row.bonificacao) },
+        {
+          titulo: "Custo total",
+          valor: (row) =>
+            row.horasSemCusto > 0 ? `${money(row.custo)} (parcial)` : money(row.custo),
+        },
+        { titulo: "Assertividade do orçamento", valor: (row) => percent(row.assertividade) },
+        { titulo: "Inconsistências", valor: (row) => row.inconsistencias },
+      ]}
+    />
+  ),
+  CLIENTES: (dados) => (
+    <Tabela
+      caption="Clientes do recorte"
+      vazio="Nenhum cliente no recorte."
+      linhas={dados.linhas}
+      colunas={[
+        { titulo: "Cliente", valor: (row) => row.nome, largura: 240 },
+        { titulo: "Projetos", valor: (row) => row.projetos },
+        { titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
+        { titulo: "Custo base", valor: (row) => money(row.custoBase) },
+        { titulo: "Bonificação", valor: (row) => money(row.bonificacao) },
+        { titulo: "Custo total", valor: (row) => money(row.custo) },
+      ]}
+    />
+  ),
+  HORAS: (dados) => (
+    <>
+      <Indicadores
+        itens={[
+          ["Horas totais", `${number(dados.total)} h`, `${dados.apontamentos} apontamentos`],
+          ["Horas sem custo", `${number(dados.horasSemCusto)} h`, "Sem valor/hora vigente"],
+          ["Horas sem tarefa", `${number(dados.horasSemTarefa)} h`, "Correção não classificada"],
+        ]}
+      />
+      {/* O banco devolve as chaves do JSON em outra ordem; a tabela segue o fluxo do status. */}
+      <Tabela
+        caption="Horas por status do apontamento"
+        vazio="Sem horas no recorte."
+        linhas={Object.keys(STATUS_HORAS).map((status) => ({
+          chave: status,
+          status,
+          horas: dados.porStatus[status] ?? 0,
+        }))}
+        colunas={[
+          { titulo: "Status", valor: (row) => STATUS_HORAS[row.status] ?? row.status },
+          { titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
+        ]}
+      />
+      <Tabela
+        caption="Horas por colaborador"
+        vazio="Sem apontamentos no recorte."
+        linhas={dados.porColaborador}
+        colunas={[
+          { titulo: "Colaborador", valor: (row) => row.nome },
+          { titulo: "Departamento", valor: (row) => row.departamento || "Sem departamento" },
+          { titulo: "Projetos", valor: (row) => row.projetos },
+          { titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
+        ]}
+      />
+    </>
+  ),
+  CUSTO: (dados) => (
+    <Indicadores
+      itens={[
+        [
+          "Custo total",
+          money(dados.total),
+          dados.parcial ? `Parcial: ${number(dados.horasSemCusto)} h sem valor/hora` : null,
+        ],
+        ["Custo base", money(dados.custoBase), null],
+        ["Bonificação", money(dados.bonificacao), null],
+        [
+          "Assertividade média do orçamento",
+          percent(dados.assertividadeMedia),
+          dados.assertividadeMedia == null
+            ? "Sem projetos com base de cálculo no recorte"
+            : `${dados.projetosComAssertividade} projeto(s) com base de cálculo`,
+        ],
+      ]}
+    />
+  ),
+  INCONSISTENCIAS: (dados) => (
+    <>
+      <Indicadores
+        itens={Object.entries(TIPOS_OCORRENCIA).map(([tipo, rotulo]) => [
+          rotulo,
+          dados.porTipo[tipo] ?? 0,
+          null,
+        ])}
+      />
+      <Tabela
+        caption={`${dados.total} ocorrência(s) no recorte`}
+        vazio="Nenhuma inconsistência no recorte."
+        linhas={dados.ocorrencias}
+        colunas={[
+          { titulo: "Tipo", valor: (row) => TIPOS_OCORRENCIA[row.tipo] ?? row.tipo },
+          { titulo: "Projeto", valor: (row) => row.projeto, largura: 160 },
+          { titulo: "Colaborador ou tarefa", valor: (row) => row.colaborador || row.tarefa || "—" },
+          { titulo: "Data", valor: (row) => (row.data ? dataBr(row.data) : "—") },
+          { titulo: "Descrição", valor: (row) => row.descricao, largura: 220 },
+        ]}
+      />
+    </>
+  ),
+};
+
+export function RelatorioPrevia({ relatorio }) {
+  const { conteudo } = relatorio;
+  const escolhidos = new Set(conteudo.filtros.projetoIds ?? []);
+  const nomesEscolhidos = conteudo.projetos
+    .filter((row) => escolhidos.has(row.id))
+    .map((row) => row.nome);
+  return (
+    <section className="dashboard-detail report-preview" aria-labelledby="relatorio-titulo">
+      <header className="report-preview-header">
+        <FileChartColumn size={22} aria-hidden="true" />
+        <div>
+          <h2 id="relatorio-titulo">Relatório nº {relatorio.id}</h2>
+          <p>
+            Gerado em {dataHora(relatorio.criadoEm)} por {relatorio.autor ?? "usuário removido"}.
+            Cópia dos dados nesse momento (versão {relatorio.versao}).
+          </p>
         </div>
-
-        <h3>Blocos Selecionáveis</h3>
-        <div
-          style={{
-            display: "flex",
-            gap: "1.5rem",
-            flexWrap: "wrap",
-            margin: "1rem 0",
-            alignItems: "center",
-          }}
-        >
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
-          >
-            <input
-              type="checkbox"
-              checked={blocos.projetos}
-              onChange={() => toggleBloco("projetos")}
-              style={{ width: "18px", height: "18px" }}
-            />
-            Projetos
-          </label>
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
-          >
-            <input
-              type="checkbox"
-              checked={blocos.clientes}
-              onChange={() => toggleBloco("clientes")}
-              style={{ width: "18px", height: "18px" }}
-            />
-            Clientes
-          </label>
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
-          >
-            <input
-              type="checkbox"
-              checked={blocos.horas}
-              onChange={() => toggleBloco("horas")}
-              style={{ width: "18px", height: "18px" }}
-            />
-            Horas Totais
-          </label>
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
-          >
-            <input
-              type="checkbox"
-              checked={blocos.custos}
-              onChange={() => toggleBloco("custos")}
-              style={{ width: "18px", height: "18px" }}
-            />
-            Custo Total
-          </label>
-          <label
-            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
-          >
-            <input
-              type="checkbox"
-              checked={blocos.ocorrencias}
-              onChange={() => toggleBloco("ocorrencias")}
-              style={{ width: "18px", height: "18px" }}
-            />
-            Inconsistências / Ocorrências
-          </label>
-        </div>
-
-        <div
-          className="import-actions"
-          style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}
-        >
-          <button type="submit" className="primary-button" disabled={carregando}>
-            <Play size={16} aria-hidden="true" />
-            {carregando ? "Gerando prévia…" : "Gerar prévia"}
-          </button>
-          <button
-            type="button"
-            className="secondary-button"
-            onClick={limparTudo}
-            disabled={carregando}
-          >
-            <X size={16} aria-hidden="true" />
-            Limpar / Cancelar
-          </button>
-        </div>
-      </form>
-
-      {erro && (
-        <div className="feedback error" role="alert" style={{ marginTop: "1rem" }}>
-          <TriangleAlert size={18} aria-hidden="true" />
-          <span>{erro}</span>
-        </div>
-      )}
-
-      {mensagemSucesso && (
-        <div className="feedback success" role="status" style={{ marginTop: "1rem" }}>
-          <CircleCheck size={18} aria-hidden="true" />
-          <span>{mensagemSucesso}</span>
-        </div>
-      )}
-
-      {previaEditada && (
-        <section
-          className="import-result"
-          aria-label="Prévia do Relatório"
-          style={{ marginTop: "2rem" }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "1.5rem",
-              flexWrap: "wrap",
-              gap: "1rem",
-            }}
-          >
-            <h2>Prévia dos Resultados</h2>
-            <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button type="button" className="secondary-button" onClick={abrirModalEdicao}>
-                <Edit3 size={16} aria-hidden="true" />
-                Editar Prévia
-              </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={salvarFotografiaSnapshot}
-                disabled={salvando}
-              >
-                <Download size={16} aria-hidden="true" />
-                {salvando ? "Salvando fotografia…" : "Salvar fotografia (Snapshot)"}
-              </button>
-            </div>
-          </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-              gap: "1rem",
-              marginBottom: "2rem",
-            }}
-          >
-            {blocos.horas && previaEditada.resumo && (
-              <div
-                className="form-panel"
-                style={{
-                  padding: "1.2rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                }}
-              >
-                <span className="eyebrow">Horas Totais</span>
-                <strong style={{ fontSize: "1.6rem" }}>
-                  {number(previaEditada.resumo.horas)} h
-                </strong>
-              </div>
-            )}
-            {blocos.custos && previaEditada.resumo && (
-              <div
-                className="form-panel"
-                style={{
-                  padding: "1.2rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "0.5rem",
-                }}
-              >
-                <span className="eyebrow">Custo Total</span>
-                <strong style={{ fontSize: "1.6rem" }}>
-                  R$ {number(previaEditada.resumo.custo)}
-                </strong>
-              </div>
-            )}
-          </div>
-
-          {blocos.projetos && previaEditada.projetos && previaEditada.projetos.length > 0 && (
-            <div className="table-panel" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>
-                Projetos no Recorte ({previaEditada.projetos.length})
-              </h3>
-              <div className="table-wrap">
-                <table className="import-table">
-                  <thead>
-                    <tr>
-                      <th>Projeto</th>
-                      <th>Cliente</th>
-                      <th>Status</th>
-                      <th>Horas</th>
-                      <th>Custo (R$)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previaEditada.projetos.map((p, idx) => (
-                      <tr key={idx}>
-                        <td>{p.nome}</td>
-                        <td>{p.cliente}</td>
-                        <td>{p.status}</td>
-                        <td>{number(p.horas)}</td>
-                        <td>R$ {number(p.custo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {blocos.clientes && previaEditada.clientes && previaEditada.clientes.length > 0 && (
-            <div className="table-panel" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>
-                Clientes Atendidos ({previaEditada.clientes.length})
-              </h3>
-              <div className="table-wrap">
-                <table className="import-table">
-                  <thead>
-                    <tr>
-                      <th>Cliente</th>
-                      <th>Projetos</th>
-                      <th>Horas</th>
-                      <th>Custo (R$)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previaEditada.clientes.map((c, idx) => (
-                      <tr key={idx}>
-                        <td>{c.nome}</td>
-                        <td>{number(c.projetos)}</td>
-                        <td>{number(c.horas)}</td>
-                        <td>R$ {number(c.custo)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {blocos.ocorrencias &&
-            previaEditada.ocorrencias &&
-            previaEditada.ocorrencias.length > 0 && (
-              <div className="table-panel" style={{ padding: "1.5rem" }}>
-                <h3 style={{ marginBottom: "1rem" }}>
-                  Inconsistências Encontradas ({previaEditada.ocorrencias.length})
-                </h3>
-                <div className="table-wrap">
-                  <table className="import-table">
-                    <thead>
-                      <tr>
-                        <th>Tipo</th>
-                        <th>Projeto</th>
-                        <th>Colaborador</th>
-                        <th>Descrição</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {previaEditada.ocorrencias.map((o, idx) => (
-                        <tr key={idx}>
-                          <td>{o.tipo}</td>
-                          <td>{o.projeto}</td>
-                          <td>{o.colaborador ?? "—"}</td>
-                          <td>{o.descricao}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-        </section>
-      )}
-
-      {/* Modal de Edição da Prévia (Prévia da Prévia) */}
-      {modalEdicaoAberto && previaOriginal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 100,
-            padding: "1rem",
-          }}
-        >
-          <div
-            className="form-panel"
-            style={{
-              width: "100%",
-              maxWidth: "700px",
-              maxHeight: "90vh",
-              overflowY: "auto",
-              backgroundColor: "var(--bg-panel, #1e293b)",
-              boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h2>Editar Elementos da Prévia</h2>
-              <button
-                type="button"
-                className="icon-button"
-                onClick={() => setModalEdicaoAberto(false)}
-                style={{
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: "var(--text-main)",
-                }}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              Selecione quais itens devem permanecer no relatório final. Desmarque aqueles que
-              deseja ocultar.
-            </p>
-
-            {/* Seção de Projetos no Modal */}
-            {previaOriginal.projetos && previaOriginal.projetos.length > 0 && (
-              <div style={{ marginBottom: "1.5rem" }}>
-                <h3
-                  style={{
-                    fontSize: "1rem",
-                    marginBottom: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                    paddingBottom: "0.4rem",
-                  }}
-                >
-                  Projetos
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {previaOriginal.projetos.map((p) => {
-                    const idProj = p.id || p.nome;
-                    const selecionado = selecaoModal.projetosIds.includes(idProj);
-                    return (
-                      <label
-                        key={idProj}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selecionado}
-                          onChange={() => {
-                            setSelecaoModal((prev) => ({
-                              ...prev,
-                              projetosIds: selecionado
-                                ? prev.projetosIds.filter((id) => id !== idProj)
-                                : [...prev.projetosIds, idProj],
-                            }));
-                          }}
-                          style={{ width: "16px", height: "16px" }}
-                        />
-                        <span>
-                          {p.nome} —{" "}
-                          <strong style={{ color: "var(--text-muted)" }}>{p.cliente}</strong>
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Seção de Clientes no Modal */}
-            {previaOriginal.clientes && previaOriginal.clientes.length > 0 && (
-              <div style={{ marginBottom: "1.5rem" }}>
-                <h3
-                  style={{
-                    fontSize: "1rem",
-                    marginBottom: "0.75rem",
-                    borderBottom: "1px solid var(--border-color)",
-                    paddingBottom: "0.4rem",
-                  }}
-                >
-                  Clientes
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {previaOriginal.clientes.map((c) => {
-                    const selecionado = selecaoModal.clientesNomes.includes(c.nome);
-                    return (
-                      <label
-                        key={c.nome}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "0.5rem",
-                          cursor: "pointer",
-                          fontSize: "0.9rem",
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selecionado}
-                          onChange={() => {
-                            setSelecaoModal((prev) => ({
-                              ...prev,
-                              clientesNomes: selecionado
-                                ? prev.clientesNomes.filter((nome) => nome !== c.nome)
-                                : [...prev.clientesNomes, c.nome],
-                            }));
-                          }}
-                          style={{ width: "16px", height: "16px" }}
-                        />
-                        <span>{c.nome}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Ações do Modal */}
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "1rem",
-                marginTop: "2rem",
-              }}
-            >
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={() => setModalEdicaoAberto(false)}
-              >
-                Cancelar
-              </button>
-              <button type="button" className="primary-button" onClick={salvarEdicaoModal}>
-                <Check size={16} aria-hidden="true" />
-                Salvar e Atualizar Prévia
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </header>
+      <ul className="dashboard-tags" aria-label="Filtros do relatório">
+        <li>
+          <span>Período:</span> {textoPeriodo(conteudo.filtros)}
+        </li>
+        <li>
+          <span>Projetos:</span>{" "}
+          {nomesEscolhidos.length ? nomesEscolhidos.join(", ") : "Todos com dados no período"}
+        </li>
+        <li>
+          <span>No recorte:</span> {conteudo.projetos.length} projeto(s)
+        </li>
+      </ul>
+      {conteudo.blocos.map((key) => {
+        const bloco = BLOCOS.find((row) => row.key === key);
+        return (
+          <section className="report-block-section" key={key} aria-labelledby={`bloco-${key}`}>
+            <h3 id={`bloco-${key}`}>{bloco?.label ?? key}</h3>
+            {conteudoDoBloco[key]?.(conteudo.dados[key])}
+          </section>
+        );
+      })}
     </section>
   );
 }

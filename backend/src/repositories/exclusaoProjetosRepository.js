@@ -18,6 +18,7 @@ export const exclusaoProjetosRepository = {
             sprints: true,
             apontamentos: true,
             avaliacoes: true,
+            relatorios: true,
           },
         },
       },

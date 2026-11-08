@@ -27,6 +27,7 @@
     "lint": "eslint .",
     "test:team-db": "node scripts/verify-team.mjs",
     "test:invoiced-costs-db": "node scripts/verify-invoiced-costs.mjs",
+    "test:reports-db": "node scripts/verify-reports.mjs",
     "check:invoiced-costs": "node scripts/check-invoiced-costs.mjs"
   },
   "dependencies": {

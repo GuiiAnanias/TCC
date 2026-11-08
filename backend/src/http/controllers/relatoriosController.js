@@ -1,6 +1,9 @@
 import { relatoriosService } from "../../services/relatoriosService.js";
+import { relatoriosGeradosService } from "../../services/relatoriosGeradosService.js";
 import { dashboardQuerySchema } from "../../schemas/dashboardSchemas.js";
+import { relatorioCreateSchema } from "../../schemas/relatoriosSchemas.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { parseId } from "../../utils/parseId.js";
 import { XLSX_MIME } from "../../utils/planilha.js";
 
 export function enviarPlanilha(response, { arquivo, nome }) {
@@ -19,25 +22,11 @@ export const relatoriosController = {
     const filtros = dashboardQuerySchema.parse(request.query);
     enviarPlanilha(response, await relatoriosService.indicadoresXlsx(filtros));
   }),
-
-  // Novo método para exibir a Prévia na tela
-  previa: asyncHandler(async (request, response) => {
-    const filtros = dashboardQuerySchema.parse(request.query);
-    const dadosPrevia = await relatoriosService.obterPrevia(filtros);
-    response.status(200).json(dadosPrevia);
+  gerar: asyncHandler(async (request, response) => {
+    const dados = relatorioCreateSchema.parse(request.body);
+    response.status(201).json(await relatoriosGeradosService.gerar(dados, request.user));
   }),
-
-  // Novo método para persistir a "fotografia" do relatório gerado
-  salvarFotografia: asyncHandler(async (request, response) => {
-    const filtros = dashboardQuerySchema.parse(request.body.filtros || {});
-    const dadosRelatorio = await relatoriosService.obterPrevia(filtros);
-    const usuarioId = request.usuario?.id || null; // Ajustado conforme o middleware de autenticação existente
-
-    const historico = await relatoriosService.salvarFotografia(usuarioId, filtros, dadosRelatorio);
-    response.status(201).json({
-      sucesso: true,
-      mensagem: "Fotografia do relatório salva com sucesso.",
-      id: historico.id,
-    });
+  buscar: asyncHandler(async (request, response) => {
+    response.json(await relatoriosGeradosService.buscar(parseId(request.params.id, "relatório")));
   }),
 };

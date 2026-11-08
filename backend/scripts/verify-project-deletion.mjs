@@ -37,7 +37,8 @@ try {
   for (const directory of readdirSync(path.join(root, "prisma/migrations"), {
     withFileTypes: true,
   }).filter(
-    (item) => item.isDirectory() && item.name !== "20261107010000_referencias_projetos_avaliacoes",
+    // As migrações a partir das referências entram depois do seed, na ordem original.
+    (item) => item.isDirectory() && item.name < "20261107010000_referencias_projetos_avaliacoes",
   )) {
     const target = path.join(temporaryProject, "migrations", directory.name);
     mkdirSync(target);
@@ -75,12 +76,19 @@ try {
   const { seedDemo } = await import("../prisma/seed-demo.js");
   await seedDemo(client);
   const snapshots = await client.avaliacaoPremiacao.findMany({ orderBy: { id: "asc" } });
-  const migrationName = "20261107010000_referencias_projetos_avaliacoes";
-  mkdirSync(path.join(temporaryProject, "migrations", migrationName));
-  writeFileSync(
-    path.join(temporaryProject, "migrations", migrationName, "migration.sql"),
-    readFileSync(path.join(root, "prisma/migrations", migrationName, "migration.sql")),
-  );
+  for (const migrationName of readdirSync(path.join(root, "prisma/migrations"), {
+    withFileTypes: true,
+  })
+    .filter(
+      (item) => item.isDirectory() && item.name >= "20261107010000_referencias_projetos_avaliacoes",
+    )
+    .map((item) => item.name)) {
+    mkdirSync(path.join(temporaryProject, "migrations", migrationName));
+    writeFileSync(
+      path.join(temporaryProject, "migrations", migrationName, "migration.sql"),
+      readFileSync(path.join(root, "prisma/migrations", migrationName, "migration.sql")),
+    );
+  }
   const applied = spawnSync(
     process.execPath,
     [
@@ -154,6 +162,15 @@ try {
           data: new Date("2026-01-01"),
           horas: 1,
           descricao: "Histórico",
+        },
+      }),
+    relatorios: (id) =>
+      client.relatorioGerado.create({
+        data: {
+          filtros: { projetoIds: [id] },
+          blocos: ["PROJETOS"],
+          conteudo: { projetos: [{ id }] },
+          criadoPorId: user.id,
         },
       }),
     avaliacoes: (id) =>

@@ -6,9 +6,6 @@ export const relatoriosRoutes = Router();
 
 // Rota para exportar o Excel (existente)
 relatoriosRoutes.get("/indicadores.xlsx", relatoriosController.indicadores);
-
-// Nova rota para obter a Prévia na tela
-relatoriosRoutes.get("/previa", relatoriosController.previa);
-
-// Nova rota para persistir a "fotografia" (snapshot) do relatório
-relatoriosRoutes.post("/fotografia", relatoriosController.salvarFotografia);
+// Fotografias: gerar grava os dados do recorte; a consulta devolve sempre a mesma cópia.
+relatoriosRoutes.post("/", relatoriosController.gerar);
+relatoriosRoutes.get("/:id", relatoriosController.buscar);

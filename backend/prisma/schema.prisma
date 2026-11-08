@@ -67,6 +67,7 @@ model Usuario {
   regrasPremiacao RegraPremiacao[]
   avaliacoesCriadas AvaliacaoPremiacao[] @relation("AutorAvaliacao")
   avaliacoesConcluidas AvaliacaoPremiacao[] @relation("ConclusaoAvaliacao")
+  relatoriosGerados RelatorioGerado[]
 
   @@map("usuarios")
 }
@@ -206,6 +207,7 @@ model Projeto {
   cliente           Cliente                @relation(fields: [clienteId], references: [id])
   equipe            ProjetoColaborador[]
   avaliacoes        ProjetoAvaliacao[]
+  relatorios        ProjetoRelatorio[]
   apontamentos      ApontamentoHora[]
   createdAt         DateTime               @default(now())
   updatedAt         DateTime               @updatedAt
@@ -371,4 +373,32 @@ model ProjetoAvaliacao {
   @@id([projetoId, avaliacaoId])
   @@index([avaliacaoId])
   @@map("projetos_avaliacoes")
+}
+
+// Fotografia de um relatório gerado: filtros, blocos e dados no momento da geração.
+// Imutável no banco; a prévia e as exportações leem sempre esta cópia.
+model RelatorioGerado {
+  id          Int                @id @default(autoincrement())
+  versao      Int                @default(1)
+  filtros     Json
+  blocos      String[]
+  conteudo    Json
+  criadoPorId Int
+  criadoPor   Usuario            @relation(fields: [criadoPorId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  projetos    ProjetoRelatorio[]
+  createdAt   DateTime           @default(now())
+
+  @@index([createdAt])
+  @@map("relatorios_gerados")
+}
+
+model ProjetoRelatorio {
+  projetoId   Int
+  relatorioId Int
+  projeto     Projeto         @relation(fields: [projetoId], references: [id], onDelete: Restrict)
+  relatorio   RelatorioGerado @relation(fields: [relatorioId], references: [id], onDelete: Restrict)
+
+  @@id([projetoId, relatorioId])
+  @@index([relatorioId])
+  @@map("relatorios_projetos")
 }

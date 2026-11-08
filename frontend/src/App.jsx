@@ -16,7 +16,7 @@ import {
   Award,
   FileUp,
   UserRoundSearch,
-  FileText,
+  FileChartColumn,
 } from "lucide-react";
 import { resources } from "./config/resources.jsx";
 import { CrudPage } from "./pages/CrudPage.jsx";
@@ -80,6 +80,7 @@ function AppRoutes() {
         <Route path="/tarefas" element={<TasksPage />} />
         <Route path="/importacao" element={<ImportacaoPage />} />
         <Route path="/relatorios" element={<RelatoriosPage />} />
+        <Route path="/relatorios/:id" element={<RelatoriosPage />} />
         {resources.map((resource) => (
           <Route
             key={resource.key}
@@ -183,6 +184,10 @@ function ProtectedLayout() {
           >
             <UserRoundSearch size={19} aria-hidden="true" />
             <span className="sidebar-label">Visão por colaborador</span>
+          </NavLink>
+          <NavLink to="/relatorios" className="nav-link" title="Relatórios" aria-label="Relatórios">
+            <FileChartColumn size={19} aria-hidden="true" />
+            <span className="sidebar-label">Relatórios</span>
           </NavLink>
           {resources.map((resource) => {
             const Icon = resource.icon;
