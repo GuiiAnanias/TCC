@@ -8,6 +8,7 @@ test("edição conserva cliente inativo já vinculado, mas rejeita outro inativo
   const projects = { ...projetosRepository };
   const clients = { ...clientesRepository };
   const writes = [];
+  projetosRepository.transaction = async (operation) => operation({});
   projetosRepository.findById = async () => ({ id: 1, clienteId: 4 });
   projetosRepository.update = async (id, data) => {
     writes.push(data);
