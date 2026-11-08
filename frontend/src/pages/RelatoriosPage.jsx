@@ -12,8 +12,9 @@ function AjudaRelatorios() {
       <section>
         <h3>Como funciona</h3>
         <p>
-          Utilize a barra de pesquisa unificada para filtrar por <strong>Projeto</strong> ou <strong>Cliente</strong>. 
-          Após gerar a prévia, clique em <strong>Editar Prévia</strong> para selecionar exatamente quais itens deseja manter ou remover.
+          Utilize a barra de pesquisa unificada para filtrar por <strong>Projeto</strong> ou{" "}
+          <strong>Cliente</strong>. Após gerar a prévia, clique em <strong>Editar Prévia</strong>{" "}
+          para selecionar exatamente quais itens deseja manter ou remover.
         </p>
       </section>
     </HelpDialog>
@@ -149,15 +150,15 @@ export function RelatoriosPage() {
     if (!previaOriginal) return;
 
     const projetosFiltrados = (previaOriginal.projetos || []).filter((p) =>
-      selecaoModal.projetosIds.includes(p.id || p.nome)
+      selecaoModal.projetosIds.includes(p.id || p.nome),
     );
 
     const clientesFiltrados = (previaOriginal.clientes || []).filter((c) =>
-      selecaoModal.clientesNomes.includes(c.nome)
+      selecaoModal.clientesNomes.includes(c.nome),
     );
 
     const ocorrenciasFiltradas = (previaOriginal.ocorrencias || []).filter((_, idx) =>
-      selecaoModal.ocorrenciasIndices.includes(idx)
+      selecaoModal.ocorrenciasIndices.includes(idx),
     );
 
     // Recalcula horas e custos com base nos projetos mantidos
@@ -210,7 +211,7 @@ export function RelatoriosPage() {
   ];
 
   const sugestoesFiltradas = itensUnificados.filter((item) =>
-    item.nome.toLowerCase().includes(termoBusca.toLowerCase())
+    item.nome.toLowerCase().includes(termoBusca.toLowerCase()),
   );
 
   return (
@@ -270,12 +271,27 @@ export function RelatoriosPage() {
               <button
                 type="button"
                 onClick={limparBusca}
-                style={{ position: "absolute", right: "0.75rem", background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}
+                style={{
+                  position: "absolute",
+                  right: "0.75rem",
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-muted)",
+                }}
               >
                 <X size={16} />
               </button>
             ) : (
-              <Search size={16} style={{ position: "absolute", right: "0.75rem", color: "var(--text-muted)", pointerEvents: "none" }} />
+              <Search
+                size={16}
+                style={{
+                  position: "absolute",
+                  right: "0.75rem",
+                  color: "var(--text-muted)",
+                  pointerEvents: "none",
+                }}
+              />
             )}
           </div>
 
@@ -295,7 +311,7 @@ export function RelatoriosPage() {
                 listStyle: "none",
                 padding: "0.5rem 0",
                 marginTop: "0.25rem",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
               }}
             >
               {sugestoesFiltradas.map((item) => (
@@ -309,14 +325,16 @@ export function RelatoriosPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)"
+                    borderBottom: "1px solid rgba(255,255,255,0.05)",
                   }}
                   onMouseDown={(e) => e.preventDefault()}
                 >
                   <div>
                     <strong>{item.nome}</strong>
                     {item.tipo === "projeto" && (
-                      <span style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)" }}>
+                      <span
+                        style={{ display: "block", fontSize: "0.8rem", color: "var(--text-muted)" }}
+                      >
                         Cliente: {item.cliente?.nome || item.cliente || "Sem vínculo"}
                       </span>
                     )}
@@ -326,10 +344,13 @@ export function RelatoriosPage() {
                       fontSize: "0.75rem",
                       padding: "0.2rem 0.5rem",
                       borderRadius: "4px",
-                      backgroundColor: item.tipo === "projeto" ? "rgba(59, 130, 246, 0.2)" : "rgba(16, 185, 129, 0.2)",
+                      backgroundColor:
+                        item.tipo === "projeto"
+                          ? "rgba(59, 130, 246, 0.2)"
+                          : "rgba(16, 185, 129, 0.2)",
                       color: item.tipo === "projeto" ? "#60a5fa" : "#34d399",
                       fontWeight: "600",
-                      textTransform: "uppercase"
+                      textTransform: "uppercase",
                     }}
                   >
                     {item.rotuloTipo}
@@ -341,8 +362,18 @@ export function RelatoriosPage() {
         </div>
 
         <h3>Blocos Selecionáveis</h3>
-        <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap", margin: "1rem 0", alignItems: "center" }}>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+        <div
+          style={{
+            display: "flex",
+            gap: "1.5rem",
+            flexWrap: "wrap",
+            margin: "1rem 0",
+            alignItems: "center",
+          }}
+        >
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
+          >
             <input
               type="checkbox"
               checked={blocos.projetos}
@@ -351,7 +382,9 @@ export function RelatoriosPage() {
             />
             Projetos
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
+          >
             <input
               type="checkbox"
               checked={blocos.clientes}
@@ -360,7 +393,9 @@ export function RelatoriosPage() {
             />
             Clientes
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
+          >
             <input
               type="checkbox"
               checked={blocos.horas}
@@ -369,7 +404,9 @@ export function RelatoriosPage() {
             />
             Horas Totais
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
+          >
             <input
               type="checkbox"
               checked={blocos.custos}
@@ -378,7 +415,9 @@ export function RelatoriosPage() {
             />
             Custo Total
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}>
+          <label
+            style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer" }}
+          >
             <input
               type="checkbox"
               checked={blocos.ocorrencias}
@@ -389,12 +428,20 @@ export function RelatoriosPage() {
           </label>
         </div>
 
-        <div className="import-actions" style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}>
+        <div
+          className="import-actions"
+          style={{ display: "flex", gap: "1rem", marginTop: "1.5rem" }}
+        >
           <button type="submit" className="primary-button" disabled={carregando}>
             <Play size={16} aria-hidden="true" />
             {carregando ? "Gerando prévia…" : "Gerar prévia"}
           </button>
-          <button type="button" className="secondary-button" onClick={limparTudo} disabled={carregando}>
+          <button
+            type="button"
+            className="secondary-button"
+            onClick={limparTudo}
+            disabled={carregando}
+          >
             <X size={16} aria-hidden="true" />
             Limpar / Cancelar
           </button>
@@ -416,15 +463,24 @@ export function RelatoriosPage() {
       )}
 
       {previaEditada && (
-        <section className="import-result" aria-label="Prévia do Relatório" style={{ marginTop: "2rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+        <section
+          className="import-result"
+          aria-label="Prévia do Relatório"
+          style={{ marginTop: "2rem" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "1.5rem",
+              flexWrap: "wrap",
+              gap: "1rem",
+            }}
+          >
             <h2>Prévia dos Resultados</h2>
             <div style={{ display: "flex", gap: "0.75rem" }}>
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={abrirModalEdicao}
-              >
+              <button type="button" className="secondary-button" onClick={abrirModalEdicao}>
                 <Edit3 size={16} aria-hidden="true" />
                 Editar Prévia
               </button>
@@ -440,24 +496,53 @@ export function RelatoriosPage() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem", marginBottom: "2rem" }}>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+              gap: "1rem",
+              marginBottom: "2rem",
+            }}
+          >
             {blocos.horas && previaEditada.resumo && (
-              <div className="form-panel" style={{ padding: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div
+                className="form-panel"
+                style={{
+                  padding: "1.2rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
                 <span className="eyebrow">Horas Totais</span>
-                <strong style={{ fontSize: "1.6rem" }}>{number(previaEditada.resumo.horas)} h</strong>
+                <strong style={{ fontSize: "1.6rem" }}>
+                  {number(previaEditada.resumo.horas)} h
+                </strong>
               </div>
             )}
             {blocos.custos && previaEditada.resumo && (
-              <div className="form-panel" style={{ padding: "1.2rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              <div
+                className="form-panel"
+                style={{
+                  padding: "1.2rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.5rem",
+                }}
+              >
                 <span className="eyebrow">Custo Total</span>
-                <strong style={{ fontSize: "1.6rem" }}>R$ {number(previaEditada.resumo.custo)}</strong>
+                <strong style={{ fontSize: "1.6rem" }}>
+                  R$ {number(previaEditada.resumo.custo)}
+                </strong>
               </div>
             )}
           </div>
 
           {blocos.projetos && previaEditada.projetos && previaEditada.projetos.length > 0 && (
             <div className="table-panel" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Projetos no Recorte ({previaEditada.projetos.length})</h3>
+              <h3 style={{ marginBottom: "1rem" }}>
+                Projetos no Recorte ({previaEditada.projetos.length})
+              </h3>
               <div className="table-wrap">
                 <table className="import-table">
                   <thead>
@@ -487,7 +572,9 @@ export function RelatoriosPage() {
 
           {blocos.clientes && previaEditada.clientes && previaEditada.clientes.length > 0 && (
             <div className="table-panel" style={{ marginBottom: "2rem", padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Clientes Atendidos ({previaEditada.clientes.length})</h3>
+              <h3 style={{ marginBottom: "1rem" }}>
+                Clientes Atendidos ({previaEditada.clientes.length})
+              </h3>
               <div className="table-wrap">
                 <table className="import-table">
                   <thead>
@@ -513,33 +600,37 @@ export function RelatoriosPage() {
             </div>
           )}
 
-          {blocos.ocorrencias && previaEditada.ocorrencias && previaEditada.ocorrencias.length > 0 && (
-            <div className="table-panel" style={{ padding: "1.5rem" }}>
-              <h3 style={{ marginBottom: "1rem" }}>Inconsistências Encontradas ({previaEditada.ocorrencias.length})</h3>
-              <div className="table-wrap">
-                <table className="import-table">
-                  <thead>
-                    <tr>
-                      <th>Tipo</th>
-                      <th>Projeto</th>
-                      <th>Colaborador</th>
-                      <th>Descrição</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previaEditada.ocorrencias.map((o, idx) => (
-                      <tr key={idx}>
-                        <td>{o.tipo}</td>
-                        <td>{o.projeto}</td>
-                        <td>{o.colaborador ?? "—"}</td>
-                        <td>{o.descricao}</td>
+          {blocos.ocorrencias &&
+            previaEditada.ocorrencias &&
+            previaEditada.ocorrencias.length > 0 && (
+              <div className="table-panel" style={{ padding: "1.5rem" }}>
+                <h3 style={{ marginBottom: "1rem" }}>
+                  Inconsistências Encontradas ({previaEditada.ocorrencias.length})
+                </h3>
+                <div className="table-wrap">
+                  <table className="import-table">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Projeto</th>
+                        <th>Colaborador</th>
+                        <th>Descrição</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {previaEditada.ocorrencias.map((o, idx) => (
+                        <tr key={idx}>
+                          <td>{o.tipo}</td>
+                          <td>{o.projeto}</td>
+                          <td>{o.colaborador ?? "—"}</td>
+                          <td>{o.descricao}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </section>
       )}
 
@@ -571,26 +662,46 @@ export function RelatoriosPage() {
               boxShadow: "0 10px 25px rgba(0,0,0,0.5)",
             }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: "1.5rem",
+              }}
+            >
               <h2>Editar Elementos da Prévia</h2>
               <button
                 type="button"
                 className="icon-button"
                 onClick={() => setModalEdicaoAberto(false)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-main)" }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--text-main)",
+                }}
               >
                 <X size={20} />
               </button>
             </div>
 
             <p style={{ color: "var(--text-muted)", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              Selecione quais itens devem permanecer no relatório final. Desmarque aqueles que deseja ocultar.
+              Selecione quais itens devem permanecer no relatório final. Desmarque aqueles que
+              deseja ocultar.
             </p>
 
             {/* Seção de Projetos no Modal */}
             {previaOriginal.projetos && previaOriginal.projetos.length > 0 && (
               <div style={{ marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: "1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.4rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1rem",
+                    marginBottom: "0.75rem",
+                    borderBottom: "1px solid var(--border-color)",
+                    paddingBottom: "0.4rem",
+                  }}
+                >
                   Projetos
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
@@ -598,7 +709,16 @@ export function RelatoriosPage() {
                     const idProj = p.id || p.nome;
                     const selecionado = selecaoModal.projetosIds.includes(idProj);
                     return (
-                      <label key={idProj} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                      <label
+                        key={idProj}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          cursor: "pointer",
+                          fontSize: "0.9rem",
+                        }}
+                      >
                         <input
                           type="checkbox"
                           checked={selecionado}
@@ -612,7 +732,10 @@ export function RelatoriosPage() {
                           }}
                           style={{ width: "16px", height: "16px" }}
                         />
-                        <span>{p.nome} — <strong style={{ color: "var(--text-muted)" }}>{p.cliente}</strong></span>
+                        <span>
+                          {p.nome} —{" "}
+                          <strong style={{ color: "var(--text-muted)" }}>{p.cliente}</strong>
+                        </span>
                       </label>
                     );
                   })}
@@ -623,14 +746,30 @@ export function RelatoriosPage() {
             {/* Seção de Clientes no Modal */}
             {previaOriginal.clientes && previaOriginal.clientes.length > 0 && (
               <div style={{ marginBottom: "1.5rem" }}>
-                <h3 style={{ fontSize: "1rem", marginBottom: "0.75rem", borderBottom: "1px solid var(--border-color)", paddingBottom: "0.4rem" }}>
+                <h3
+                  style={{
+                    fontSize: "1rem",
+                    marginBottom: "0.75rem",
+                    borderBottom: "1px solid var(--border-color)",
+                    paddingBottom: "0.4rem",
+                  }}
+                >
                   Clientes
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {previaOriginal.clientes.map((c) => {
                     const selecionado = selecaoModal.clientesNomes.includes(c.nome);
                     return (
-                      <label key={c.nome} style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                      <label
+                        key={c.nome}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.5rem",
+                          cursor: "pointer",
+                          fontSize: "0.9rem",
+                        }}
+                      >
                         <input
                           type="checkbox"
                           checked={selecionado}
@@ -653,7 +792,14 @@ export function RelatoriosPage() {
             )}
 
             {/* Ações do Modal */}
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "1rem", marginTop: "2rem" }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "1rem",
+                marginTop: "2rem",
+              }}
+            >
               <button
                 type="button"
                 className="secondary-button"
@@ -661,11 +807,7 @@ export function RelatoriosPage() {
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                className="primary-button"
-                onClick={salvarEdicaoModal}
-              >
+              <button type="button" className="primary-button" onClick={salvarEdicaoModal}>
                 <Check size={16} aria-hidden="true" />
                 Salvar e Atualizar Prévia
               </button>

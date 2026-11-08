@@ -306,10 +306,10 @@ export const relatoriosService = {
     return { arquivo, nome: `indicadores-codebi-${hoje}.xlsx` };
   },
 
-async obterPrevia(filtros) {
+  async obterPrevia(filtros) {
     // Garante que o dashboardService receba os filtros de projetoIds e clienteId corretamente
     const relatorio = await dashboardService.report(filtros);
-    
+
     // Se houver projetos específicos filtrados, podemos refinar os blocos de clientes e ocorrências para exibir apenas o pertinente
     let projetosFiltrados = relatorio.projetos;
     let clientesFiltrados = relatorio.clientes;
@@ -317,15 +317,17 @@ async obterPrevia(filtros) {
 
     if (filtros.projetoIds && filtros.projetoIds.length > 0) {
       const idsStr = filtros.projetoIds.map(String);
-      projetosFiltrados = relatorio.projetos.filter(p => idsStr.includes(String(p.id)));
-      
+      projetosFiltrados = relatorio.projetos.filter((p) => idsStr.includes(String(p.id)));
+
       // Puxa automaticamente apenas os clientes vinculados a esses projetos
-      const nomesClientesValidos = new Set(projetosFiltrados.map(p => p.cliente));
-      clientesFiltrados = relatorio.clientes.filter(c => nomesClientesValidos.has(c.nome));
-      
+      const nomesClientesValidos = new Set(projetosFiltrados.map((p) => p.cliente));
+      clientesFiltrados = relatorio.clientes.filter((c) => nomesClientesValidos.has(c.nome));
+
       // Filtra as ocorrências apenas para os projetos selecionados
-      const nomesProjetosValidos = new Set(projetosFiltrados.map(p => p.nome));
-      ocorrenciasFiltradas = relatorio.ocorrencias.filter(o => nomesProjetosValidos.has(o.projeto));
+      const nomesProjetosValidos = new Set(projetosFiltrados.map((p) => p.nome));
+      ocorrenciasFiltradas = relatorio.ocorrencias.filter((o) =>
+        nomesProjetosValidos.has(o.projeto),
+      );
     }
 
     return {
@@ -348,6 +350,5 @@ async obterPrevia(filtros) {
         criadoEm: new Date(),
       },
     });
-  }
+  },
 };
-
