@@ -144,7 +144,7 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
     const horas = sum(project.apontamentos, "horas");
     const orcamento = Number(project.valorProjeto);
     const custo = round(round(custoBase) + round(bonificacao));
-    // Fórmula da e/code: orçado / realizado × 100, inclusive acima de 100%.
+    // Fórmula adotada pelo sistema: orçado / realizado × 100, inclusive acima de 100%.
     // Não comparar orçamento integral com custo de apenas parte do período/equipe.
     const assertividade =
       !period &&

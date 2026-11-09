@@ -37,7 +37,7 @@ export async function seedAwards(tx, { admin, people, projects }) {
       percentualBase: concluded ? 5 : null,
       percentualInformado: concluded ? 80 : null,
       justificativaPercentual: concluded
-        ? "Percentual fictício de 80% informado apenas para demonstrar o cálculo; não representa faixa da e/code."
+        ? "Percentual fictício de 80% informado apenas para demonstrar o cálculo; não representa faixa de uma empresa real."
         : "",
       observacoes:
         "DEMONSTRAÇÃO. Contexto e percentuais de avaliação são fictícios. A base de 5%, quando usada, é exemplo manual e não foi vinculada à remuneração nem ao custo.",

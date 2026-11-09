@@ -1,6 +1,6 @@
 # Avaliação de premiação Dev e PO/SM
 
-A tela **Premiação** registra a avaliação mensal de uma pessoa nas categorias Dev ou PO/SM. Os critérios foram transcritos das abas Dev e PO e SM da planilha de premiação da E/Code. A avaliação calcula nota e percentual; não calcula valores em reais, não comprova pagamento e não altera custos de projetos nem a bonificação por papel.
+A tela **Premiação** registra a avaliação mensal de uma pessoa nas categorias Dev ou PO/SM. É um módulo adicional de demonstração: os critérios formam um modelo de exemplo do sistema, montado a partir das abas Dev e PO e SM de uma planilha de avaliação usada no levantamento, e não representam a política de premiação de uma empresa real. A avaliação calcula nota e percentual; não calcula valores em reais, não comprova pagamento e não altera custos de projetos nem a bonificação por papel.
 
 ## Critérios dos modelos
 

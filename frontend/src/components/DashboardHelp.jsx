@@ -25,9 +25,9 @@ export function DashboardHelp() {
           como parcial.
         </p>
         <p>
-          A bonificação é opcional: sem regra vigente, aplica-se 0%. Benefícios e rateio mensal de
-          ociosidade ainda dependem da composição do custo/hora e da capacidade disponível de cada
-          colaborador.
+          A bonificação é opcional: sem regra vigente, aplica-se 0%. Benefícios cadastrados são
+          apenas informativos, e rateio de ociosidade não faz parte do modelo: o custo apurado
+          considera somente as horas registradas.
         </p>
       </section>
       <section>

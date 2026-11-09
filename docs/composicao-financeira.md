@@ -17,7 +17,7 @@ Na lista de colaboradores, a ação **Financeiro** abre o histórico de vigênci
 | Dado                     | Origem                                                          |
 | ------------------------ | --------------------------------------------------------------- |
 | Nível e valor/hora       | Copiados do item da tabela no momento do cadastro e preservados |
-| Benefícios (R$)          | Informados; não negativos, com até duas casas decimais          |
+| Benefícios (R$)          | Informativos; não negativos, até duas casas; fora do custo      |
 | Início e fim             | Início informado; o fim é preenchido ao substituir ou encerrar  |
 | Motivo                   | Opcional, até 500 caracteres; o padrão é "Nova vigência"        |
 | Vigência anterior, autor | Gravados pelo sistema para rastrear a substituição e quem a fez |
@@ -75,7 +75,7 @@ O custo atual é somente valor/hora mais bonificação por papel. Não entram:
 - bônus de valor fixo;
 - o resultado da avaliação de premiação ([premiacao.md](premiacao.md)).
 
-Incluir qualquer um desses itens depende de a empresa definir a regra (como ratear benefícios, sobre qual base aplicar percentuais, a periodicidade de valores fixos e como combinar bônus). O sistema não presume fórmula.
+Essa é uma decisão do modelo de custo adotado pelo sistema, não uma regra pendente: o custo apurado representa as horas registradas, e não o custo contábil completo da empresa. O campo de benefícios é apenas informativo. Incluir qualquer um desses itens exigiria definir uma regra nova (como ratear benefícios, sobre qual base aplicar percentuais, a periodicidade de valores fixos e como combinar bônus); o sistema não presume fórmula.
 
 ## API
 
