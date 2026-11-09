@@ -33,15 +33,17 @@ function AwardsHelp() {
       <section>
         <h3>Regras e categorias</h3>
         <p>
-          Dev e PO/SM têm critérios separados, transcritos das abas da planilha da e/code. Os
+          Premiação é um módulo adicional de demonstração. Dev e PO/SM têm critérios separados,
+          oferecidos como modelo de exemplo do sistema, montado a partir de uma planilha de
+          avaliação usada no levantamento. Não representam a política de uma empresa real. Os
           modelos começam com 10 pontos. Cada critério marcado como ocorrência desconta sua dedução
           uma única vez na avaliação mensal, independentemente da quantidade de tarefas. Não
           aplicável não desconta e exige justificativa.
         </p>
         <p>
-          O critério de tarefas fora de sprint de PO/SM foi incluído: a planilha o apresenta, mas
-          sua soma omite a última linha. A estrutura do space que consta apenas no banco auxiliar
-          não foi acrescentada aos critérios da avaliação.
+          O critério de tarefas fora de sprint de PO/SM foi incluído no modelo: a planilha de origem
+          o apresenta, mas sua soma omite a última linha. A estrutura do space que consta apenas no
+          banco auxiliar não foi acrescentada aos critérios da avaliação.
         </p>
         <p>
           Publicar cria uma versão imutável das regras. Alterações usam outra versão, com nome que

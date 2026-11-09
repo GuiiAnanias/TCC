@@ -211,8 +211,10 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
                 <h3>Nova vigência</h3>
                 <p>
                   Escolha o nível de remuneração, os benefícios e a data. O valor/hora fica
-                  preservado nesta vigência. Editar a tabela de remuneração não altera os valores já
-                  vinculados; para aplicar a nova taxa, crie uma nova vigência.
+                  preservado nesta vigência. Os benefícios são apenas informativos: o custo das
+                  horas usa somente o valor/hora e a bonificação do papel. Editar a tabela de
+                  remuneração não altera os valores já vinculados; para aplicar a nova taxa, crie
+                  uma nova vigência.
                 </p>
                 <p>Cargo e papel no projeto não escolhem a faixa automaticamente.</p>
               </section>
@@ -323,9 +325,10 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
           )}
         </label>
         <label className="field">
-          <span>Benefícios</span>
+          <span>Benefícios (informativo)</span>
           <input
             name="beneficios"
+            aria-describedby="finance-benefits-hint"
             type="number"
             min="0"
             max="99999999.99"
@@ -335,6 +338,9 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             onChange={update}
             disabled={isInactive || loading || saving || Boolean(loadError)}
           />
+          <small id="finance-benefits-hint">
+            Apenas registro: não entra no custo das horas nem nos indicadores.
+          </small>
         </label>
         <label className="field">
           <span>Início da vigência</span>
@@ -389,7 +395,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
             <tr>
               <th>Nível preservado</th>
               <th>Valor hora preservado</th>
-              <th>Benefícios</th>
+              <th>Benefícios (informativo)</th>
               <th>Início</th>
               <th>Último dia</th>
               <th>Status</th>

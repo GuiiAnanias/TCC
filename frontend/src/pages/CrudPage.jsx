@@ -877,9 +877,10 @@ export function CrudPage({ config }) {
                 <section>
                   <h3>Configuração financeira</h3>
                   <p>
-                    Use a ação Financeiro na lista para definir o nível, valor/hora e benefícios de
-                    cada colaborador. Cargo e papel no projeto são definidos separadamente. A ajuda
-                    do painel financeiro explica as vigências e o histórico.
+                    Use a ação Financeiro na lista para definir o nível, valor/hora e benefícios
+                    (informativos, fora do custo) de cada colaborador. Cargo e papel no projeto são
+                    definidos separadamente. A ajuda do painel financeiro explica as vigências e o
+                    histórico.
                   </p>
                 </section>
               )}

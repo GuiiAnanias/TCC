@@ -111,7 +111,7 @@ Funcionalidades disponíveis:
 - Cadastro, edição, consulta e inativação de clientes.
 - Cadastro, edição, consulta e inativação de colaboradores.
 - Cadastro, edição, consulta e inativação de itens de remuneração.
-- Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios e histórico.
+- Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios informativos (fora do cálculo de custo) e histórico.
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
 - Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
@@ -304,7 +304,7 @@ O colaborador é vinculado a uma faixa por meio da configuração financeira:
 ```txt
 Colaborador
 Faixa de remuneração
-Benefícios
+Benefícios (informativo, não entra no custo)
 Data de início
 Data de fim
 ```
@@ -529,8 +529,8 @@ sai com o mesmo recorte da tela, em seis abas:
 | Ocorrências   | Pendências da auditoria (sem valor/hora, sem equipe, sem tarefa etc.)             |
 
 As abas de dados são Tabelas do Excel, que o Power BI reconhece direto em
-_Obter dados > Excel_. A planilha contém custos internos e valor/hora: é para uso da E/Code,
-não para enviar ao cliente.
+_Obter dados > Excel_. A planilha contém custos internos e valor/hora: é para uso interno da
+empresa, não para enviar ao cliente.
 
 **Importar.** Em **Importar horas**, baixe o modelo, preencha uma linha por apontamento e
 envie o arquivo. O modelo abre na aba **Como usar** (passo a passo curto), marca em vermelho
