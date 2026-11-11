@@ -8,11 +8,31 @@ O Dashboard Geral resume todos os projetos do recorte. As visões por projeto e 
 - **Visão por projeto** e **Visão por colaborador**: sem uma escolha anterior, abrem numa tela para escolher o projeto ou o colaborador. A lista traz também projetos não ativos e colaboradores inativos, para consulta do histórico. Depois da escolha, o seletor no topo troca de entidade sem voltar ao menu.
 - Os nomes nas tabelas do Dashboard Geral continuam levando ao dashboard de cada projeto.
 
+## Visão em gráficos
+
+Logo abaixo dos indicadores, o Dashboard Geral mostra sete gráficos com o mesmo recorte dos cartões. Todos respondem aos filtros e mostram os valores ao passar o mouse; os números também estão nas tabelas das seções de detalhe.
+
+| Gráfico                           | Forma                       | O que mostra                                                                                  |
+| --------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------- |
+| Custo por mês                     | Colunas empilhadas          | Custo base e bonificação dos apontamentos de cada mês, com o total no topo e as horas na dica |
+| Orçamento × custo por projeto     | Barras horizontais em pares | Orçamento integral e custo do recorte dos projetos de maior custo (até 8)                     |
+| Horas por status do apontamento   | Rosca                       | Horas pendentes, aprovadas e faturadas, com valor e percentual na legenda                     |
+| Tarefas por status                | Rosca                       | Tarefas planejadas, em andamento, concluídas e canceladas                                     |
+| Custo por cliente                 | Barras ordenadas            | Do maior para o menor custo                                                                   |
+| Horas por equipe                  | Barras ordenadas            | Horas por departamento do colaborador                                                         |
+| Ocorrências de auditoria por tipo | Barras ordenadas            | Quantidade de ocorrências de cada tipo da auditoria                                           |
+
+- As séries por mês e por status vêm da API (`evolucao` e `apontamentosPorStatus` em `GET /api/dashboard`) e somam exatamente as horas e o custo do resumo.
+- Com filtro de período, equipe, colaborador ou sprint, o custo do gráfico de orçamento é só o do recorte; o orçamento é sempre o valor integral do projeto, e o gráfico avisa isso.
+- Nos rankings, com mais de 8 categorias as menores são somadas em "Outros".
+- As cores seguem uma paleta categórica testada para daltonismo, com uma versão para o tema claro e outra para o escuro. Cada categoria tem sempre a mesma cor; os rótulos e legendas mostram os valores, então a leitura não depende só da cor.
+- O gráfico do Comparativo por projeto passou a usar um único eixo (custo base e bonificação); as horas aparecem na dica e na tabela, em vez de um segundo eixo no mesmo gráfico.
+
 ## Seções do Dashboard Geral
 
 | Seção                      | O que mostra                                                                                                                                             |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comparativo por projeto    | Custo e horas por projeto, em gráfico e tabela                                                                                                           |
+| Comparativo por projeto    | Custo por projeto em gráfico; horas e custos na tabela                                                                                                   |
 | Auditoria operacional      | Ocorrências detalhadas e o ranking pela assertividade do orçamento (menor primeiro)                                                                      |
 | Ranking de inconsistências | Projetos do que tem mais para o que tem menos ocorrências, com a contagem por tipo; empate segue a ordem alfabética                                      |
 | Resumo por cliente         | Projetos, horas e custos por cliente                                                                                                                     |
