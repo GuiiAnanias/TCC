@@ -21,7 +21,7 @@ No navegador, o token fica no `sessionStorage`: sobrevive a recargas da aba, mas
 
 ## Rotas protegidas
 
-Somente `GET /api/health`, `POST /api/auth/login` e `POST /api/auth/redefinir-senha` são públicas. Todas as demais exigem `Authorization: Bearer <token>`, inclusive opções de cadastro, consultas de CNPJ/CEP, relatórios e importações. No front, as páginas internas redirecionam para o login e voltam à página pedida depois da autenticação.
+Somente `GET /api/health`, `POST /api/auth/login`, `POST /api/auth/esqueci-senha`, `POST /api/auth/redefinir-senha/validar` e `POST /api/auth/redefinir-senha` são públicas. Todas as demais exigem `Authorization: Bearer <token>`, inclusive opções de cadastro, consultas de CNPJ/CEP, relatórios e importações. No front, as páginas internas redirecionam para o login e voltam à página pedida depois da autenticação.
 
 Não existem perfis ou permissões por função: qualquer conta ativa acessa e altera todos os módulos.
 
@@ -30,17 +30,20 @@ Não existem perfis ou permissões por função: qualquer conta ativa acessa e a
 | Rota                 | Por origem (IP) | Por identificador | Janela |
 | -------------------- | --------------: | ----------------: | -----: |
 | Login                |              60 |                10 | 15 min |
+| Esqueci minha senha  |              20 |                 5 | 15 min |
+| Conferência do link  |              20 |                10 | 15 min |
 | Redefinição de senha |              20 |                10 | 15 min |
 
-O identificador é o login digitado (sem diferenciar maiúsculas) ou o token de redefinição. Ao passar do limite, a API responde 429 com `Retry-After`. Os contadores ficam no banco (`limites_autenticacao`), então valem para vários processos da API; as chaves são gravadas como HMAC, sem o login em texto. Os limites podem ser ajustados pelas variáveis `AUTH_LOGIN_*` e `AUTH_RESET_*` (`ORIGIN_LIMIT`, `IDENTIFIER_LIMIT`, `WINDOW_MS`).
+O identificador é o login ou o e-mail digitado (sem diferenciar maiúsculas) ou o token de redefinição. Ao passar do limite, a API responde 429 com `Retry-After`. Os contadores ficam no banco (`limites_autenticacao`), então valem para vários processos da API; as chaves são gravadas como HMAC, sem o login em texto. Os limites podem ser ajustados pelas variáveis `AUTH_LOGIN_*`, `AUTH_FORGOT_*` e `AUTH_RESET_*` (`ORIGIN_LIMIT`, `IDENTIFIER_LIMIT`, `WINDOW_MS`).
 
 A API não confia no cabeçalho `X-Forwarded-For`: atrás de um proxy reverso, todas as requisições contam como a mesma origem.
 
 ## Senhas e redefinição
 
-- Nova senha: ao menos 8 caracteres e no máximo 72 bytes UTF-8 (limite do bcrypt; acentos e emojis ocupam mais de um byte).
-- O sistema não envia e-mail. Quem administra o servidor gera um link com `corepack pnpm run senha:link <usuário ou e-mail>`, na pasta `backend`.
-- O link vale 30 minutos e só pode ser usado uma vez. Apenas o hash SHA-256 do token fica no banco, e gerar outro link invalida o anterior.
+- Nova senha: ao menos 8 caracteres, uma letra maiúscula, um número e um símbolo (qualquer caractere que não seja letra, número ou espaço, como `! @ # $ %`), e no máximo 72 bytes UTF-8 (limite do bcrypt; acentos e emojis ocupam mais de um byte). As regras são conferidas na API e repetidas na tela. Senhas já cadastradas continuam entrando; as regras valem ao definir uma senha nova.
+- Em **Esqueci minha senha**, o usuário informa o e-mail e recebe o link por e-mail. A resposta é a mesma para e-mails cadastrados ou não, e o envio acontece depois da resposta, para que nem o conteúdo nem o tempo revelem quais e-mails existem. Contas inativas não recebem link. Falhas de envio ficam só no log do servidor.
+- Quem administra o servidor também pode gerar o link com `corepack pnpm run senha:link <usuário ou e-mail>`, na pasta `backend`.
+- O link vale 30 minutos e só pode ser usado uma vez. A tela de redefinição confere o link assim que abre (`POST /api/auth/redefinir-senha/validar`, com o token no corpo): se ele já foi usado, expirou ou é desconhecido, avisa na hora e não mostra o formulário. Conferir não consome o link. Apenas o hash SHA-256 do token fica no banco, e gerar outro link invalida o anterior.
 
 ## Integridade dos dados
 
