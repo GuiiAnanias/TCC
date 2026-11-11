@@ -127,13 +127,13 @@ try {
     });
     const token = new URL(reset.link).searchParams.get("token");
     const results = await Promise.all([
-      send("/redefinir-senha", { token, novaSenha: "SenhaNova123" }),
-      send("/redefinir-senha", { token, novaSenha: "SenhaNova123" }),
+      send("/redefinir-senha", { token, novaSenha: "SenhaNova#123" }),
+      send("/redefinir-senha", { token, novaSenha: "SenhaNova#123" }),
     ]);
     assert.deepEqual(results.map((response) => response.status).sort(), [200, 400]);
     assert.equal((await me(second)).status, 401);
     assert.equal((await send("/login", { login: "auth-test", senha: password })).status, 401);
-    const fresh = await login("SenhaNova123");
+    const fresh = await login("SenhaNova#123");
     const profile = await (await me(fresh)).json();
     assert.equal(profile.user.nomeUsuario, "auth-test");
     assert.equal(profile.user.versaoSessao, undefined);
@@ -157,7 +157,7 @@ try {
       data: { expiraEm: new Date(0) },
     });
     assert.equal((await me(fresh)).status, 401);
-    const active = await login("SenhaNova123");
+    const active = await login("SenhaNova#123");
     await client.usuario.update({ where: { id: migrated.id }, data: { status: "INATIVO" } });
     assert.equal((await me(active)).status, 401);
     await client.usuario.update({ where: { id: migrated.id }, data: { status: "ATIVO" } });
@@ -170,20 +170,20 @@ try {
     sessoesRepository.create = async (...args) => {
       await senhaService.redefinir(
         new URL(resetAgain.link).searchParams.get("token"),
-        "SenhaFinal123",
+        "SenhaFinal#123",
       );
       return create(...args);
     };
     try {
       assert.equal(
-        (await send("/login", { login: "auth-test", senha: "SenhaNova123" })).status,
+        (await send("/login", { login: "auth-test", senha: "SenhaNova#123" })).status,
         401,
       );
     } finally {
       sessoesRepository.create = create;
     }
     assert.equal((await me(active)).status, 401);
-    assert.equal((await me(await login("SenhaFinal123"))).status, 200);
+    assert.equal((await me(await login("SenhaFinal#123"))).status, 200);
 
     // Contas anteriores com senha longa continuam autenticando; novas senhas são limitadas em bytes.
     const longPassword = "é".repeat(40);
@@ -200,7 +200,11 @@ try {
       frontendUrl: "http://localhost:5173",
     });
     const longToken = new URL(longReset.link).searchParams.get("token");
-    for (const novaSenha of ["a".repeat(73), "é".repeat(37), "🔒".repeat(19)]) {
+    for (const novaSenha of [
+      "A1!" + "a".repeat(70),
+      "A1!" + "é".repeat(35),
+      "A1!" + "🔒".repeat(18),
+    ]) {
       const invalid = await send("/redefinir-senha", { token: longToken, novaSenha });
       assert.equal(invalid.status, 400);
       assert.match((await invalid.json()).errors[0].message, /72 bytes/);
@@ -211,11 +215,16 @@ try {
       );
     }
     assert.equal(
-      (await send("/redefinir-senha", { token: longToken, novaSenha: "é".repeat(36) })).status,
+      (
+        await send("/redefinir-senha", {
+          token: longToken,
+          novaSenha: "A1!" + "é".repeat(34) + "a",
+        })
+      ).status,
       200,
     );
     assert.equal((await me(legacySession)).status, 401);
-    assert.equal((await me(await login("é".repeat(36), "legacy-long"))).status, 200);
+    assert.equal((await me(await login("A1!" + "é".repeat(34) + "a", "legacy-long"))).status, 200);
 
     const { limitesAutenticacaoRepository: limits } =
       await import("../src/repositories/limitesAutenticacaoRepository.js");
@@ -247,7 +256,7 @@ try {
     assert.equal(blocked.status, 429);
     assert.ok(Number(blocked.headers.get("Retry-After")) > 0);
     assert.equal(
-      (await me(await login("SenhaFinal123"))).status,
+      (await me(await login("SenhaFinal#123"))).status,
       200,
       "Outra conta continua acessível pela mesma origem.",
     );
@@ -277,7 +286,7 @@ try {
     assert.ok(stored.every((item) => /^[a-f0-9]{64}$/.test(item.chave)));
     await client.limiteAutenticacao.updateMany({ data: { expiraEm: new Date(0) } });
     assert.equal(
-      (await me(await login("SenhaFinal123"))).status,
+      (await me(await login("SenhaFinal#123"))).status,
       200,
       "O bloqueio expira sem intervenção administrativa.",
     );
@@ -287,7 +296,7 @@ try {
         (
           await send("/redefinir-senha", {
             token: "invalido-comprido-para-teste",
-            novaSenha: "SenhaValida123",
+            novaSenha: "SenhaValida#123",
           })
         ).status,
         400,
@@ -296,7 +305,7 @@ try {
       (
         await send("/redefinir-senha", {
           token: "invalido-comprido-para-teste",
-          novaSenha: "SenhaValida123",
+          novaSenha: "SenhaValida#123",
         })
       ).status,
       429,
