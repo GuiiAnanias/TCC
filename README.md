@@ -117,7 +117,7 @@ Funcionalidades disponíveis:
 - Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
 - Relatórios com prévia: escolha de projetos ou clientes, período e blocos, com uma cópia gravada dos dados de cada geração, download em PDF e Excel e histórico paginado dos relatórios gerados, descritos em `docs/relatorios.md`.
 - Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
-- Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar.
+- Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar, com histórico das importações concluídas e com falha.
 - Consulta visual dos dados do banco pelo Prisma Studio.
 - Collection do Postman para testes da API.
 
@@ -265,6 +265,7 @@ sistema-indicadores/
 | `tarefas` | Tarefas de cada projeto, com estimativa e status |
 | `tarefas_responsaveis` | Responsáveis de cada tarefa |
 | `apontamentos_horas` | Horas trabalhadas, com status e composição do custo faturado |
+| `importacoes_apontamentos` | Histórico das importações de apontamentos por planilha (concluídas e com falha) |
 | `regras_premiacao` | Versões publicadas das regras de premiação |
 | `avaliacoes_premiacao` | Avaliações mensais de premiação e suas versões |
 | `projetos_avaliacoes` | Projetos usados em cada avaliação |
@@ -510,6 +511,7 @@ GET    /relatorios/indicadores.xlsx          aceita os mesmos filtros de GET /da
 GET    /importacoes/apontamentos/modelo      modelo .xlsx com listas dos cadastros ativos
 POST   /importacoes/apontamentos/validacao   corpo = arquivo .xlsx; confere sem gravar
 POST   /importacoes/apontamentos             corpo = arquivo .xlsx; grava tudo ou nada
+GET    /importacoes/apontamentos/historico   pagina, porPagina (1 a 50, padrão 10)
 ```
 
 ---
@@ -548,6 +550,12 @@ filtrada pelo projeto escolhido.
 - Avisos não bloqueiam: indicam horas que entram com custo incompleto (colaborador fora da
   equipe do projeto na data ou sem valor/hora vigente).
 - Limite de 2.000 linhas e 5 MB por arquivo.
+- **Histórico de Importações**, no fim da tela: cada importação confirmada fica registrada
+  com data e hora, quem importou, nome do arquivo, projetos, status (Concluída ou Falhou) e
+  resultado (apontamentos e horas, ou linhas com erro e o motivo da falha, com as primeiras
+  20 linhas com erro). A lista vai da mais recente para a mais antiga, 10 por página, e é
+  atualizada a cada importação. Conferir sem importar não entra no histórico; o arquivo em si
+  não é guardado. O registro é imutável: um gatilho do banco impede alterar ou excluir.
 
 ---
 
