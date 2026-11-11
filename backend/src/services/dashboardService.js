@@ -87,6 +87,14 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
   );
   const occurrences = [];
   const equipes = new Map();
+  // Séries dos gráficos do dashboard geral, somadas sobre os mesmos apontamentos dos cartões.
+  const meses = new Map();
+  const porStatus = new Map(
+    STATUS_APONTAMENTO.map((status) => [
+      status,
+      { status, apontamentos: 0, horas: 0, custoBase: 0, bonificacao: 0 },
+    ]),
+  );
   const rows = visible.map((project) => {
     let custoBase = 0;
     let bonificacao = 0;
@@ -140,6 +148,15 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
         });
       custoBase += cost.custoBase;
       bonificacao += cost.bonificacao;
+      const mes = day.slice(0, 7);
+      if (!meses.has(mes))
+        meses.set(mes, { mes, apontamentos: 0, horas: 0, custoBase: 0, bonificacao: 0 });
+      for (const serie of [meses.get(mes), porStatus.get(entry.status)].filter(Boolean)) {
+        serie.apontamentos++;
+        serie.horas += Number(entry.horas);
+        serie.custoBase += cost.custoBase;
+        serie.bonificacao += cost.bonificacao;
+      }
     }
     const horas = sum(project.apontamentos, "horas");
     const orcamento = Number(project.valorProjeto);
@@ -237,7 +254,26 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
         a.nome.localeCompare(b.nome, "pt-BR"),
     ),
     clientes: [...clients.values()].sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR")),
+    evolucao: fecharSeries([...meses.values()].sort((a, b) => a.mes.localeCompare(b.mes))),
+    apontamentosPorStatus: fecharSeries([...porStatus.values()]),
   };
+}
+
+const STATUS_APONTAMENTO = ["PENDENTE", "APROVADO", "FATURADO"];
+
+/** Arredonda as somas de cada ponto das séries e acrescenta o custo total. */
+function fecharSeries(series) {
+  return series.map((row) => {
+    const custoBase = round(row.custoBase);
+    const bonificacao = round(row.bonificacao);
+    return {
+      ...row,
+      horas: round(row.horas),
+      custoBase,
+      bonificacao,
+      custo: round(custoBase + bonificacao),
+    };
+  });
 }
 
 /**

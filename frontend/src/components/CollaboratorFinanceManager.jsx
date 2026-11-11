@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 import { todayBusinessDate as today } from "../utils/businessDates.js";
+import { dataBr } from "../utils/pendencias.js";
 
 const inputDate = (value) => (value ? String(value).slice(0, 10) : "");
 const formatDate = (value) =>
@@ -48,7 +49,12 @@ function statusOf(config) {
   return "VIGENTE";
 }
 
-export function CollaboratorFinanceManager({ collaborator, onChanged, onClose }) {
+const cobreData = (config, dia) =>
+  inputDate(config.dataInicio) <= dia && (!config.dataFim || inputDate(config.dataFim) >= dia);
+
+// `pendencia` vem do Dashboard Geral ({ data }): horas lançadas sem valor/hora vigente.
+// Sem nenhuma vigência, a tela já preenche o início com essa data.
+export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, pendencia = null }) {
   const requestScope = useRequestScope(collaborator?.id);
   const callbacks = useLatestValue({ onChanged });
   const [loadError, setLoadError] = useState("");
@@ -58,6 +64,8 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
   const [formData, setFormData] = useState(initialForm);
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
+  // Histórico já carregado para este colaborador (a pendência só é conferida depois disso).
+  const [carregado, setCarregado] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -85,6 +93,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
       setConfigs(history.data);
       setRemunerations(rates.data);
       setFormData(initialForm(history.data));
+      setCarregado(true);
     } catch (err) {
       if (!request.isCurrent()) return;
       setConfigs([]);
@@ -103,6 +112,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
     setSaving(false);
     setLoadError("");
     setFormData(initialForm());
+    setCarregado(false);
     setSelectionError("");
     setMessage("");
     setError("");
@@ -199,6 +209,24 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
     );
   }
 
+  const preenchido = useRef("");
+  const situacaoFinanceira =
+    pendencia && carregado && !loading && !loadError
+      ? configs.some((config) => cobreData(config, pendencia.data))
+        ? "coberto"
+        : configs.length
+          ? "historico"
+          : "sem-vigencia"
+      : null;
+
+  useEffect(() => {
+    if (situacaoFinanceira !== "sem-vigencia") return;
+    const chave = `${collaborator?.id}:${pendencia.data}`;
+    if (preenchido.current === chave) return;
+    preenchido.current = chave;
+    setFormData((current) => ({ ...current, dataInicio: pendencia.data }));
+  }, [situacaoFinanceira, pendencia, collaborator?.id]);
+
   return (
     <section className="team-panel finance-history-panel">
       <header className="team-header">
@@ -263,6 +291,35 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose })
         </div>
       </header>
       <div className="feedback-row">
+        {situacaoFinanceira && (
+          <div
+            className={`feedback ${situacaoFinanceira === "coberto" ? "success" : "warning"} pending-fix`}
+            role="status"
+          >
+            <strong>Pendência do dashboard</strong>
+            {situacaoFinanceira === "sem-vigencia" && (
+              <span>
+                {collaborator.nomeCompleto} lançou horas em {dataBr(pendencia.data)} sem valor/hora
+                vigente, por isso elas ficaram sem custo. O formulário abaixo já vem com essa data
+                de início: escolha o nível de remuneração e clique em Criar nova vigência.
+              </span>
+            )}
+            {situacaoFinanceira === "historico" && (
+              <span>
+                {collaborator.nomeCompleto} lançou horas em {dataBr(pendencia.data)}, fora das
+                vigências abaixo. Como o histórico financeiro não pode ser alterado e uma nova
+                vigência não pode começar antes das existentes, essa data não pode ser coberta por
+                aqui. Se a data do apontamento estiver errada, corrija-a em Apontamento de Horas.
+              </span>
+            )}
+            {situacaoFinanceira === "coberto" && (
+              <span>
+                Resolvido: há vigência em {dataBr(pendencia.data)}. Atualize o Dashboard Geral para
+                ver o custo completo.
+              </span>
+            )}
+          </div>
+        )}
         {loadError && (
           <div className="feedback error" role="alert">
             {loadError}

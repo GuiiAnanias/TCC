@@ -101,6 +101,22 @@ try {
   assert.equal(somaEquipes("horas"), base.resumo.horas);
   assert.equal(somaEquipes("custo"), base.resumo.custo);
   assert.equal(somaEquipes("horasSemCusto"), base.resumo.horasSemCusto);
+  // Séries dos gráficos: custo por mês e horas por status fecham com o total do resumo.
+  const somarSerie = (lista, campo) =>
+    Math.round(lista.reduce((total, row) => total + row[campo], 0) * 100) / 100;
+  assert.ok(base.evolucao.length > 0);
+  assert.deepEqual(
+    base.evolucao.map((row) => row.mes),
+    [...base.evolucao.map((row) => row.mes)].sort(),
+  );
+  assert.equal(somarSerie(base.evolucao, "horas"), base.resumo.horas);
+  assert.equal(somarSerie(base.evolucao, "custo"), base.resumo.custo);
+  assert.deepEqual(
+    base.apontamentosPorStatus.map((row) => row.status),
+    ["PENDENTE", "APROVADO", "FATURADO"],
+  );
+  assert.equal(somarSerie(base.apontamentosPorStatus, "horas"), base.resumo.horas);
+  assert.equal(somarSerie(base.apontamentosPorStatus, "custo"), base.resumo.custo);
   assert.ok(base.equipes.some((row) => row.equipe === "Tecnologia"));
   assert.equal(
     base.rankingInconsistencias.reduce((total, row) => total + row.total, 0),

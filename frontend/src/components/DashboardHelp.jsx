@@ -104,6 +104,27 @@ export function DashboardHelp() {
           <dd>Tarefas sem estimativa ÷ total de tarefas × 100.</dd>
         </dl>
       </section>
+      <section>
+        <h3>Visão em gráficos</h3>
+        <p>
+          Os gráficos usam o mesmo recorte dos cartões e respondem aos mesmos filtros. Passe o mouse
+          sobre uma barra ou fatia para ver os valores; eles também estão nas tabelas das seções de
+          detalhe.
+        </p>
+        <ul>
+          <li>Custo por mês: custo base e bonificação dos apontamentos de cada mês.</li>
+          <li>
+            Orçamento × custo por projeto: o orçamento é o valor integral do projeto. Com filtro de
+            período, equipe, colaborador ou sprint, o custo é só o do recorte.
+          </li>
+          <li>Horas por status: quanto das horas está pendente, aprovado ou faturado.</li>
+          <li>Tarefas por status: planejadas, em andamento, concluídas e canceladas.</li>
+          <li>
+            Custo por cliente, horas por equipe e ocorrências por tipo: do maior para o menor; com
+            muitas categorias, as menores são somadas em "Outros".
+          </li>
+        </ul>
+      </section>
     </HelpDialog>
   );
 }
