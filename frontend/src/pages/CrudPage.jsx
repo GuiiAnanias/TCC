@@ -819,6 +819,15 @@ export function CrudPage({ config }) {
     );
   }
 
+  // Link vindo do Dashboard Geral com uma pendência: `?equipe=<projeto>&colaborador=<id>&data=`
+  // ou `?financeiro=<colaborador>&data=`. Só vale para o registro que o link abriu.
+  function pendenciaDoLink(acao, record) {
+    const data = query.get("data");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(data ?? "") || query.get(acao) !== String(record.id))
+      return null;
+    return { data, colaboradorId: acao === "equipe" ? query.get("colaborador") : record.id };
+  }
+
   useEffect(() => {
     const action = query.has("editar")
       ? "editar"
@@ -1269,6 +1278,7 @@ export function CrudPage({ config }) {
             project={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}
+            pendencia={pendenciaDoLink("equipe", selectedRecord)}
           />
         ) : null}
 
@@ -1278,6 +1288,7 @@ export function CrudPage({ config }) {
             collaborator={selectedRecord}
             onChanged={loadRecords}
             onClose={() => setSelectedRecord(null)}
+            pendencia={pendenciaDoLink("financeiro", selectedRecord)}
           />
         ) : null}
       </div>

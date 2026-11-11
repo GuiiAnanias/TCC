@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { StatusBadge } from "./StatusBadge.jsx";
 import { todayBusinessDate as today } from "../utils/businessDates.js";
+import { dataBr, situacaoNaEquipe } from "../utils/pendencias.js";
 
 function toInputDate(value) {
   if (!value) {
@@ -26,7 +27,10 @@ function memberName(vinculo) {
   return vinculo.colaborador?.nomeCompleto || "Colaborador";
 }
 
-export function ProjectTeamManager({ project, onChanged, onClose }) {
+// `pendencia` vem do Dashboard Geral ({ colaboradorId, data }): horas lançadas por alguém
+// fora da equipe naquela data. A tela explica o ajuste e, se a pessoa nunca participou do
+// projeto, já preenche o formulário com ela e a data.
+export function ProjectTeamManager({ project, onChanged, onClose, pendencia = null }) {
   const requestScope = useRequestScope(project?.id);
   const callbacks = useLatestValue({ onChanged });
   const [loadError, setLoadError] = useState("");
@@ -57,6 +61,31 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
 
     return collaborators.filter((collaborator) => !activeMemberIds.has(Number(collaborator.id)));
   }, [collaborators, team]);
+
+  const preenchido = useRef("");
+  const situacao =
+    pendencia && !loading && !loadError
+      ? situacaoNaEquipe(team, pendencia.colaboradorId, pendencia.data)
+      : null;
+  const nomePendencia =
+    collaborators.find((person) => String(person.id) === String(pendencia?.colaboradorId))
+      ?.nomeCompleto ||
+    situacao?.participacoes[0]?.colaborador?.nomeCompleto ||
+    "O colaborador";
+
+  useEffect(() => {
+    if (situacao?.situacao !== "sem-vinculo") return;
+    const chave = `${project?.id}:${pendencia.colaboradorId}:${pendencia.data}`;
+    if (preenchido.current === chave) return;
+    if (!collaborators.some((person) => String(person.id) === String(pendencia.colaboradorId)))
+      return;
+    preenchido.current = chave;
+    setFormData((current) => ({
+      ...current,
+      colaboradorId: String(pendencia.colaboradorId),
+      dataEntrada: pendencia.data,
+    }));
+  }, [situacao?.situacao, pendencia, project?.id, collaborators]);
 
   const filteredTeam = useMemo(() => {
     if (teamStatusFilter === "ATIVO") {
@@ -287,6 +316,34 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
       </header>
 
       <div className="feedback-row">
+        {situacao && (
+          <div
+            className={`feedback ${situacao.situacao === "coberto" ? "success" : "warning"} pending-fix`}
+            role="status"
+          >
+            <strong>Pendência do dashboard</strong>
+            {situacao.situacao === "sem-vinculo" && (
+              <span>
+                {nomePendencia} lançou horas em {dataBr(pendencia.data)} neste projeto, mas não faz
+                parte da equipe. O formulário abaixo já vem com {nomePendencia} e essa data: escolha
+                o papel e clique em Vincular.
+              </span>
+            )}
+            {situacao.situacao === "fora-do-periodo" && (
+              <span>
+                {nomePendencia} lançou horas em {dataBr(pendencia.data)}, fora do período em que
+                participou do projeto (linha destacada na tabela). Ajuste a data de entrada para{" "}
+                {dataBr(pendencia.data)} ou antes e clique em Salvar vínculo.
+              </span>
+            )}
+            {situacao.situacao === "coberto" && (
+              <span>
+                Resolvido: {nomePendencia} já participa da equipe em {dataBr(pendencia.data)}.
+                Atualize o Dashboard Geral para ver o custo completo.
+              </span>
+            )}
+          </div>
+        )}
         {loadError && (
           <div className="feedback error" role="alert">
             {loadError}
@@ -454,7 +511,15 @@ export function ProjectTeamManager({ project, onChanged, onClose }) {
               </tr>
             ) : (
               filteredTeam.map((member) => (
-                <tr key={member.id}>
+                <tr
+                  key={member.id}
+                  className={
+                    situacao?.situacao === "fora-do-periodo" &&
+                    String(member.colaboradorId) === String(pendencia.colaboradorId)
+                      ? "team-row-pending"
+                      : undefined
+                  }
+                >
                   <td>{memberName(member)}</td>
                   <td>{member.colaborador?.cargo || "-"}</td>
                   <td>

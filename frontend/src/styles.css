@@ -2023,6 +2023,18 @@ tbody tr:hover {
   border: 0;
   cursor: pointer;
 }
+/* Pendência trazida do dashboard, nas telas de equipe e de financeiro. */
+.pending-fix {
+  display: grid;
+  gap: 4px;
+}
+.pending-fix strong {
+  color: var(--text);
+}
+.team-row-pending td {
+  background: var(--warning-soft);
+}
+
 /* Gráficos do Dashboard Geral. */
 .dashboard-charts-block {
   margin-top: 28px;
