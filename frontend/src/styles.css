@@ -40,6 +40,12 @@
   --info-soft: #dbeafe;
   --focus-ring: rgba(0, 127, 115, 0.14);
   --shadow: 0 14px 35px rgba(32, 39, 51, 0.08);
+  /* Gráficos: paleta categórica validada para daltonismo, em ordem fixa (tema claro). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-muted: #b8c3cc;
   --dropdown-shadow: 0 16px 40px rgba(32, 39, 51, 0.14);
 }
 
@@ -75,6 +81,12 @@
   --info-soft: #253751;
   --focus-ring: rgba(82, 203, 181, 0.22);
   --shadow: 0 14px 35px rgba(0, 0, 0, 0.18);
+  /* Mesmas cores, ajustadas para o fundo escuro. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-muted: #4b5e6c;
   --dropdown-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
@@ -1165,10 +1177,6 @@ select:disabled {
   background: var(--surface-soft);
 }
 
-.finance-form {
-  grid-template-columns: minmax(230px, 1.4fr) 170px 180px auto;
-}
-
 .team-table-toolbar {
   display: flex;
   justify-content: flex-end;
@@ -1938,6 +1946,167 @@ tbody tr:hover {
 .dashboard-detail h2 {
   margin: 0 0 16px;
   font-size: 19px;
+}
+/* Gráficos do Dashboard Geral. */
+.dashboard-charts-block {
+  margin-top: 28px;
+}
+.dashboard-charts-block > h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+.dashboard-charts-block > p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 16px;
+  transition: opacity 0.2s;
+}
+.dashboard-charts-block[aria-busy="true"] .dashboard-charts {
+  opacity: 0.55;
+}
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 18px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.chart-card-wide {
+  grid-column: 1 / -1;
+}
+.chart-card header h3 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.chart-card header p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.chart-area {
+  min-width: 0;
+}
+.chart-empty {
+  margin: auto 0;
+  padding: 32px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 13px;
+}
+.chart-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+.chart-tooltip {
+  min-width: 170px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 13px;
+}
+.chart-tooltip strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.chart-tooltip dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.chart-tooltip dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.chart-tooltip dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+.chart-tooltip dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chart-swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.chart-donut {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) 1fr;
+  align-items: center;
+  gap: 16px;
+}
+.chart-donut-plot {
+  position: relative;
+}
+.chart-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.chart-donut-center strong {
+  font-size: 20px;
+  color: var(--text);
+}
+.chart-donut-center span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.chart-legend {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+.chart-legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.chart-legend-name {
+  color: var(--text-secondary);
+}
+.chart-legend-value {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.chart-legend-value small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+@media (max-width: 520px) {
+  .chart-donut {
+    grid-template-columns: 1fr;
+  }
 }
 .dashboard-chart {
   width: 100%;

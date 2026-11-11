@@ -14,7 +14,7 @@ export const taskStatus = {
   CONCLUIDA: "Concluída",
   CANCELADA: "Cancelada",
 };
-const issueLabels = {
+export const issueLabels = {
   SEM_REMUNERACAO: "Sem remuneração",
   SEM_VINCULO: "Sem participação na equipe",
   SEM_TAREFA: "Horas sem tarefa",

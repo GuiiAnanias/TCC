@@ -33,6 +33,7 @@ import {
 } from "../utils/dashboardFilters.js";
 
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
+const DashboardCharts = lazy(() => import("../components/DashboardCharts.jsx"));
 
 const emptyFilters = {
   dataInicio: "",
@@ -461,6 +462,32 @@ export function DashboardPage() {
         <OperationalMetrics summary={summary} loading={loading} context={Boolean(applied.equipe)} />
       </div>
 
+      {data && summary?.projetos > 0 && (
+        <section
+          className="dashboard-charts-block"
+          aria-busy={loading}
+          aria-labelledby="dashboard-graficos-titulo"
+        >
+          <h2 id="dashboard-graficos-titulo">Visão em gráficos</h2>
+          <p>
+            Mesmo recorte dos indicadores acima. Os valores de cada gráfico também estão nas tabelas
+            das seções de detalhe.
+          </p>
+          <Suspense fallback={<p role="status">Carregando gráficos…</p>}>
+            <DashboardCharts
+              data={data}
+              recortado={Boolean(
+                applied.dataInicio ||
+                applied.dataFim ||
+                applied.equipe ||
+                applied.colaboradorId ||
+                applied.sprintId,
+              )}
+            />
+          </Suspense>
+        </section>
+      )}
+
       {!loading && summary?.registrosSemVinculo > 0 && (
         <div className="feedback warning" role="status">
           <div>
@@ -523,7 +550,7 @@ export function DashboardPage() {
                       <div
                         className="dashboard-chart"
                         role="img"
-                        aria-label="Comparação de custo em reais e horas trabalhadas por projeto; valores disponíveis na tabela abaixo."
+                        aria-label="Custo por projeto, separado em custo base e bonificação; horas e valores disponíveis na tabela abaixo."
                       >
                         {openSection === key && (
                           <Suspense fallback={<p role="status">Carregando gráfico…</p>}>
