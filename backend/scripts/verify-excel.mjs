@@ -1,6 +1,6 @@
 // Integração com PostgreSQL local em schema temporário; não modifica a base da interface.
 // Confere pela API autenticada: modelo, prévia, importação tudo-ou-nada, importação
-// repetida, limite de 24 h, importações simultâneas e o relatório em Excel.
+// repetida, limite de 24 h, importações simultâneas, histórico de importações e o relatório em Excel.
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
@@ -28,10 +28,10 @@ const valorAoLado = (aba, rotulo) => {
 /** Fluxo completo pela API. Supõe a base de demonstração (seed) já carregada. */
 export async function verificarFluxoExcel({ client, baseUrl, token }) {
   const auth = { Authorization: `Bearer ${token}` };
-  const enviar = (rota, corpo) =>
+  const enviar = (rota, corpo, cabecalhos = {}) =>
     fetch(`${baseUrl}${rota}`, {
       method: "POST",
-      headers: { ...auth, "Content-Type": XLSX },
+      headers: { ...auth, "Content-Type": XLSX, ...cabecalhos },
       body: corpo,
     });
   const marca = `verify-excel-${Date.now().toString(36)}`;
@@ -119,7 +119,9 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
   assert.equal(await contar(), 0, "A prévia não grava.");
 
   // Importação grava as três linhas com os valores convertidos.
-  resposta = await enviar("/importacoes/apontamentos", valida);
+  resposta = await enviar("/importacoes/apontamentos", valida, {
+    "X-Nome-Arquivo": encodeURIComponent("Horas de março.xlsx"),
+  });
   const importacao = await resposta.json();
   assert.equal(resposta.status, 201, JSON.stringify(importacao));
   assert.equal(importacao.importados, 3);
@@ -170,6 +172,59 @@ export async function verificarFluxoExcel({ client, baseUrl, token }) {
   ]);
   assert.deepEqual(respostas.map((item) => item.status).sort(), [201, 422]);
   assert.equal(await contar(), 5);
+
+  // Histórico: cada tentativa de importar fica registrada, inclusive as que falharam;
+  // a prévia não entra. O schema é novo, então só há as tentativas deste teste.
+  const historico = async (consulta = "") =>
+    fetch(`${baseUrl}/importacoes/apontamentos/historico${consulta}`, { headers: auth });
+  resposta = await historico("?porPagina=50");
+  const lista = await resposta.json();
+  assert.equal(resposta.status, 200, JSON.stringify(lista));
+  assert.equal(lista.total, 5);
+  assert.deepEqual(lista.itens.map((item) => item.status).sort(), [
+    "CONCLUIDA",
+    "CONCLUIDA",
+    "FALHOU",
+    "FALHOU",
+    "FALHOU",
+  ]);
+  const primeira = lista.itens.at(-1);
+  assert.equal(primeira.arquivo, "Horas de março.xlsx");
+  assert.equal(primeira.status, "CONCLUIDA");
+  assert.equal(primeira.importados, 3);
+  assert.equal(primeira.horas, 11.5);
+  const nomesProjetos = primeira.projetos.map((projeto) => projeto.nome);
+  assert.ok(nomesProjetos.includes(projetoEquipe), JSON.stringify(nomesProjetos));
+  assert.deepEqual(
+    nomesProjetos,
+    [...nomesProjetos].sort((a, b) => a.localeCompare(b, "pt-BR")),
+    "Projetos sem repetição, em ordem alfabética.",
+  );
+  assert.equal(new Set(nomesProjetos).size, nomesProjetos.length);
+  assert.equal(primeira.usuario.nome, "excel-test");
+  const repetidaNoHistorico = lista.itens.at(-2);
+  assert.equal(repetidaNoHistorico.status, "FALHOU");
+  assert.equal(repetidaNoHistorico.arquivo, "planilha.xlsx");
+  assert.equal(repetidaNoHistorico.comErro, 3);
+  assert.match(repetidaNoHistorico.erros[0].mensagem, /já existe no sistema/);
+  assert.ok(
+    new Date(lista.itens[0].criadoEm) >= new Date(lista.itens.at(-1).criadoEm),
+    "Da mais recente para a mais antiga.",
+  );
+  resposta = await historico("?pagina=2&porPagina=2");
+  const segunda = await resposta.json();
+  assert.deepEqual([segunda.pagina, segunda.paginas, segunda.itens.length], [2, 3, 2]);
+  assert.equal((await historico("?porPagina=51")).status, 400);
+  assert.equal(
+    (await fetch(`${baseUrl}/importacoes/apontamentos/historico`)).status,
+    401,
+    "O histórico exige login.",
+  );
+  await assert.rejects(
+    client.importacaoApontamentos.deleteMany({}),
+    /CODEBI_IMPORTACAO_IMUTAVEL/,
+    "O histórico não pode ser apagado por fora da API.",
+  );
 
   // Arquivos inválidos.
   resposta = await enviar("/importacoes/apontamentos/validacao", Buffer.from("data;horas"));
@@ -298,7 +353,7 @@ async function principal() {
       await new Promise((resolve) => server.close(resolve));
     }
     console.log(
-      "OK: modelo, prévia sem gravar, importação tudo-ou-nada, importação repetida, limite de 24 h, importações simultâneas, arquivos inválidos e relatório igual ao dashboard.",
+      "OK: modelo, prévia sem gravar, importação tudo-ou-nada, importação repetida, limite de 24 h, importações simultâneas, histórico de importações, arquivos inválidos e relatório igual ao dashboard.",
     );
   } finally {
     await client?.$disconnect();
