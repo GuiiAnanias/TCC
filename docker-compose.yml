@@ -11,5 +11,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Caixa de e-mail local para desenvolvimento e demonstração: recebe as mensagens
+  # do sistema (porta SMTP 1025) e as mostra em http://localhost:8025. Nada sai para a internet.
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: sistema_indicadores_mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   postgres_data:
