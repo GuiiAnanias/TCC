@@ -12,6 +12,7 @@ import {
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
+import { HistoricoImportacoes } from "../components/HistoricoImportacoes.jsx";
 import { date, number } from "../components/OperationalDashboard.jsx";
 import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
 
@@ -54,6 +55,15 @@ function AjudaImportacao() {
         <p>
           Avisos não impedem a importação. Eles indicam horas que entram com custo incompleto no
           dashboard: colaborador fora da equipe do projeto na data ou sem valor/hora vigente.
+        </p>
+      </section>
+      <section>
+        <h3>Histórico de Importações</h3>
+        <p>
+          Cada vez que você confirma uma importação, ela fica registrada no fim da tela com data,
+          quem importou, arquivo, projetos e status. As que falharam também aparecem, com o motivo e
+          as primeiras linhas com erro. Conferir a planilha sem importar não entra no histórico, e o
+          arquivo em si não é guardado.
         </p>
       </section>
     </HelpDialog>
@@ -163,6 +173,8 @@ export function ImportacaoPage() {
   const [importado, setImportado] = useState(null);
   const [etapa, setEtapa] = useState("");
   const [error, setError] = useState("");
+  // Muda a cada tentativa de importação (ou ao atualizar a tela) para recarregar o histórico.
+  const [versaoHistorico, setVersaoHistorico] = useState(0);
   const ocupado = Boolean(etapa);
 
   function recomecar() {
@@ -223,7 +235,8 @@ export function ImportacaoPage() {
     setError("");
     try {
       const response = await api.post("/importacoes/apontamentos", arquivo, {
-        headers: { "Content-Type": XLSX },
+        // O nome vai codificado: cabeçalhos HTTP não aceitam acentos diretamente.
+        headers: { "Content-Type": XLSX, "X-Nome-Arquivo": encodeURIComponent(arquivo.name) },
       });
       setImportado({ ...response.data, arquivo: arquivo.name });
       recomecar();
@@ -234,6 +247,7 @@ export function ImportacaoPage() {
       setError(await mensagemDeErro(err, "Não foi possível importar a planilha."));
     } finally {
       setEtapa("");
+      setVersaoHistorico((versao) => versao + 1);
     }
   }
 
@@ -250,7 +264,13 @@ export function ImportacaoPage() {
             <AjudaImportacao />
           </div>
         </div>
-        <FloatingActions onRefresh={recomecar} loading={ocupado} />
+        <FloatingActions
+          onRefresh={() => {
+            recomecar();
+            setVersaoHistorico((versao) => versao + 1);
+          }}
+          loading={ocupado}
+        />
       </header>
 
       <ol className="import-steps">
@@ -393,6 +413,8 @@ export function ImportacaoPage() {
           Importando {plural(resumo?.validas ?? 0, "apontamento", "apontamentos")}…
         </p>
       )}
+
+      <HistoricoImportacoes versao={versaoHistorico} />
     </section>
   );
 }

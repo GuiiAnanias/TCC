@@ -2391,6 +2391,59 @@ tbody tr:hover {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* Histórico de importações, abaixo dos passos da tela Importar horas. */
+.import-history {
+  display: grid;
+  gap: 12px;
+}
+.import-history-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.import-history-header h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+.import-history-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.import-history-file {
+  overflow-wrap: anywhere;
+}
+.import-history-result {
+  white-space: normal;
+}
+.import-history-errors {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.import-history-errors summary {
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+.import-history-errors ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+.status-concluida {
+  color: var(--success);
+  background: var(--success-soft);
+  border: 1px solid var(--success-line);
+}
+.status-falhou {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-line);
+}
 .feedback a {
   color: inherit;
   font-weight: 800;
