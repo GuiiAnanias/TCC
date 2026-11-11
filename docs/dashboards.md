@@ -8,6 +8,15 @@ O Dashboard Geral resume todos os projetos do recorte. As visões por projeto e 
 - **Visão por projeto** e **Visão por colaborador**: sem uma escolha anterior, abrem numa tela para escolher o projeto ou o colaborador. A lista traz também projetos não ativos e colaboradores inativos, para consulta do histórico. Depois da escolha, o seletor no topo troca de entidade sem voltar ao menu.
 - Os nomes nas tabelas do Dashboard Geral continuam levando ao dashboard de cada projeto.
 
+## Apontamentos com custo incompleto
+
+Quando há apontamentos sem participação na equipe do projeto na data das horas (custo sem bonificação) ou sem valor/hora vigente (horas sem custo), o Dashboard Geral mostra o aviso "apontamentos com custo incompleto", logo abaixo dos indicadores. Cada linha traz o colaborador, o projeto, a data, o problema e um botão:
+
+- **Ajustar equipe** abre a equipe do projeto (`/projetos?equipe=<projeto>&colaborador=<colaborador>&data=<dia>`). Se a pessoa nunca participou do projeto, o formulário já vem com ela e a data; se participou em outro período, a linha dela fica destacada e a tela orienta a ajustar a data de entrada. Quando a participação já cobre a data, a tela informa que a pendência foi resolvida.
+- **Cadastrar valor/hora** abre o financeiro do colaborador (`/colaboradores?financeiro=<colaborador>&data=<dia>`). Sem nenhuma vigência, o início da nova vigência já vem com a data das horas. Se já houver vigências, a tela explica que o histórico não pode ser alterado e que uma nova vigência não cobre datas anteriores.
+
+O aviso mostra até 5 pendências, das mais recentes para as mais antigas; as demais ficam na seção Auditoria operacional, que usa os mesmos links.
+
 ## Visão em gráficos
 
 Logo abaixo dos indicadores, o Dashboard Geral mostra sete gráficos com o mesmo recorte dos cartões. Todos respondem aos filtros e mostram os valores ao passar o mouse; os números também estão nas tabelas das seções de detalhe.
