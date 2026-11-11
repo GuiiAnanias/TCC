@@ -25,6 +25,7 @@ import { DashboardPage } from "./pages/DashboardPage.jsx";
 import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { RedefinirSenhaPage } from "./pages/RedefinirSenhaPage.jsx";
+import { EsqueciSenhaPage } from "./pages/EsqueciSenhaPage.jsx";
 import { ThemeProvider } from "./ThemeContext.jsx";
 
 export function App() {
@@ -62,6 +63,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
       <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />

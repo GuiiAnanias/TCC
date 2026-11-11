@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { Link, Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { ThemeToggle } from "../ThemeContext.jsx";
@@ -18,7 +18,6 @@ export function LoginPage() {
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
   const from = location.state?.from;
   const destination =
     typeof from === "string" &&
@@ -111,20 +110,9 @@ export function LoginPage() {
             {busy ? "Entrando…" : "Entrar"}
           </button>
         </form>
-        <button
-          type="button"
-          className="login-link"
-          aria-expanded={showHelp}
-          onClick={() => setShowHelp((value) => !value)}
-        >
+        <Link className="login-link" to="/esqueci-senha">
           Esqueci minha senha
-        </button>
-        {showHelp && (
-          <p className="login-help" role="note">
-            Peça ao administrador do sistema um link para redefinir sua senha. O link vale por 30
-            minutos e só pode ser usado uma vez.
-          </p>
-        )}
+        </Link>
       </section>
     </main>
   );
