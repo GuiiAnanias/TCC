@@ -55,6 +55,25 @@ export const importacaoApontamentosRepository = {
     });
   },
 
+  // Histórico: uma linha por tentativa de importação. Quando a importação dá certo, é
+  // gravada na mesma transação dos apontamentos; quando falha, depois do rollback.
+  registrar(dados, db = prisma) {
+    return db.importacaoApontamentos.create({ data: dados, select: { id: true } });
+  },
+
+  async historico({ pagina, porPagina }, db = prisma) {
+    const [total, itens] = await Promise.all([
+      db.importacaoApontamentos.count(),
+      db.importacaoApontamentos.findMany({
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (pagina - 1) * porPagina,
+        take: porPagina,
+        include: { usuario: { select: { id: true, nomeUsuario: true } } },
+      }),
+    ]);
+    return { total, itens };
+  },
+
   async criar(registros, db = prisma) {
     const pessoas = [...new Set(registros.map((item) => item.colaboradorId))].sort((a, b) => a - b);
     const projetos = [...new Set(registros.map((item) => item.projetoId))].sort((a, b) => a - b);
