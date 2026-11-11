@@ -23,6 +23,7 @@ import { Link } from "react-router-dom";
 import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
 import { projectStatusOptions, projectStatusLabel } from "../config/projectOptions.js";
 import { MultiSelect } from "../components/MultiSelect.jsx";
+import { PendenciasCusto } from "../components/PendenciasCusto.jsx";
 import {
   ajustarRecorte,
   etiquetasDoRecorte,
@@ -462,6 +463,20 @@ export function DashboardPage() {
         <OperationalMetrics summary={summary} loading={loading} context={Boolean(applied.equipe)} />
       </div>
 
+      {data && (
+        <PendenciasCusto
+          ocorrencias={data.ocorrencias}
+          onVerTodas={() => {
+            setOpenSection("auditoria");
+            requestAnimationFrame(() =>
+              document
+                .getElementById("dashboard-auditoria")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+            );
+          }}
+        />
+      )}
+
       {data && summary?.projetos > 0 && (
         <section
           className="dashboard-charts-block"
@@ -486,19 +501,6 @@ export function DashboardPage() {
             />
           </Suspense>
         </section>
-      )}
-
-      {!loading && summary?.registrosSemVinculo > 0 && (
-        <div className="feedback warning" role="status">
-          <div>
-            {summary.registrosSemVinculo === 1
-              ? "Há 1 apontamento sem participação de equipe válida"
-              : `Há ${summary.registrosSemVinculo} apontamentos sem participação de equipe válida`}{" "}
-            na data das horas. O custo foi calculado pelo valor/hora, sem bonificação nesses
-            apontamentos. <Link to="/projetos">Conferir equipe e datas em Projetos</Link>. Isso não
-            exige cadastrar uma bonificação.
-          </div>
-        </div>
       )}
 
       {!loading && data && !summary.projetos && (

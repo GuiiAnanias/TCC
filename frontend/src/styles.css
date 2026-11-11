@@ -1947,6 +1947,82 @@ tbody tr:hover {
   margin: 0 0 16px;
   font-size: 19px;
 }
+/* Aviso de apontamentos com custo incompleto, no Dashboard Geral. */
+.cost-issues {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+  padding: 16px 18px;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+  border-radius: 12px;
+}
+.cost-issues > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--warning);
+}
+.cost-issues > header svg {
+  flex: none;
+  margin-top: 2px;
+}
+.cost-issues h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text);
+}
+.cost-issues header p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.cost-issues ul {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cost-issues li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.cost-issue-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cost-issue-text strong {
+  color: var(--text);
+}
+.cost-issue-text span {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.cost-issue-text small {
+  color: var(--muted);
+  font-size: 12px;
+}
+.cost-issues li .secondary-button {
+  flex: none;
+}
+.cost-issues-more {
+  justify-self: start;
+  padding: 0;
+  color: var(--primary);
+  font-weight: 700;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
 /* Gráficos do Dashboard Geral. */
 .dashboard-charts-block {
   margin-top: 28px;

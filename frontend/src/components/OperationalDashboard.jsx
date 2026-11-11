@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { TIPOS_PENDENCIA_CUSTO, linkDaPendencia } from "../utils/pendencias.js";
 
 export const number = (value) =>
   Number(value ?? 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 });
@@ -152,13 +153,11 @@ export function AuditTable({ occurrences = [] }) {
                   <td>
                     <Link
                       to={
-                        row.tipo === "SEM_REMUNERACAO"
-                          ? `/colaboradores?financeiro=${row.colaboradorId}`
-                          : row.tipo === "SEM_VINCULO"
-                            ? `/projetos?equipe=${row.projetoId}`
-                            : row.tarefaId
-                              ? taskUrl(row)
-                              : `/apontamentos?editar=${row.apontamentoId}`
+                        TIPOS_PENDENCIA_CUSTO.includes(row.tipo)
+                          ? linkDaPendencia(row)
+                          : row.tarefaId
+                            ? taskUrl(row)
+                            : `/apontamentos?editar=${row.apontamentoId}`
                       }
                     >
                       {row.tipo === "SEM_REMUNERACAO"
