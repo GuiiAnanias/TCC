@@ -525,3 +525,56 @@ test("sprint de outro projeto é recusada; sem projeto escolhido, a sprint defin
     bonificacoesPapeisRepository.findAll = originalBonuses;
   }
 });
+
+test("séries dos gráficos: custo por mês e horas por status fecham com o total", () => {
+  const comStatus = (horas, dia, status) => ({ ...entry(horas, dia), status });
+  const result = summarize(
+    [
+      project(1, [
+        comStatus("2", "2026-09-30", "PENDENTE"),
+        comStatus("3", "2026-10-01", "APROVADO"),
+        comStatus("1.5", "2026-10-15", "APROVADO"),
+      ]),
+      project(2, [comStatus("4", "2026-10-20", "FATURADO")], {
+        clienteId: 2,
+        cliente: { nome: "Cliente B" },
+      }),
+    ],
+    {},
+    [bonus(role, 10)],
+  );
+  assert.deepEqual(result.evolucao, [
+    { mes: "2026-09", apontamentos: 1, horas: 2, custoBase: 200, bonificacao: 20, custo: 220 },
+    { mes: "2026-10", apontamentos: 3, horas: 8.5, custoBase: 850, bonificacao: 85, custo: 935 },
+  ]);
+  assert.deepEqual(
+    result.apontamentosPorStatus.map(({ status, apontamentos, horas, custo }) => [
+      status,
+      apontamentos,
+      horas,
+      custo,
+    ]),
+    [
+      ["PENDENTE", 1, 2, 220],
+      ["APROVADO", 2, 4.5, 495],
+      ["FATURADO", 1, 4, 440],
+    ],
+  );
+  const total = (lista, chave) => lista.reduce((soma, item) => soma + item[chave], 0);
+  assert.equal(total(result.evolucao, "horas"), result.resumo.horas);
+  assert.equal(total(result.evolucao, "custo"), result.resumo.custo);
+  assert.equal(total(result.apontamentosPorStatus, "custo"), result.resumo.custo);
+});
+
+test("séries dos gráficos vêm vazias, mas presentes, sem apontamentos", () => {
+  const result = summarize([project(1)]);
+  assert.deepEqual(result.evolucao, []);
+  assert.deepEqual(
+    result.apontamentosPorStatus.map((row) => [row.status, row.horas]),
+    [
+      ["PENDENTE", 0],
+      ["APROVADO", 0],
+      ["FATURADO", 0],
+    ],
+  );
+});
