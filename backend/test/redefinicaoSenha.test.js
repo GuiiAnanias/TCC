@@ -64,10 +64,10 @@ test("o link troca a senha uma única vez", async () => {
     const token = tokenDo(
       (await senhaService.gerarLink("admin", { frontendUrl: "http://localhost:5173", agora })).link,
     );
-    await senhaService.redefinir(token, "novaSenha123", minutos(5));
-    assert.equal(await bcrypt.compare("novaSenha123", usuario.senhaHash), true);
+    await senhaService.redefinir(token, "NovaSenha#123", minutos(5));
+    assert.equal(await bcrypt.compare("NovaSenha#123", usuario.senhaHash), true);
     assert.equal(usuario.resetToken, null);
-    await assert.rejects(senhaService.redefinir(token, "outraSenha123", minutos(6)), {
+    await assert.rejects(senhaService.redefinir(token, "OutraSenha#123", minutos(6)), {
       statusCode: 400,
     });
   });
@@ -79,11 +79,11 @@ test("link expirado, desconhecido ou de usuário inativo é recusado", async () 
       (await senhaService.gerarLink("admin", { frontendUrl: "http://localhost:5173", agora })).link,
     );
     await assert.rejects(
-      senhaService.redefinir(token, "novaSenha123", minutos(VALIDADE_LINK_MINUTOS + 1)),
+      senhaService.redefinir(token, "NovaSenha#123", minutos(VALIDADE_LINK_MINUTOS + 1)),
       { statusCode: 400 },
     );
     await assert.rejects(
-      senhaService.redefinir("token-que-nao-existe-0123456789", "novaSenha123", minutos(1)),
+      senhaService.redefinir("token-que-nao-existe-0123456789", "NovaSenha#123", minutos(1)),
       { statusCode: 400 },
     );
     assert.equal(usuario.senhaHash, "antiga");
@@ -96,7 +96,7 @@ test("link expirado, desconhecido ou de usuário inativo é recusado", async () 
     usuario.resetToken = hashToken("token-antigo-de-usuario-inativo");
     usuario.resetTokenExpiraEm = minutos(10);
     await assert.rejects(
-      senhaService.redefinir("token-antigo-de-usuario-inativo", "novaSenha123", minutos(1)),
+      senhaService.redefinir("token-antigo-de-usuario-inativo", "NovaSenha#123", minutos(1)),
       { statusCode: 400 },
     );
   });
@@ -125,6 +125,59 @@ test("rota de redefinição é pública e valida o corpo antes de consultar o ba
     const curta = await post({ token: "x".repeat(43), novaSenha: "1234567" });
     assert.equal(curta.status, 400);
     assert.match((await curta.json()).errors[0].message, /8 caracteres/);
+  } finally {
+    limitesAutenticacaoRepository.consume = originalConsume;
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test("conferência ao abrir o link aceita só link válido e não o consome", async () => {
+  await comUsuario({}, async (usuario) => {
+    const token = tokenDo(
+      (await senhaService.gerarLink("admin", { frontendUrl: "http://localhost:5173", agora })).link,
+    );
+    await senhaService.validarLink(token, minutos(1));
+    await senhaService.validarLink(token, minutos(2));
+    assert.equal(usuario.resetToken, hashToken(token), "conferir não gasta o link");
+    await senhaService.redefinir(token, "NovaSenha#123", minutos(3));
+    await assert.rejects(senhaService.validarLink(token, minutos(4)), {
+      statusCode: 400,
+      message: /Esqueci minha senha/,
+    });
+  });
+  await comUsuario({}, async () => {
+    const token = tokenDo(
+      (await senhaService.gerarLink("admin", { frontendUrl: "http://localhost:5173", agora })).link,
+    );
+    await assert.rejects(senhaService.validarLink(token, minutos(VALIDADE_LINK_MINUTOS + 1)), {
+      statusCode: 400,
+    });
+    await assert.rejects(senhaService.validarLink("token-que-nao-existe-0123456789", minutos(1)), {
+      statusCode: 400,
+    });
+  });
+});
+
+test("rota de conferência do link é pública e responde 204 ou 400", async () => {
+  const originalConsume = limitesAutenticacaoRepository.consume;
+  limitesAutenticacaoRepository.consume = async () => ({ allowed: true });
+  const server = app.listen(0, "127.0.0.1");
+  await new Promise((resolve) => server.once("listening", resolve));
+  const post = (body) =>
+    fetch(`http://127.0.0.1:${server.address().port}/api/auth/redefinir-senha/validar`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+  try {
+    await comUsuario({}, async () => {
+      const token = tokenDo(
+        (await senhaService.gerarLink("admin", { frontendUrl: "http://localhost:5173" })).link,
+      );
+      assert.equal((await post({ token })).status, 204);
+      assert.equal((await post({ token: "x".repeat(43) })).status, 400);
+      assert.equal((await post({})).status, 400);
+    });
   } finally {
     limitesAutenticacaoRepository.consume = originalConsume;
     await new Promise((resolve) => server.close(resolve));

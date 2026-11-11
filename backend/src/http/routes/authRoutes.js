@@ -6,7 +6,7 @@ import { z } from "zod";
 import prisma from "../../config/prisma.js";
 import { env } from "../../config/env.js";
 import { authenticate } from "../middlewares/authenticate.js";
-import { senhaService } from "../../services/senhaService.js";
+import { senhaService, MENSAGEM_SOLICITACAO } from "../../services/senhaService.js";
 import { sessoesRepository } from "../../repositories/sessoesRepository.js";
 import { novaSenhaSchema } from "../../schemas/senhaSchemas.js";
 import { authRateLimit } from "../middlewares/authRateLimit.js";
@@ -18,12 +18,22 @@ const loginSchema = z.object({
   login: z.string().trim().min(1).max(254),
   senha: z.string().min(1).max(256),
 });
-const redefinirSenhaSchema = z.object({
-  token: z
-    .string({ message: "Link inválido." })
+const esqueciSenhaSchema = z.object({
+  email: z
+    .string({ message: "Informe o e-mail." })
     .trim()
-    .min(20, "Link inválido.")
-    .max(200, "Link inválido."),
+    .min(1, "Informe o e-mail.")
+    .max(254, "Informe um e-mail válido.")
+    .email("Informe um e-mail válido."),
+});
+const tokenLinkSchema = z
+  .string({ message: "Link inválido." })
+  .trim()
+  .min(20, "Link inválido.")
+  .max(200, "Link inválido.");
+const validarLinkSchema = z.object({ token: tokenLinkSchema });
+const redefinirSenhaSchema = z.object({
+  token: tokenLinkSchema,
   novaSenha: novaSenhaSchema,
 });
 
@@ -65,7 +75,43 @@ authRoutes.post(
     }
   },
 );
-// Rota pública: o link é gerado no servidor com `corepack pnpm run senha:link <usuário>`.
+// Rota pública: o próprio usuário pede o link informando o e-mail. A resposta é sempre a
+// mesma e o envio acontece depois dela, para não revelar quais e-mails estão cadastrados.
+authRoutes.post(
+  "/esqueci-senha",
+  authRateLimit("forgot", env.authForgotLimit, "email"),
+  (request, response, next) => {
+    try {
+      const { email } = esqueciSenhaSchema.parse(request.body);
+      response.json({ message: MENSAGEM_SOLICITACAO });
+      senhaService
+        .solicitarPorEmail(email, { frontendUrl: env.frontendUrl })
+        .catch((error) =>
+          console.error("Falha ao enviar o e-mail de redefinição de senha:", error.message),
+        );
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+// Rota pública chamada ao abrir a tela do link: responde 204 se ele ainda pode ser usado
+// ou 400 se já foi usado, expirou ou é desconhecido. O token vai no corpo, não na URL,
+// para não aparecer em registros de acesso.
+authRoutes.post(
+  "/redefinir-senha/validar",
+  authRateLimit("reset-check", env.authResetLimit, "token"),
+  async (request, response, next) => {
+    try {
+      const { token } = validarLinkSchema.parse(request.body);
+      await senhaService.validarLink(token);
+      response.status(204).end();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+// Rota pública: o link chega por e-mail ou é gerado no servidor com
+// `corepack pnpm run senha:link <usuário>`.
 authRoutes.post(
   "/redefinir-senha",
   authRateLimit("reset", env.authResetLimit, "token"),
