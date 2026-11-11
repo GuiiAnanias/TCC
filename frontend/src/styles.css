@@ -1177,13 +1177,30 @@ select:disabled {
   background: var(--surface-soft);
 }
 
-.team-table-toolbar {
-  display: flex;
-  justify-content: flex-end;
+/* O botão acompanha a altura dos campos ao lado (50 px, ver .field > input). */
+.team-form > button {
+  min-height: 50px;
 }
 
+.finance-form {
+  grid-template-columns: minmax(230px, 1.4fr) 170px 180px auto;
+}
+
+.team-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.team-table-toolbar .field {
+  width: 210px;
+}
+
+.team-table-toolbar input,
 .team-table-toolbar select {
-  width: 190px;
+  width: 100%;
 }
 
 .table-toolbar {
@@ -1477,7 +1494,7 @@ tbody tr:hover {
     width: 100%;
   }
 
-  .team-table-toolbar select {
+  .team-table-toolbar .field {
     width: 100%;
   }
 }

@@ -478,15 +478,18 @@ export function ProjectTeamManager({ project, onChanged, onClose, pendencia = nu
             disabled={isInactive || loading || saving || Boolean(loadError)}
           />
         </label>
-        <select
-          value={teamStatusFilter}
-          onChange={(event) => setTeamStatusFilter(event.target.value)}
-          title="Filtrar equipe por status"
-        >
-          <option value="">Todos os vínculos</option>
-          <option value="ATIVO">Ativos</option>
-          <option value="INATIVO">Inativos</option>
-        </select>
+        <label className="field">
+          <span>Mostrar</span>
+          <select
+            value={teamStatusFilter}
+            onChange={(event) => setTeamStatusFilter(event.target.value)}
+            title="Filtrar equipe por status"
+          >
+            <option value="">Todos os vínculos</option>
+            <option value="ATIVO">Ativos</option>
+            <option value="INATIVO">Inativos</option>
+          </select>
+        </label>
       </div>
 
       <div className="table-wrap">
