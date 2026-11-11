@@ -5,6 +5,11 @@ export const usuariosRepository = {
     return prisma.usuario.findFirst({ where: { OR: [{ email: login }, { nomeUsuario: login }] } });
   },
 
+  // Recuperação pelo próprio usuário: somente pelo e-mail, sem diferenciar maiúsculas.
+  findByEmail(email) {
+    return prisma.usuario.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
+  },
+
   findByResetToken(tokenHash) {
     return prisma.usuario.findFirst({ where: { resetToken: tokenHash } });
   },

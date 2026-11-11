@@ -68,7 +68,11 @@ Para testar a autenticação e a proteção da API com banco simulado, execute `
 
 #### Esqueci minha senha
 
-O sistema não envia e-mail. Para redefinir uma senha, quem administra o servidor gera um link de uso único na pasta `backend`, informando o usuário ou o e-mail:
+Na tela de login, **Esqueci minha senha** abre a tela em que o usuário informa o e-mail da conta. A resposta é sempre a mesma ("Caso o e-mail informado esteja cadastrado, será enviado um link de redefinição de senha."), e o link chega por e-mail apenas se o e-mail pertencer a uma conta ativa.
+
+Em desenvolvimento e na demonstração, os e-mails vão para o **Mailpit**, que sobe junto do banco com `docker compose up -d` e mostra as mensagens em [http://localhost:8025](http://localhost:8025). Nada é enviado para a internet. Para usar um servidor de e-mail real, ajuste `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no `.env` do backend.
+
+Quem administra o servidor também pode gerar o link manualmente na pasta `backend`, informando o usuário ou o e-mail:
 
 ```powershell
 corepack pnpm run senha:link admin
@@ -362,7 +366,7 @@ Base URL:
 http://localhost:3333/api
 ```
 
-Exceto `/health`, `/auth/login` e `/auth/redefinir-senha`, todas as rotas exigem `Authorization: Bearer <token>`. Os documentos em `docs/` detalham parâmetros e regras de cada módulo.
+Exceto `/health`, `/auth/login`, `/auth/esqueci-senha`, `/auth/redefinir-senha/validar` e `/auth/redefinir-senha`, todas as rotas exigem `Authorization: Bearer <token>`. Os documentos em `docs/` detalham parâmetros e regras de cada módulo.
 
 Autenticação:
 
@@ -370,6 +374,8 @@ Autenticação:
 POST   /auth/login
 GET    /auth/me
 POST   /auth/logout
+POST   /auth/esqueci-senha
+POST   /auth/redefinir-senha/validar
 POST   /auth/redefinir-senha
 ```
 

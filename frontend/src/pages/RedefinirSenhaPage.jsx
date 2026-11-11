@@ -1,19 +1,49 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { api } from "../api/client.js";
 import { ThemeToggle } from "../ThemeContext.jsx";
 import { newPasswordError } from "../auth/password.js";
+import { PasswordChecklist } from "../components/PasswordChecklist.jsx";
 
-// Tela aberta pelo link gerado com `corepack pnpm run senha:link <usuário>` no backend.
+const LINK_INVALIDO = "Este link já foi usado, expirou ou não é válido.";
+
+// Tela aberta pelo link recebido por e-mail ("Esqueci minha senha") ou gerado no servidor
+// com `corepack pnpm run senha:link <usuário>`. O link é conferido assim que a tela abre:
+// se não puder mais ser usado, a tela avisa e não mostra o formulário.
 export function RedefinirSenhaPage() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
+  // verificando | valido | invalido | falha
+  const [link, setLink] = useState(token ? "verificando" : "invalido");
   const [senha, setSenha] = useState("");
   const [confirmacao, setConfirmacao] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
+  const [showRules, setShowRules] = useState(false);
+
+  const verificar = useCallback(
+    async (isCurrent = () => true) => {
+      if (!token) return setLink("invalido");
+      setLink("verificando");
+      try {
+        await api.post("/auth/redefinir-senha/validar", { token });
+        if (isCurrent()) setLink("valido");
+      } catch (requestError) {
+        if (isCurrent()) setLink(requestError.response?.status === 400 ? "invalido" : "falha");
+      }
+    },
+    [token],
+  );
+
+  useEffect(() => {
+    let current = true;
+    verificar(() => current);
+    return () => {
+      current = false;
+    };
+  }, [verificar]);
 
   async function submit(event) {
     event.preventDefault();
@@ -33,11 +63,14 @@ export function RedefinirSenhaPage() {
       setDone(true);
     } catch (requestError) {
       const data = requestError.response?.data;
-      setError(
-        data?.errors?.[0]?.message ||
-          data?.message ||
-          "Não foi possível conectar ao servidor. Tente novamente.",
-      );
+      // O link pode ter expirado enquanto a pessoa preenchia o formulário.
+      if (requestError.response?.status === 400 && !data?.errors) setLink("invalido");
+      else
+        setError(
+          data?.errors?.[0]?.message ||
+            data?.message ||
+            "Não foi possível conectar ao servidor. Tente novamente.",
+        );
     } finally {
       setBusy(false);
     }
@@ -57,35 +90,55 @@ export function RedefinirSenhaPage() {
           <ThemeToggle />
         </div>
         <h1>Redefinir senha</h1>
-        {!token && (
+        {link === "verificando" && (
+          <p role="status" aria-live="polite">
+            Verificando o link…
+          </p>
+        )}
+        {link === "invalido" && (
           <div className="feedback error" role="alert">
-            Link inválido. Peça um novo link ao administrador do sistema.
+            {LINK_INVALIDO} <Link to="/esqueci-senha">Solicite um novo link</Link>.
           </div>
         )}
-        {token && done && (
+        {link === "falha" && (
+          <>
+            <div className="feedback error" role="alert">
+              Não foi possível verificar o link. Confira a conexão e tente novamente.
+            </div>
+            <button className="primary-button" type="button" onClick={() => verificar()}>
+              Tentar novamente
+            </button>
+          </>
+        )}
+        {link === "valido" && done && (
           <div className="feedback success" role="status">
             Senha redefinida. Entre com a nova senha.
           </div>
         )}
-        {token && !done && (
+        {link === "valido" && !done && (
           <>
             <p>
-              Escolha uma nova senha com pelo menos 8 caracteres e até 72 bytes UTF-8. Acentos e
-              emojis ocupam mais de um byte.
+              Escolha uma nova senha. Ao clicar no campo, as regras aparecem e vão sendo marcadas
+              conforme você digita.
             </p>
             <form onSubmit={submit} className="login-form">
               <label htmlFor="nova-senha">Nova senha</label>
-              <input
-                id="nova-senha"
-                type="password"
-                autoComplete="new-password"
-                required
-                minLength={8}
-                value={senha}
-                onChange={(event) => setSenha(event.target.value)}
-                disabled={busy}
-                autoFocus
-              />
+              <div className="password-field">
+                <input
+                  id="nova-senha"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  value={senha}
+                  onChange={(event) => setSenha(event.target.value)}
+                  onFocus={() => setShowRules(true)}
+                  onBlur={() => setShowRules(false)}
+                  aria-describedby="regras-senha"
+                  disabled={busy}
+                />
+                <PasswordChecklist id="regras-senha" value={senha} visible={showRules} />
+              </div>
               <label htmlFor="confirmar-senha">Confirmar nova senha</label>
               <input
                 id="confirmar-senha"

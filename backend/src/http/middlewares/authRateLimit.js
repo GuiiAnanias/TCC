@@ -13,7 +13,7 @@ export function authRateLimit(scope, { originLimit, identifierLimit, windowMs },
     try {
       const raw = request.body?.[identifierField];
       const text = typeof raw === "string" && raw.length <= 254 ? raw.trim() : "";
-      const identifier = identifierField === "login" ? text.toLowerCase() : text;
+      const identifier = ["login", "email"].includes(identifierField) ? text.toLowerCase() : text;
       // Express não confia em X-Forwarded-For nesta aplicação; usar a origem real.
       const buckets = [["origin", request.ip || request.socket.remoteAddress, originLimit]];
       if (identifier) buckets.push(["identifier", identifier, identifierLimit]);

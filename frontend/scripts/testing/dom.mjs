@@ -46,7 +46,7 @@ export function installDom() {
   };
 }
 
-export async function mount(element) {
+export async function mount(element, { initialEntries } = {}) {
   const { createRoot } = await import("react-dom/client");
   const container = document.createElement("div");
   document.body.append(container);
@@ -54,7 +54,11 @@ export async function mount(element) {
   const render = (child) =>
     act(async () =>
       root.render(
-        React.createElement(MemoryRouter, null, React.createElement(ThemeProvider, null, child)),
+        React.createElement(
+          MemoryRouter,
+          { initialEntries },
+          React.createElement(ThemeProvider, null, child),
+        ),
       ),
     );
   await render(element);
