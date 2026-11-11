@@ -18,7 +18,9 @@ function lerArquivo(request, response, next) {
 
 export const importacoesRoutes = Router();
 importacoesRoutes.get("/apontamentos/modelo", importacoesController.modelo);
+// Histórico das importações, da mais recente para a mais antiga (concluídas e com falha).
+importacoesRoutes.get("/apontamentos/historico", importacoesController.historico);
 // Só confere a planilha e devolve os erros por linha; não grava nada.
 importacoesRoutes.post("/apontamentos/validacao", lerArquivo, importacoesController.validar);
-// Grava todos os apontamentos ou nenhum.
+// Grava todos os apontamentos ou nenhum, e registra a tentativa no histórico.
 importacoesRoutes.post("/apontamentos", lerArquivo, importacoesController.importar);
