@@ -69,6 +69,7 @@ model Usuario {
   avaliacoesConcluidas AvaliacaoPremiacao[] @relation("ConclusaoAvaliacao")
   relatoriosGerados RelatorioGerado[]
   exportacoesRelatorios RelatorioExportacao[]
+  importacoesApontamentos ImportacaoApontamentos[]
 
   @@map("usuarios")
 }
@@ -419,4 +420,28 @@ model RelatorioExportacao {
 
   @@index([relatorioId])
   @@map("relatorios_exportacoes")
+}
+
+// Histórico das importações de apontamentos por planilha (concluídas e com falha).
+// Projetos e erros ficam como cópia em JSON: o registro conta o que aconteceu na hora,
+// sem impedir mudanças futuras nos cadastros. O arquivo em si não é guardado.
+model ImportacaoApontamentos {
+  id            Int       @id @default(autoincrement())
+  usuarioId     Int
+  usuario       Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  arquivo       String
+  status        String
+  mensagem      String?
+  linhas        Int       @default(0)
+  importados    Int       @default(0)
+  comErro       Int       @default(0)
+  horas         Decimal   @default(0) @db.Decimal(10, 2)
+  periodoInicio DateTime? @db.Date
+  periodoFim    DateTime? @db.Date
+  projetos      Json      @default("[]")
+  erros         Json      @default("[]")
+  createdAt     DateTime  @default(now())
+
+  @@index([createdAt])
+  @@map("importacoes_apontamentos")
 }

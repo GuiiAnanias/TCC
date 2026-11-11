@@ -1073,30 +1073,159 @@ export const importacaoApontamentosService = {
    * transação serializável, como no cadastro manual, para que gravações simultâneas
    * não passem do limite de horas do dia.
    */
-  async importar(buffer) {
-    const planilha = await lerPlanilha(buffer);
-    return apontamentosRepository.transaction(async (db) => {
-      const cadastros = await repositorio.cadastros(db);
-      const resultado = await analisar(planilha, cadastros, db);
-      if (resultado.resumo.comErro)
-        throw new HttpError(
-          422,
-          `Nenhum apontamento foi importado: ${resultado.resumo.comErro} ${resultado.resumo.comErro === 1 ? "linha tem" : "linhas têm"} erro.`,
-          resultado,
-        );
-      await repositorio.criar(
-        resultado.linhas.map((item) => ({
-          colaboradorId: item.colaborador.id,
-          projetoId: item.projeto.id,
-          tarefaId: item.tarefa?.id ?? null,
-          data: dataUtc(item.data),
-          horas: item.horas,
-          status: item.status,
-          descricao: item.descricao,
-        })),
-        db,
-      );
-      return { importados: resultado.resumo.validas, ...resultado.resumo };
-    });
+  async importar(buffer, { usuarioId, arquivo } = {}) {
+    // Sem usuário (chamadas internas e testes antigos) não há a quem atribuir o histórico.
+    const historico = usuarioId ? { usuarioId, arquivo: nomeDoArquivo(arquivo) } : null;
+    try {
+      return await gravarImportacao(buffer, historico);
+    } catch (error) {
+      if (historico) await registrarFalha(historico, error);
+      throw error;
+    }
+  },
+
+  async historico(filtros) {
+    const { total, itens } = await repositorio.historico(filtros);
+    return {
+      pagina: filtros.pagina,
+      porPagina: filtros.porPagina,
+      total,
+      paginas: Math.max(1, Math.ceil(total / filtros.porPagina)),
+      itens: itens.map(itemDoHistorico),
+    };
   },
 };
+
+// ---------------------------------------------------------------- histórico
+
+export const STATUS_IMPORTACAO = { CONCLUIDA: "CONCLUIDA", FALHOU: "FALHOU" };
+const LIMITE_ERROS_HISTORICO = 20;
+const FALHA_INESPERADA = "Erro inesperado ao importar. Nenhum apontamento foi gravado.";
+
+// O nome vem do navegador (cabeçalho X-Nome-Arquivo, codificado para aceitar acentos).
+function decodificar(valor) {
+  try {
+    return decodeURIComponent(valor);
+  } catch {
+    return valor;
+  }
+}
+
+export function nomeDoArquivo(valor) {
+  const nome = decodificar(String(valor ?? ""))
+    .replace(/[\p{Cc}]/gu, "")
+    .split(/[\\/]/)
+    .pop()
+    .trim();
+  return nome.slice(0, 255) || "planilha.xlsx";
+}
+
+// Projetos reconhecidos nas linhas da planilha, sem repetição, em ordem alfabética.
+function projetosDasLinhas(linhas = []) {
+  const porId = new Map();
+  for (const item of linhas) if (item.projeto) porId.set(item.projeto.id, item.projeto);
+  return [...porId.values()]
+    .map(({ id, nome }) => ({ id, nome }))
+    .sort((a, b) => a.nome.localeCompare(b.nome, "pt-BR"));
+}
+
+function dadosDoResumo(resultado) {
+  const resumo = resultado?.resumo;
+  return {
+    linhas: resumo?.linhas ?? 0,
+    comErro: resumo?.comErro ?? 0,
+    horas: resumo?.horas ?? 0,
+    periodoInicio: resumo?.periodo ? dataUtc(resumo.periodo.inicio) : null,
+    periodoFim: resumo?.periodo ? dataUtc(resumo.periodo.fim) : null,
+    projetos: projetosDasLinhas(resultado?.linhas),
+    erros: (resultado?.erros ?? [])
+      .slice(0, LIMITE_ERROS_HISTORICO)
+      .map(({ linha, coluna, mensagem }) => ({ linha, coluna, mensagem })),
+  };
+}
+
+// A falha é gravada depois do rollback. Se nem isso for possível, a importação
+// continua respondendo o erro original; o problema do histórico fica no log.
+async function registrarFalha(historico, error) {
+  const conhecida = error instanceof HttpError && error.statusCode < 500;
+  try {
+    await repositorio.registrar({
+      ...historico,
+      ...dadosDoResumo(conhecida ? error.details : null),
+      status: STATUS_IMPORTACAO.FALHOU,
+      mensagem: conhecida ? error.message : FALHA_INESPERADA,
+      importados: 0,
+    });
+  } catch (registroError) {
+    console.error("Falha ao registrar a importação no histórico:", registroError.message);
+  }
+}
+
+function itemDoHistorico(registro) {
+  const dia = (valor) => (valor ? diaIso(valor) : null);
+  return {
+    id: registro.id,
+    criadoEm: registro.createdAt,
+    usuario: registro.usuario
+      ? { id: registro.usuario.id, nome: registro.usuario.nomeUsuario }
+      : null,
+    arquivo: registro.arquivo,
+    status: registro.status,
+    mensagem: registro.mensagem,
+    linhas: registro.linhas,
+    importados: registro.importados,
+    comErro: registro.comErro,
+    horas: Number(registro.horas),
+    periodo: registro.periodoInicio
+      ? { inicio: dia(registro.periodoInicio), fim: dia(registro.periodoFim) }
+      : null,
+    projetos: registro.projetos ?? [],
+    erros: registro.erros ?? [],
+  };
+}
+
+/**
+ * Grava todos os apontamentos ou nenhum. A conferência é refeita dentro de uma
+ * transação serializável, como no cadastro manual, para que gravações simultâneas
+ * não passem do limite de horas do dia. Quando dá certo, o histórico é gravado na
+ * mesma transação: ou ficam os apontamentos e o registro, ou nenhum dos dois.
+ */
+async function gravarImportacao(buffer, historico) {
+  const planilha = await lerPlanilha(buffer);
+  return apontamentosRepository.transaction(async (db) => {
+    const cadastros = await repositorio.cadastros(db);
+    const resultado = await analisar(planilha, cadastros, db);
+    if (resultado.resumo.comErro)
+      throw new HttpError(
+        422,
+        `Nenhum apontamento foi importado: ${resultado.resumo.comErro} ${resultado.resumo.comErro === 1 ? "linha tem" : "linhas têm"} erro.`,
+        resultado,
+      );
+    await repositorio.criar(
+      resultado.linhas.map((item) => ({
+        colaboradorId: item.colaborador.id,
+        projetoId: item.projeto.id,
+        tarefaId: item.tarefa?.id ?? null,
+        data: dataUtc(item.data),
+        horas: item.horas,
+        status: item.status,
+        descricao: item.descricao,
+      })),
+      db,
+    );
+    const resposta = { importados: resultado.resumo.validas, ...resultado.resumo };
+    if (historico) {
+      const { id } = await repositorio.registrar(
+        {
+          ...historico,
+          ...dadosDoResumo(resultado),
+          status: STATUS_IMPORTACAO.CONCLUIDA,
+          importados: resultado.resumo.validas,
+        },
+        db,
+      );
+      resposta.historicoId = id;
+    }
+    return resposta;
+  });
+}
