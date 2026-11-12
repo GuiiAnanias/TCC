@@ -1492,16 +1492,19 @@ tbody tr:hover {
 }
 
 .icon-button {
+  border: 1px solid var(--warning-line);
   width: 36px;
   min-height: 36px;
   color: var(--text-secondary);
   background: var(--surface);
   border-color: var(--line-strong);
+  border: 1px solid var(--success-line);
 }
 
 .icon-button:hover {
   background: var(--hover);
 }
+  border: 1px solid var(--line-strong);
 
 .icon-button.danger {
   color: var(--danger);

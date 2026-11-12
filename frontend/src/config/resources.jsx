@@ -506,7 +506,7 @@ export const resources = [
       {
         key: "status",
         label: "Status",
-        render: (val) => (typeof val === "string" ? val : val?.status || "PENDENTE"),
+        render: (item) => <StatusBadge status={item.status || "PENDENTE"} />,
       },
       { key: "descricao", label: "Descrição" },
     ],
