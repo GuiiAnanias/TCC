@@ -20,9 +20,9 @@ const base = {
 };
 
 test("projetos aceitam contratos documentados e rejeitam classificações antigas", () => {
-  for (const tipoContrato of ["FEE_MENSAL", "ESCOPO_SEMIABERTO", "SQUAD"])
+  for (const tipoContrato of ["ESCOPO_FECHADO", "POR_HORA", "FEE_MENSAL", "SQUAD"])
     assert.equal(projetoCreateSchema.parse({ ...base, tipoContrato }).tipoContrato, tipoContrato);
-  for (const tipoContrato of ["FIXO", "HORAS", "FECHADO"])
+  for (const tipoContrato of ["FIXO", "HORAS", "FECHADO", "ESCOPO_SEMIABERTO"])
     assert.equal(projetoCreateSchema.safeParse({ ...base, tipoContrato }).success, false);
   for (const status of ["ATIVO", "PAUSADO", "ENCERRADO", "CANCELADO"]) {
     assert.equal(projetoUpdateSchema.parse({ status }).status, status);

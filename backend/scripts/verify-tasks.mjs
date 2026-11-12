@@ -78,7 +78,7 @@ try {
   const customer = await client.cliente.create({ data: { nome: "Cliente de teste" } });
   const projectData = {
     clienteId: customer.id,
-    tipoContrato: "ESCOPO_SEMIABERTO",
+    tipoContrato: "ESCOPO_FECHADO",
     horasContratadas: 100,
     valorProjeto: 1000,
     dataInicio: new Date("2026-09-01"),

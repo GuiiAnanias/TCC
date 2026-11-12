@@ -17,6 +17,7 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(originalUrl.hostname))
   throw new Error("Este teste aceita somente PostgreSQL local.");
 const schema = `project_delete_test_${Date.now().toString(36)}`;
 if (!/^project_delete_test_[a-z0-9]+$/.test(schema)) throw new Error("Schema temporário inválido.");
+const MIGRACAO_CONTRATOS = "20261111010000_tipos_contrato_genericos";
 const admin = new PrismaClient();
 let client;
 let created = false;
@@ -38,7 +39,11 @@ try {
     withFileTypes: true,
   }).filter(
     // As migrações a partir das referências entram depois do seed, na ordem original.
-    (item) => item.isDirectory() && item.name < "20261107010000_referencias_projetos_avaliacoes",
+    // A dos tipos de contrato entra antes, porque o seed já usa os tipos genéricos.
+    (item) =>
+      item.isDirectory() &&
+      (item.name < "20261107010000_referencias_projetos_avaliacoes" ||
+        item.name === MIGRACAO_CONTRATOS),
   )) {
     const target = path.join(temporaryProject, "migrations", directory.name);
     mkdirSync(target);
@@ -80,7 +85,10 @@ try {
     withFileTypes: true,
   })
     .filter(
-      (item) => item.isDirectory() && item.name >= "20261107010000_referencias_projetos_avaliacoes",
+      (item) =>
+        item.isDirectory() &&
+        item.name >= "20261107010000_referencias_projetos_avaliacoes" &&
+        item.name !== MIGRACAO_CONTRATOS,
     )
     .map((item) => item.name)) {
     mkdirSync(path.join(temporaryProject, "migrations", migrationName));
