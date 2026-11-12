@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileChartColumn, FileDown, FileSpreadsheet, Play, X } from "lucide-react";
 import { api } from "../api/client.js";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { ReportScopeSelect } from "../components/ReportScopeSelect.jsx";
 import { ReportCustomizationDialog } from "../components/ReportCustomizationDialog.jsx";
@@ -250,7 +250,7 @@ export function RelatoriosPage() {
             <RelatoriosHelp />
           </div>
         </div>
-        <FloatingActions
+        <PageActions
           onRefresh={() => {
             carregarOpcoes();
             if (id) carregarRelatorio(id);

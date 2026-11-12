@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Filter, RotateCcw } from "lucide-react";
 import { api } from "../api/client.js";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { entryStatusLabel, projectStatusLabel } from "../config/projectOptions.js";
 import { MultiSelect } from "../components/MultiSelect.jsx";
@@ -155,7 +155,7 @@ export function EntityDashboardPage({ type }) {
             <DashboardHelp />
           </div>
         </div>
-        <FloatingActions
+        <PageActions
           onRefresh={() => {
             load();
             loadOptions();
@@ -671,7 +671,7 @@ function EntitySelection({ individual, options, optionsError, onRefresh, onPick 
             <DashboardHelp />
           </div>
         </div>
-        <FloatingActions onRefresh={onRefresh} loading={false} />
+        <PageActions onRefresh={onRefresh} loading={false} />
       </header>
       <nav className="entity-dashboard-links" aria-label="Navegação do dashboard">
         <Link to="/dashboard">Dashboard geral</Link>

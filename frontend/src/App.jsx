@@ -26,7 +26,39 @@ import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { RedefinirSenhaPage } from "./pages/RedefinirSenhaPage.jsx";
 import { EsqueciSenhaPage } from "./pages/EsqueciSenhaPage.jsx";
-import { ThemeProvider } from "./ThemeContext.jsx";
+import { ThemeProvider, ThemeToggle } from "./ThemeContext.jsx";
+import { PageActionsSlot } from "./components/PageActions.jsx";
+
+const resourceLink = (key) => {
+  const resource = resources.find((item) => item.key === key);
+  return { to: `/${key}`, label: resource.title, icon: resource.icon };
+};
+
+/** Menu lateral em três grupos, na ordem descrita no documento (história 2.4). */
+const NAV_GROUPS = [
+  {
+    title: "Análise",
+    links: [
+      { to: "/dashboard", label: "Dashboard Geral", icon: LayoutDashboard, end: true },
+      { to: "/dashboard/projetos", label: "Visão por projeto", icon: ChartNoAxesCombined },
+      { to: "/dashboard/colaboradores", label: "Visão por colaborador", icon: UserRoundSearch },
+      { to: "/relatorios", label: "Relatórios", icon: FileChartColumn },
+    ],
+  },
+  {
+    title: "Cadastros",
+    links: ["clientes", "colaboradores", "remuneracoes", "projetos"].map(resourceLink),
+  },
+  {
+    title: "Operação",
+    links: [
+      resourceLink("apontamentos"),
+      { to: "/tarefas", label: "Tarefas e sprints", icon: ListTodo },
+      { to: "/premiacao", label: "Premiação", icon: Award },
+      { to: "/importacao", label: "Importar horas", icon: FileUp },
+    ],
+  },
+];
 
 export function App() {
   return (
@@ -101,6 +133,7 @@ function AppRoutes() {
 function ProtectedLayout() {
   const auth = useAuth();
   const location = useLocation();
+  const [actionsSlot, setActionsSlot] = useState(null);
   const [collapsed, setCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem("code-bi-sidebar-collapsed");
@@ -138,9 +171,9 @@ function ProtectedLayout() {
       title={collapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
     >
       {collapsed ? (
-        <PanelLeftOpen size={20} aria-hidden="true" />
+        <PanelLeftOpen size={18} aria-hidden="true" />
       ) : (
-        <PanelLeftClose size={20} aria-hidden="true" />
+        <PanelLeftClose size={18} aria-hidden="true" />
       )}
     </button>
   );
@@ -150,7 +183,7 @@ function ProtectedLayout() {
         <div className="sidebar-header">
           <div className="sidebar-brand-row">
             <div className="brand">
-              <DatabaseZap size={28} aria-hidden="true" />
+              <DatabaseZap size={22} aria-hidden="true" />
               <div className="brand-copy">
                 <strong>CODE BI</strong>
                 <span>Gestão de projetos</span>
@@ -161,78 +194,27 @@ function ProtectedLayout() {
         </div>
 
         <nav className="nav-list" id="sidebar-navigation" aria-label="Menu principal">
-          <NavLink
-            to="/dashboard"
-            end
-            className="nav-link"
-            title="Dashboard Geral"
-            aria-label="Dashboard Geral"
-          >
-            <LayoutDashboard size={19} aria-hidden="true" />
-            <span className="sidebar-label">Dashboard Geral</span>
-          </NavLink>
-          <NavLink
-            to="/dashboard/projetos"
-            className="nav-link"
-            title="Visão por projeto"
-            aria-label="Visão por projeto"
-          >
-            <ChartNoAxesCombined size={19} aria-hidden="true" />
-            <span className="sidebar-label">Visão por projeto</span>
-          </NavLink>
-          <NavLink
-            to="/dashboard/colaboradores"
-            className="nav-link"
-            title="Visão por colaborador"
-            aria-label="Visão por colaborador"
-          >
-            <UserRoundSearch size={19} aria-hidden="true" />
-            <span className="sidebar-label">Visão por colaborador</span>
-          </NavLink>
-          <NavLink to="/relatorios" className="nav-link" title="Relatórios" aria-label="Relatórios">
-            <FileChartColumn size={19} aria-hidden="true" />
-            <span className="sidebar-label">Relatórios</span>
-          </NavLink>
-          {resources.map((resource) => {
-            const Icon = resource.icon;
-
-            return (
-              <NavLink
-                key={resource.key}
-                to={`/${resource.key}`}
-                className="nav-link"
-                title={resource.title}
-                aria-label={resource.title}
-              >
-                <Icon size={19} aria-hidden="true" />
-                <span className="sidebar-label">{resource.title}</span>
-              </NavLink>
-            );
-          })}
-          <NavLink
-            to="/tarefas"
-            className="nav-link"
-            title="Tarefas e sprints"
-            aria-label="Tarefas e sprints"
-          >
-            <ListTodo size={19} aria-hidden="true" />
-            <span className="sidebar-label">Tarefas e sprints</span>
-          </NavLink>
-          <NavLink to="/premiacao" className="nav-link" title="Premiação" aria-label="Premiação">
-            <Award size={19} aria-hidden="true" />
-            <span className="sidebar-label">Premiação</span>
-          </NavLink>
-          <NavLink
-            to="/importacao"
-            className="nav-link"
-            title="Importar horas"
-            aria-label="Importar horas"
-          >
-            <FileUp size={19} aria-hidden="true" />
-            <span className="sidebar-label">Importar horas</span>
-          </NavLink>
+          {NAV_GROUPS.map((group) => (
+            <div className="nav-group" key={group.title} role="group" aria-label={group.title}>
+              <span className="nav-group-title" aria-hidden="true">
+                {group.title}
+              </span>
+              {group.links.map(({ to, label, icon: Icon, end }) => (
+                <NavLink
+                  key={to}
+                  to={to}
+                  end={end}
+                  className="nav-link"
+                  title={collapsed ? label : undefined}
+                  aria-label={label}
+                >
+                  <Icon size={18} aria-hidden="true" />
+                  <span className="sidebar-label">{label}</span>
+                </NavLink>
+              ))}
+            </div>
+          ))}
         </nav>
-        <div className="sidebar-actions-slot" aria-hidden="true" />
         <div className="session-panel">
           <span className="session-name" title={auth.user.nomeUsuario}>
             {auth.user.nomeUsuario.charAt(0).toLocaleUpperCase("pt-BR") +
@@ -242,17 +224,27 @@ function ProtectedLayout() {
             className="secondary-button logout-button"
             type="button"
             onClick={auth.logout}
-            title="Sair"
+            title={collapsed ? "Sair" : undefined}
             aria-label="Sair"
           >
-            <LogOut size={18} aria-hidden="true" />
+            <LogOut size={16} aria-hidden="true" />
             <span className="sidebar-label">Sair</span>
           </button>
         </div>
       </aside>
 
       <main className="main-area">
-        <Outlet />
+        <header className="topbar">
+          <div className="page-actions" ref={setActionsSlot} />
+          <div className="topbar-controls" role="group" aria-label="Preferências de exibição">
+            <ThemeToggle />
+          </div>
+        </header>
+        <div className="main-content">
+          <PageActionsSlot.Provider value={actionsSlot}>
+            <Outlet />
+          </PageActionsSlot.Provider>
+        </div>
       </main>
     </div>
   );

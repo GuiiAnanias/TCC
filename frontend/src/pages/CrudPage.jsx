@@ -23,7 +23,7 @@ import { api } from "../api/client.js";
 import { CollaboratorFinanceManager } from "../components/CollaboratorFinanceManager.jsx";
 import { ProjectTeamManager } from "../components/ProjectTeamManager.jsx";
 import { SearchableSelect } from "../components/SearchableSelect.jsx";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
 import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { InitialProjectTeam } from "../components/InitialProjectTeam.jsx";
@@ -929,7 +929,7 @@ export function CrudPage({ config }) {
             </HelpDialog>
           </div>
         </div>
-        <FloatingActions onRefresh={loadRecords} loading={loading} />
+        <PageActions onRefresh={loadRecords} loading={loading} />
       </header>
 
       <div className="feedback-row">

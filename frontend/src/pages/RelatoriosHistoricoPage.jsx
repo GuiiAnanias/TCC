@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Search } from "lucide-react";
 import { api } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { ReportTabs } from "../components/ReportTabs.jsx";
 import { BLOCOS } from "../config/reportBlocks.js";
@@ -159,7 +159,7 @@ export function RelatoriosHistoricoPage() {
             <HistoricoHelp />
           </div>
         </div>
-        <FloatingActions onRefresh={carregar} loading={carregando} />
+        <PageActions onRefresh={carregar} loading={carregando} />
       </header>
       <ReportTabs />
 

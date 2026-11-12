@@ -10,7 +10,7 @@ import {
   X,
 } from "lucide-react";
 import { api } from "../api/client.js";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { HistoricoImportacoes } from "../components/HistoricoImportacoes.jsx";
 import { date, number } from "../components/OperationalDashboard.jsx";
@@ -264,7 +264,7 @@ export function ImportacaoPage() {
             <AjudaImportacao />
           </div>
         </div>
-        <FloatingActions
+        <PageActions
           onRefresh={() => {
             recomecar();
             setVersaoHistorico((versao) => versao + 1);
