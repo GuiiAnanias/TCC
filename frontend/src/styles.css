@@ -1244,8 +1244,21 @@ td .row-actions {
   min-height: 50px;
 }
 
+/* Quatro campos na mesma linha, alinhados pelo topo (rótulos na mesma altura; o texto de
+   apoio dos benefícios fica embaixo do campo dele), e o botão numa linha própria. */
 .finance-form {
-  grid-template-columns: minmax(230px, 1.4fr) 170px 180px auto;
+  grid-template-columns: minmax(230px, 1.4fr) 190px 180px minmax(180px, 1fr);
+  align-items: start;
+}
+.finance-form .field small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.finance-form > button {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-width: 220px;
 }
 
 .team-table-toolbar {
@@ -1479,32 +1492,32 @@ tbody tr:hover {
 .status-pendente {
   background-color: var(--warning-soft);
   color: var(--warning);
+  border: 1px solid var(--warning-line);
 }
 
 .status-aprovado {
   background-color: var(--success-soft);
   color: var(--success);
+  border: 1px solid var(--success-line);
 }
 
 .status-faturado {
   background-color: var(--info-soft);
   color: var(--info);
+  border: 1px solid var(--line-strong);
 }
 
 .icon-button {
-  border: 1px solid var(--warning-line);
   width: 36px;
   min-height: 36px;
   color: var(--text-secondary);
   background: var(--surface);
   border-color: var(--line-strong);
-  border: 1px solid var(--success-line);
 }
 
 .icon-button:hover {
   background: var(--hover);
 }
-  border: 1px solid var(--line-strong);
 
 .icon-button.danger {
   color: var(--danger);
@@ -1662,19 +1675,6 @@ tbody tr:hover {
   font-weight: 500;
 }
 
-.searchable-select__chevron {
-  flex: 0 0 auto;
-  color: var(--muted);
-  transition: transform 0.16s ease;
-}
-
-.searchable-select.is-open .searchable-select__chevron {
-  transform: rotate(180deg);
-}
-
-.searchable-select__dropdown {
-  position: absolute;
-  z-index: 50;
 /* Dentro de um campo, o texto do seletor herdava o estilo do rótulo (.field span):
    pequeno e em negrito. Aqui ele volta a parecer com os outros campos. */
 .field .searchable-select__value,
@@ -1689,6 +1689,19 @@ tbody tr:hover {
   color: var(--muted);
 }
 
+.searchable-select__chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.16s ease;
+}
+
+.searchable-select.is-open .searchable-select__chevron {
+  transform: rotate(180deg);
+}
+
+.searchable-select__dropdown {
+  position: absolute;
+  z-index: 50;
   top: calc(100% + 7px);
   left: 0;
   width: 100%;
@@ -1862,6 +1875,11 @@ tbody tr:hover {
   border: 0;
   min-width: 0;
 }
+/* Campos alinhados pela base: a estimativa tem dois rótulos e deixava o campo ao lado
+   esticado e desalinhado. */
+.tasks-form-fields .form-grid {
+  align-items: end;
+}
 .tasks-estimate {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1875,11 +1893,6 @@ tbody tr:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
-/* Campos alinhados pela base: a estimativa tem dois rótulos e deixava o campo ao lado
-   esticado e desalinhado. */
-.tasks-form-fields .form-grid {
-  align-items: end;
-}
 }
 .tasks-responsibles legend {
   padding: 0 8px;
