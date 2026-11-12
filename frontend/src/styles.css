@@ -22,6 +22,18 @@
   src: url("./assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
 }
 
+/* Tamanho do texto (botão Aa). Todos os tamanhos de fonte e de controles usam rem, então
+   crescem juntos a partir daqui sem alterar a largura das colunas. */
+html {
+  font-size: 100%;
+}
+html[data-font-size="grande"] {
+  font-size: 112.5%;
+}
+html[data-font-size="maior"] {
+  font-size: 125%;
+}
+
 :root {
   color-scheme: light;
   font-family:
@@ -265,6 +277,73 @@ body:has(.dashboard-help-dialog[open]) {
   font-size: 0.75rem;
 }
 
+/* Botão Aa: escolha do tamanho do texto. */
+.font-size-control {
+  position: relative;
+}
+.font-size-trigger span {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.font-size-menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  z-index: 80;
+  display: grid;
+  gap: 2px;
+  width: 15rem;
+  padding: 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--dropdown-shadow);
+}
+.font-size-option {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+.font-size-option:hover,
+.font-size-option:focus-visible {
+  background: var(--hover);
+}
+.font-size-option:focus-visible {
+  outline-offset: -2px;
+}
+.font-size-option[aria-checked="true"] {
+  color: var(--accent-text);
+}
+.font-size-sample {
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+.font-size-name {
+  font-size: 0.875rem;
+}
+.font-size-percent {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.font-size-option svg {
+  grid-column: 4;
+}
+.login-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
 .login-brand-row {
   display: flex;
   align-items: center;
@@ -737,7 +816,7 @@ button {
 }
 
 /* O conteúdo é um contêiner de consulta: as grades mudam de colunas pela largura disponível
-   (medida em rem) para o conteúdo, não pela largura da janela. */
+   medida em rem, então reagem também ao tamanho do texto escolhido no botão Aa. */
 .main-content {
   flex: 1;
   min-width: 0;

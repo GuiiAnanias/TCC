@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { api } from "../api/client.js";
 import { ThemeToggle } from "../ThemeContext.jsx";
+import { FontSizeControl } from "../components/FontSizeControl.jsx";
 import { newPasswordError } from "../auth/password.js";
 import { PasswordChecklist } from "../components/PasswordChecklist.jsx";
 
@@ -105,7 +106,10 @@ export function RedefinirSenhaPage() {
               <span>Gestão de projetos</span>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="login-controls">
+            <FontSizeControl />
+            <ThemeToggle />
+          </div>
         </div>
         <h1>Redefinir senha</h1>
         {link === "verificando" && (

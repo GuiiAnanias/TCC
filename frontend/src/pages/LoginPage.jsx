@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { ThemeToggle } from "../ThemeContext.jsx";
+import { FontSizeControl } from "../components/FontSizeControl.jsx";
 import {
   readRememberedLogin,
   saveRememberedLogin,
@@ -53,7 +54,10 @@ export function LoginPage() {
               <span>Gestão de projetos</span>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="login-controls">
+            <FontSizeControl />
+            <ThemeToggle />
+          </div>
         </div>
         <h1>Entrar no sistema</h1>
         <p>Use sua conta para acessar os projetos e indicadores.</p>

@@ -4,10 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
-      // Tema escolhido antes, aplicado antes da primeira pintura; sem escolha, o claro.
+      // Tema e tamanho do texto escolhidos antes, aplicados antes da primeira pintura.
       try {
         const theme = localStorage.getItem("code-bi-theme");
         document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
+        const size = localStorage.getItem("code-bi-font-size");
+        if (size === "grande" || size === "maior") document.documentElement.dataset.fontSize = size;
       } catch {
         document.documentElement.dataset.theme = "light";
       }
