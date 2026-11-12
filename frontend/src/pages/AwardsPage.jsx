@@ -41,9 +41,8 @@ function AwardsHelp() {
           aplicável não desconta e exige justificativa.
         </p>
         <p>
-          O critério de tarefas fora de sprint de PO/SM foi incluído no modelo: a planilha de origem
-          o apresenta, mas sua soma omite a última linha. A estrutura do space que consta apenas no
-          banco auxiliar não foi acrescentada aos critérios da avaliação.
+          Ao publicar uma versão, a empresa ajusta a pontuação inicial, as deduções e as faixas.
+          Abaixo de cada critério aparece onde conferi-lo antes de marcar a resposta.
         </p>
         <p>
           Publicar cria uma versão imutável das regras. Alterações usam outra versão, com nome que
@@ -57,10 +56,9 @@ function AwardsHelp() {
           todos os critérios, a nota é provisória. A nota pode ser negativa: não há piso presumido.
         </p>
         <p>
-          As faixas de conversão da nota não estão disponíveis no arquivo fornecido, por isso
-          começam vazias. Configure limites inclusivos, sem sobreposição; notas não cobertas ficam
-          sem percentual automático. Os percentuais e as faixas informados aqui são configurações da
-          empresa, não valores extraídos da planilha.
+          As faixas de conversão da nota começam vazias: o sistema não presume percentuais.
+          Configure limites inclusivos, sem sobreposição; notas não cobertas ficam sem percentual
+          automático. Os percentuais e as faixas são definidos pela empresa.
         </p>
         <p>
           Informe o percentual-base de premiação desta pessoa e competência, com a origem nas
