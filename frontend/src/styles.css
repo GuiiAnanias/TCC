@@ -2866,6 +2866,16 @@ td .icon-button {
 .report-filters > .report-projects {
   grid-column: span 2;
 }
+/* Como no dashboard: o rótulo "Projetos ou clientes" fica na linha de "Data inicial" e
+   "Data final", e o campo, na linha das datas (a altura da legenda "Período" vira recuo). */
+@container conteudo (width >= 60rem) {
+  .dashboard-filters.report-filters {
+    align-items: start;
+  }
+  .report-filters > .report-projects {
+    padding-top: calc(0.8125rem * 1.5 + 0.5rem);
+  }
+}
 .report-blocks {
   grid-column: 1 / -1;
   min-width: 0;
@@ -2880,9 +2890,11 @@ td .icon-button {
   font-weight: 600;
   color: var(--text-secondary);
 }
+/* Os cinco blocos ocupam a largura inteira, alinhados aos campos de cima; com texto maior ou
+   tela estreita, passam para a linha seguinte em colunas iguais. */
 .report-blocks > div {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
   gap: 0.75rem;
 }
 .report-block {

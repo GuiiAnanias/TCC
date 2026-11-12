@@ -274,9 +274,6 @@ export function RelatoriosPage() {
               }}
               disabled={gerando || carregando || Boolean(opcoesErro)}
             />
-            <small>
-              Clientes incluem seus projetos. As seleções se somam, sem repetir os dados.
-            </small>
           </div>
           <fieldset className="dashboard-period" disabled={gerando || carregando}>
             <legend>Período</legend>
