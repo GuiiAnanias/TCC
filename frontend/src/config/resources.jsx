@@ -53,6 +53,7 @@ function currentRemuneration(item) {
 export const resources = [
   {
     key: "clientes",
+    emptyMessage: "Nenhum cliente cadastrado",
     title: "Clientes",
     singular: "cliente",
     endpoint: "/clientes",
@@ -283,6 +284,7 @@ export const resources = [
   },
   {
     key: "colaboradores",
+    emptyMessage: "Nenhum colaborador cadastrado",
     title: "Colaboradores",
     singular: "colaborador",
     endpoint: "/colaboradores",
@@ -338,6 +340,7 @@ export const resources = [
   },
   {
     key: "remuneracoes",
+    emptyMessage: "Não há itens cadastrados",
     title: "Remuneração",
     singular: "item",
     endpoint: "/remuneracoes",
@@ -376,6 +379,7 @@ export const resources = [
   },
   {
     key: "projetos",
+    emptyMessage: "Nenhum projeto cadastrado",
     title: "Projetos",
     singular: "projeto",
     endpoint: "/projetos",

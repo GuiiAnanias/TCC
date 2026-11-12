@@ -63,7 +63,7 @@ export const configuracoesFinanceirasRepository = {
       const item = await tx.itemTabelaRemuneracao.findUnique({ where: { id: itemTabelaId } });
       if (!item) throw new HttpError(404, "Item da tabela de remuneração não encontrado.");
       if (item.status !== "ATIVO")
-        throw new HttpError(400, "Não é possível usar item de remuneração inativo.");
+        throw new HttpError(400, "Item inativo na tabela de remuneração e bonificação.");
       const history = await tx.configuracaoFinanceira.findMany({
         where: { colaboradorId },
         orderBy: [{ dataInicio: "desc" }, { id: "desc" }],

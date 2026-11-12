@@ -244,7 +244,7 @@ export function ImportacaoPage() {
       // 422: algo mudou desde a conferência (ex.: horas lançadas nesse meio-tempo).
       if (err.response?.status === 422 && err.response.data?.details)
         setResultado(err.response.data.details);
-      setError(await mensagemDeErro(err, "Não foi possível importar a planilha."));
+      setError(`Falha ao importar arquivo. ${await mensagemDeErro(err, "Tente novamente.")}`);
     } finally {
       setEtapa("");
       setVersaoHistorico((versao) => versao + 1);
@@ -337,8 +337,9 @@ export function ImportacaoPage() {
         <div className="feedback success" role="status">
           <CircleCheck size={18} aria-hidden="true" />
           <span>
+            Importação realizada com sucesso:{" "}
             {plural(importado.importados, "apontamento importado", "apontamentos importados")} de{" "}
-            {importado.arquivo}: {number(importado.horas)} h, {periodo(importado.periodo)}.{" "}
+            {importado.arquivo}, {number(importado.horas)} h, {periodo(importado.periodo)}.{" "}
             <Link to="/dashboard">Ver no Dashboard</Link> ·{" "}
             <Link to="/apontamentos">Ver apontamentos</Link>
           </span>

@@ -25,7 +25,7 @@ export const relatorioCreateSchema = z
     dataFim: dia.nullable().optional(),
     blocos: z
       .array(z.enum(BLOCOS_RELATORIO, { message: "Bloco de relatório inválido." }))
-      .min(1, "Selecione ao menos um bloco.")
+      .min(1, "Selecione ao menos um bloco de dados para o relatório.")
       .transform((blocos) => BLOCOS_RELATORIO.filter((bloco) => blocos.includes(bloco))),
   })
   .strict()
@@ -34,7 +34,7 @@ export const relatorioCreateSchema = z
       data.projetoIds.length > 0 || data.clienteIds.length > 0 || data.dataInicio || data.dataFim,
     {
       path: ["projetoIds"],
-      message: "Informe ao menos um filtro: projetos, clientes ou período.",
+      message: "Selecione ao menos um filtro para gerar o relatório.",
     },
   )
   .refine((data) => !data.dataInicio || !data.dataFim || data.dataInicio <= data.dataFim, {
