@@ -1045,6 +1045,11 @@ select:disabled {
   gap: 10px;
 }
 
+/* Botões de ação dentro das tabelas um pouco mais próximos, para a coluna não alargar. */
+td .row-actions {
+  gap: 6px;
+}
+
 .actions-row {
   justify-content: flex-end;
   margin-top: 16px;
@@ -1334,11 +1339,23 @@ table {
 
 th,
 td {
-  padding: 13px 14px;
+  padding: 13px 12px;
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+}
+
+/* Textos longos (nomes de projeto, cliente, descrições e cabeçalhos compridos) quebram
+   linha entre palavras em vez de esticar a tabela para o lado. Valores em reais já usam
+   espaço sem quebra; datas e números não têm espaço, então continuam numa linha só. */
+th,
+td {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+td {
+  line-height: 1.45;
 }
 
 th {
@@ -2361,9 +2378,21 @@ tbody tr:hover {
 }
 .dashboard-table td {
   white-space: normal;
-  overflow-wrap: anywhere;
-  min-width: 110px;
+  /* Quebra só entre palavras: valores como "R$ 1.079,00" e datas nunca se partem. */
+  overflow-wrap: break-word;
+  /* Mínimo baixo: números e valores não quebram, e textos quebram linha. Com 110 px por
+     coluna, tabelas de 10 colunas (como Projetos no relatório) passavam da tela. */
+  min-width: 72px;
   max-width: 300px;
+}
+/* Tabelas de relatório e dashboard têm muitas colunas: espaçamento menor para caberem
+   em notebooks (1366 px) mesmo com o menu lateral aberto. */
+.dashboard-table th,
+.dashboard-table td {
+  padding: 11px 8px;
+}
+.dashboard-table th {
+  font-size: 11px;
 }
 .operational-audit .table-toolbar {
   flex-wrap: wrap;
