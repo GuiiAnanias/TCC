@@ -108,7 +108,7 @@ Se a API responder "Rota não encontrada" em http://localhost:3333: acesse as ro
 
 ## Visão Geral
 
-O Sistema de Indicadores é uma aplicação web para centralizar a gestão operacional de clientes, colaboradores, projetos, equipes e tabelas de remuneração. A base foi estruturada para preservar histórico, reduzir planilhas manuais e preparar o sistema para indicadores financeiros e operacionais.
+O Sistema de Indicadores (CODE BI) é uma aplicação web para empresas de software centralizarem a gestão operacional de clientes, colaboradores, projetos, equipes e tabelas de remuneração. A base foi estruturada para preservar histórico, reduzir planilhas manuais e preparar o sistema para indicadores financeiros e operacionais.
 
 Funcionalidades disponíveis:
 
@@ -873,12 +873,12 @@ os dados. O seed também não realiza essa limpeza.
 ## Avaliação de premiação e exemplos do seed
 
 A tela **Premiação** permite publicar regras e avaliar uma pessoa por competência
-mensal e categoria Dev ou PO/SM. A pontuação começa em 10 nos modelos da planilha;
+mensal e categoria Dev ou PO/SM. A pontuação começa em 10 nos modelos de exemplo;
 cada critério com ocorrência desconta sua dedução uma vez no período. Ocorrência e
 Não aplicável exigem evidência/justificativa. Os indicadores servem para conferência,
 sem inferir automaticamente notificações, atrasos ou responsabilidade por erro.
 
-As faixas de nota não estão disponíveis na planilha fornecida e começam vazias.
+As faixas de nota começam vazias: cada empresa define as suas ao publicar uma versão.
 Configure faixas sem sobreposição ou informe elegibilidade manual com justificativa.
 O percentual final é `percentual-base × elegibilidade / 100`: base 5% e elegibilidade
 80% resultam em 4%. Não há cálculo em reais nem inclusão automática no custo por papel.

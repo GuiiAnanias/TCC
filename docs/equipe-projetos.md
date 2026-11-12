@@ -41,7 +41,7 @@ Essa regra exige uma equipe mínima do projeto; não exige que a pessoa do apont
 
 Correções no mesmo apontamento e na mesma data, consultas e históricos permanecem disponíveis. O custo faturado continua protegido e não é reprocessado automaticamente. Desativar colaboradores ou encerrar participações não apaga horas anteriores.
 
-A mesma exigência vale no cadastro manual e na importação Excel já existente, inclusive pela API. A prévia indica erro por linha quando falta equipe; a gravação também revalida a condição na transação. Não foi adicionada integração com ClickUp.
+A mesma exigência vale no cadastro manual e na importação Excel já existente, inclusive pela API. A prévia indica erro por linha quando falta equipe; a gravação também revalida a condição na transação. Não há integração com ferramentas externas de tarefas: dados de outras ferramentas entram pela planilha.
 
 Na listagem de projetos, a coluna Equipe mostra quantas participações de colaboradores ativos estão vigentes **hoje**, ou **Sem equipe vigente**. Esse resumo é diferente da validação de um lançamento retroativo, que usa a data das horas.
 
