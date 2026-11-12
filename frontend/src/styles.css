@@ -1675,6 +1675,20 @@ tbody tr:hover {
 .searchable-select__dropdown {
   position: absolute;
   z-index: 50;
+/* Dentro de um campo, o texto do seletor herdava o estilo do rótulo (.field span):
+   pequeno e em negrito. Aqui ele volta a parecer com os outros campos. */
+.field .searchable-select__value,
+.field .searchable-select__placeholder {
+  font-size: 16px;
+  font-weight: 400;
+}
+.field .searchable-select__value {
+  color: var(--text);
+}
+.field .searchable-select__placeholder {
+  color: var(--muted);
+}
+
   top: calc(100% + 7px);
   left: 0;
   width: 100%;
