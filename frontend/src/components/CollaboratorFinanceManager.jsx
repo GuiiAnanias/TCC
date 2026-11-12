@@ -434,16 +434,19 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, p
         </button>
       </form>
       <div className="team-table-toolbar">
-        <select
-          value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
-          title="Filtrar configurações por status"
-        >
-          <option value="">Todas as vigências</option>
-          <option value="VIGENTE">Vigentes</option>
-          <option value="AGENDADA">Agendadas</option>
-          <option value="ENCERRADA">Encerradas</option>
-        </select>
+        <label className="field">
+          <span>Mostrar</span>
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            title="Filtrar configurações por status"
+          >
+            <option value="">Todas as vigências</option>
+            <option value="VIGENTE">Vigentes</option>
+            <option value="AGENDADA">Agendadas</option>
+            <option value="ENCERRADA">Encerradas</option>
+          </select>
+        </label>
       </div>
       <div className="table-wrap">
         <table>

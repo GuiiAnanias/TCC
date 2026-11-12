@@ -4,7 +4,7 @@ import { Filter, RotateCcw } from "lucide-react";
 import { api } from "../api/client.js";
 import { FloatingActions } from "../components/FloatingActions.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
-import { projectStatusLabel } from "../config/projectOptions.js";
+import { entryStatusLabel, projectStatusLabel } from "../config/projectOptions.js";
 import { MultiSelect } from "../components/MultiSelect.jsx";
 import {
   etiquetasDoRecorte,
@@ -430,7 +430,9 @@ export function EntityDashboardPage({ type }) {
                             <td>{row.semCusto ? "Indisponível" : money(row.custo)}</td>
                             <td>
                               <Link to={`/apontamentos?editar=${row.id}`}>Conferir</Link>
-                              <small className="dashboard-detail-note">{row.status}</small>
+                              <small className="dashboard-detail-note">
+                                {entryStatusLabel(row.status)}
+                              </small>
                             </td>
                           </tr>
                         ))

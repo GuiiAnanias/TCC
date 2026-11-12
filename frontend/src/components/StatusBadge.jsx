@@ -1,10 +1,13 @@
 import React from "react";
-import { projectStatusLabel } from "../config/projectOptions.js";
+import { entryStatusLabel, projectStatusLabel } from "../config/projectOptions.js";
 
 export function StatusBadge({ status }) {
   if (!status) return null;
 
   const statusClass = status.toString().toLowerCase();
 
-  return <span className={`status status-${statusClass}`}>{projectStatusLabel(status)}</span>;
+  // Serve para status de cadastro/projeto e de apontamento; os nomes não se repetem.
+  const label = entryStatusLabel(projectStatusLabel(status));
+
+  return <span className={`status status-${statusClass}`}>{label}</span>;
 }

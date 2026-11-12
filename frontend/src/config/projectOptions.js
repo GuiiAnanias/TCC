@@ -12,6 +12,16 @@ export const projectContractOptions = [
   { value: "SQUAD", label: "Squad" },
 ];
 
+// Status de apontamento de horas (o fluxo Pendente → Aprovado → Faturado).
+export const entryStatusOptions = [
+  { value: "PENDENTE", label: "Pendente" },
+  { value: "APROVADO", label: "Aprovado" },
+  { value: "FATURADO", label: "Faturado" },
+];
+
+export const entryStatusLabel = (status) =>
+  entryStatusOptions.find((option) => option.value === status)?.label ?? status;
+
 export const projectStatusLabel = (status) =>
   projectStatusOptions.find((option) => option.value === status)?.label ?? status;
 

@@ -360,6 +360,7 @@ export const resources = [
         type: "number",
         step: "0.01",
         min: "0.01",
+        placeholder: "Em reais. Ex.: 60",
         required: true,
         help: "Usado em novas vigências. Configurações financeiras existentes mantêm o valor/hora preservado.",
       },
@@ -410,6 +411,7 @@ export const resources = [
         type: "number",
         step: "0.01",
         min: "0",
+        placeholder: "Ex.: 40",
         required: true,
       },
       {
@@ -418,6 +420,7 @@ export const resources = [
         type: "number",
         step: "0.01",
         min: "0",
+        placeholder: "Em reais. Ex.: 5000",
         required: true,
       },
       { name: "dataInicio", label: "Data de início", type: "date", required: true },
@@ -478,6 +481,7 @@ export const resources = [
         type: "number",
         step: "0.01",
         min: "0.01",
+        placeholder: "Ex.: 8",
         required: true,
       },
       {
@@ -491,7 +495,13 @@ export const resources = [
           { value: "FATURADO", label: "Faturado" },
         ],
       },
-      { name: "descricao", label: "Descrição da atividade", type: "text", required: true },
+      {
+        name: "descricao",
+        label: "Descrição da atividade",
+        type: "text",
+        placeholder: "O que foi feito nessas horas",
+        required: true,
+      },
     ],
     columns: [
       {
@@ -506,7 +516,7 @@ export const resources = [
       {
         key: "status",
         label: "Status",
-        render: (val) => (typeof val === "string" ? val : val?.status || "PENDENTE"),
+        render: (item) => <StatusBadge status={item.status || "PENDENTE"} />,
       },
       { key: "descricao", label: "Descrição" },
     ],
