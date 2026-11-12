@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { api } from "../api/client.js";
 import { ThemeToggle } from "../ThemeContext.jsx";
@@ -7,6 +7,9 @@ import { newPasswordError } from "../auth/password.js";
 import { PasswordChecklist } from "../components/PasswordChecklist.jsx";
 
 const LINK_INVALIDO = "Este link já foi usado, expirou ou não é válido.";
+export const SENHA_ATUALIZADA = "Senha atualizada com sucesso";
+// Tempo para ler a confirmação antes de voltar ao login.
+const ESPERA_LOGIN = 3000;
 
 // Tela aberta pelo link recebido por e-mail ("Esqueci minha senha") ou gerado no servidor
 // com `corepack pnpm run senha:link <usuário>`. O link é conferido assim que a tela abre:
@@ -22,6 +25,21 @@ export function RedefinirSenhaPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const navigate = useNavigate();
+
+  // Depois de atualizar a senha, volta sozinha ao login, que repete a confirmação.
+  useEffect(() => {
+    if (!done) return undefined;
+    const espera = setTimeout(
+      () =>
+        navigate("/login", {
+          replace: true,
+          state: { aviso: `${SENHA_ATUALIZADA}. Entre com a nova senha.` },
+        }),
+      ESPERA_LOGIN,
+    );
+    return () => clearTimeout(espera);
+  }, [done, navigate]);
 
   const verificar = useCallback(
     async (isCurrent = () => true) => {
@@ -112,7 +130,7 @@ export function RedefinirSenhaPage() {
         )}
         {link === "valido" && done && (
           <div className="feedback success" role="status">
-            Senha redefinida. Entre com a nova senha.
+            {SENHA_ATUALIZADA}. Você será levado ao login para entrar com a nova senha.
           </div>
         )}
         {link === "valido" && !done && (

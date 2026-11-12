@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import React, { act } from "react";
+import { Route, Routes, useLocation } from "react-router-dom";
 import { installDom, mount, click, change } from "../scripts/testing/dom.mjs";
 import { api } from "../src/api/client.js";
 import { RedefinirSenhaPage } from "../src/pages/RedefinirSenhaPage.jsx";
@@ -113,5 +114,50 @@ test("checklist da senha aparece ao clicar no campo e marca as regras ao digitar
     assert.equal(lista.hidden, true);
   } finally {
     await pagina.fechar();
+  }
+});
+
+test("senha atualizada mostra a confirmação e volta sozinha ao login", async () => {
+  const cleanup = installDom();
+  const originalPost = api.post;
+  api.post = async () => ({ data: null });
+  function LoginFalso() {
+    const location = useLocation();
+    return React.createElement("p", { id: "aviso-login" }, location.state?.aviso ?? "");
+  }
+  const view = await mount(
+    React.createElement(
+      Routes,
+      null,
+      React.createElement(Route, {
+        path: "/redefinir-senha",
+        element: React.createElement(RedefinirSenhaPage),
+      }),
+      React.createElement(Route, { path: "/login", element: React.createElement(LoginFalso) }),
+    ),
+    comToken,
+  );
+  try {
+    const tela = view.container;
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+    await change(tela.querySelector("#nova-senha"), "Senha@Forte2026");
+    await change(tela.querySelector("#confirmar-senha"), "Senha@Forte2026");
+    await act(async () =>
+      tela.querySelector("form").dispatchEvent(new window.Event("submit", { bubbles: true })),
+    );
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
+    assert.match(
+      tela.querySelector('[role="status"]').textContent,
+      /^Senha atualizada com sucesso/,
+    );
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 3100)));
+    assert.equal(
+      tela.querySelector("#aviso-login").textContent,
+      "Senha atualizada com sucesso. Entre com a nova senha.",
+    );
+  } finally {
+    api.post = originalPost;
+    await view.unmount();
+    cleanup();
   }
 });
