@@ -39,8 +39,16 @@ const naOrdem =
   (...chaves) =>
   (item) =>
     chaves.indexOf(item.dataKey);
-const truncar = (texto, limite = 22) =>
-  texto.length > limite ? `${texto.slice(0, limite - 1)}…` : texto;
+// Corta o rótulo do eixo para caber em uma linha. Maiúsculas são mais largas, então
+// contam mais no limite (que é dado em "letras minúsculas").
+function truncar(texto, limite = 22) {
+  let largura = 0;
+  for (let indice = 0; indice < texto.length; indice++) {
+    largura += /[A-ZÀ-Ý]/.test(texto[indice]) ? 1.3 : 1;
+    if (largura > limite) return `${texto.slice(0, Math.max(1, indice - 1))}…`;
+  }
+  return texto;
+}
 
 // Cores por categoria, em ordem fixa (a cor acompanha a categoria, nunca a posição no ranking).
 const COR = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
@@ -217,7 +225,7 @@ function OrcamentoXCusto({ projetos, recortado }) {
               tick={eixo}
               tickLine={false}
               axisLine={{ stroke: "var(--line)" }}
-              tickFormatter={(value) => truncar(value)}
+              tickFormatter={(value) => truncar(value, 21)}
             />
             <Tooltip
               cursor={{ fill: "var(--surface-soft)" }}
@@ -340,7 +348,16 @@ function Rosca({ titulo, subtitulo, categorias, valorDe, formatar, centro }) {
 }
 
 // Barras horizontais do maior para o menor, numa cor só, com o valor no fim de cada barra.
-function Ranking({ titulo, subtitulo, itens, formatar, nota }) {
+// `eixo` é a largura dos nomes e `margem` o espaço do valor no fim da barra.
+function Ranking({
+  titulo,
+  subtitulo,
+  itens,
+  formatar,
+  nota,
+  eixo: larguraEixo = 150,
+  margem = 72,
+}) {
   const altura = Math.max(120, itens.length * 40 + 24);
   return (
     <Cartao titulo={titulo} subtitulo={subtitulo} vazio={!itens.length} nota={nota}>
@@ -353,7 +370,7 @@ function Ranking({ titulo, subtitulo, itens, formatar, nota }) {
           <BarChart
             data={itens}
             layout="vertical"
-            margin={{ top: 0, right: 72, bottom: 0, left: 8 }}
+            margin={{ top: 0, right: margem, bottom: 0, left: 8 }}
             barCategoryGap="30%"
             accessibilityLayer
           >
@@ -361,11 +378,11 @@ function Ranking({ titulo, subtitulo, itens, formatar, nota }) {
             <YAxis
               type="category"
               dataKey="nome"
-              width={150}
+              width={larguraEixo}
               tick={eixo}
               tickLine={false}
               axisLine={{ stroke: "var(--line)" }}
-              tickFormatter={(value) => truncar(value, 20)}
+              tickFormatter={(value) => truncar(value, Math.round(larguraEixo / 8.3))}
             />
             <Tooltip
               cursor={{ fill: "var(--surface-soft)" }}
@@ -449,6 +466,8 @@ export default function DashboardCharts({ data, recortado = false }) {
           nome: ([, rotulo]) => rotulo,
         })}
         formatar={number}
+        eixo={190}
+        margem={36}
         nota="Detalhes de cada ocorrência na seção Auditoria operacional."
       />
     </div>
