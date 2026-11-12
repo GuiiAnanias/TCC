@@ -2378,9 +2378,21 @@ tbody tr:hover {
 }
 .dashboard-table td {
   white-space: normal;
-  overflow-wrap: anywhere;
-  min-width: 110px;
+  /* Quebra só entre palavras: valores como "R$ 1.079,00" e datas nunca se partem. */
+  overflow-wrap: break-word;
+  /* Mínimo baixo: números e valores não quebram, e textos quebram linha. Com 110 px por
+     coluna, tabelas de 10 colunas (como Projetos no relatório) passavam da tela. */
+  min-width: 72px;
   max-width: 300px;
+}
+/* Tabelas de relatório e dashboard têm muitas colunas: espaçamento menor para caberem
+   em notebooks (1366 px) mesmo com o menu lateral aberto. */
+.dashboard-table th,
+.dashboard-table td {
+  padding: 11px 8px;
+}
+.dashboard-table th {
+  font-size: 11px;
 }
 .operational-audit .table-toolbar {
   flex-wrap: wrap;
