@@ -1045,6 +1045,11 @@ select:disabled {
   gap: 10px;
 }
 
+/* Botões de ação dentro das tabelas um pouco mais próximos, para a coluna não alargar. */
+td .row-actions {
+  gap: 6px;
+}
+
 .actions-row {
   justify-content: flex-end;
   margin-top: 16px;
@@ -1334,11 +1339,23 @@ table {
 
 th,
 td {
-  padding: 13px 14px;
+  padding: 13px 12px;
   text-align: left;
   vertical-align: middle;
   border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+}
+
+/* Textos longos (nomes de projeto, cliente, descrições e cabeçalhos compridos) quebram
+   linha entre palavras em vez de esticar a tabela para o lado. Valores em reais já usam
+   espaço sem quebra; datas e números não têm espaço, então continuam numa linha só. */
+th,
+td {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+td {
+  line-height: 1.45;
 }
 
 th {
