@@ -1310,13 +1310,13 @@ table {
   min-width: 960px;
 }
 .clients-table th:nth-child(1) {
-  width: 28%;
+  width: 25%;
 }
 .clients-table th:nth-child(2) {
   width: 170px;
 }
 .clients-table th:nth-child(3) {
-  width: 17%;
+  width: 14%;
 }
 .clients-table th:nth-child(5) {
   width: 100px;
@@ -1875,6 +1875,11 @@ tbody tr:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 14px;
+/* Campos alinhados pela base: a estimativa tem dois rótulos e deixava o campo ao lado
+   esticado e desalinhado. */
+.tasks-form-fields .form-grid {
+  align-items: end;
+}
 }
 .tasks-responsibles legend {
   padding: 0 8px;
