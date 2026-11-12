@@ -25,6 +25,7 @@ O link **Esqueci minha senha**, na tela de login, abre a tela `/esqueci-senha`:
 - Se o e-mail pertencer a uma conta ativa, o sistema envia um e-mail com o link para `/redefinir-senha`, de uso único e válido por 30 minutos. Um novo pedido invalida o link anterior.
 - Esta tela não altera a senha: a troca acontece somente na tela aberta pelo link, que encerra as sessões abertas da conta.
 - Na tela de redefinição, ao clicar no campo **Nova senha** aparece uma lista com as regras (pelo menos 8 caracteres, uma letra maiúscula, um número e um símbolo), marcadas conforme a senha é digitada. A lista flutua sobre a tela, sem empurrar os campos, e some ao sair do campo.
+- Depois de salvar a nova senha, a tela mostra "Senha atualizada com sucesso" e, em 3 segundos, volta sozinha ao login, que repete a confirmação. O link **Ir para o login** continua disponível.
 - Ao abrir o link, a tela de redefinição confere se ele ainda vale. Se já foi usado, expirou ou é desconhecido, mostra "Este link já foi usado, expirou ou não é válido." com o atalho para pedir outro, sem exibir o formulário. Se a conferência falhar por conexão, a tela oferece tentar de novo.
 
 Em desenvolvimento e na demonstração, os e-mails chegam ao Mailpit ([http://localhost:8025](http://localhost:8025)), que sobe junto do banco com `docker compose up -d`. O administrador continua podendo gerar o link manualmente com `corepack pnpm run senha:link <usuário ou e-mail>`.
