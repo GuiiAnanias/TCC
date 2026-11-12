@@ -8,10 +8,13 @@ import { HelpDialog } from "../components/HelpDialog.jsx";
 import { ReportTabs } from "../components/ReportTabs.jsx";
 import { BLOCOS } from "../config/reportBlocks.js";
 import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
+import { falhaDoArquivo, sucessoDoArquivo } from "../utils/relatorioArquivos.js";
 
 const POR_PAGINA = 20;
 const filtrosVazios = { projetoId: "", geradoDe: "", geradoAte: "", meus: false };
 const FORMATOS = { pdf: "PDF", xlsx: "Excel" };
+const semFiltros = (filtros) =>
+  !filtros.projetoId && !filtros.geradoDe && !filtros.geradoAte && !filtros.meus;
 
 const dataBr = (value) => value.slice(0, 10).split("-").reverse().join("/");
 const dataHora = (value) =>
@@ -129,13 +132,14 @@ export function RelatoriosHistoricoPage() {
         responseType: "blob",
       });
       const nome = salvarArquivo(response, `relatorio-${item.id}.${formato}`);
-      setRetorno({ tipo: "success", texto: `Arquivo ${nome} baixado.` });
+      setRetorno({ tipo: "success", texto: sucessoDoArquivo(formato, nome) });
       carregar();
     } catch (error) {
       setRetorno({
         tipo: "error",
-        texto: await mensagemDeErro(
+        texto: await falhaDoArquivo(
           error,
+          formato,
           `Não foi possível gerar o ${FORMATOS[formato]} do relatório nº ${item.id}.`,
         ),
       });
@@ -234,7 +238,9 @@ export function RelatoriosHistoricoPage() {
           <p role="status">Carregando…</p>
         ) : !itens.length ? (
           <p className="dashboard-empty">
-            Nenhum relatório encontrado. Gere um na aba Gerar relatório.
+            {semFiltros(aplicados)
+              ? "Nenhum relatório gerado."
+              : "Nenhum relatório encontrado com esses filtros."}
           </p>
         ) : (
           <div className="dashboard-table">

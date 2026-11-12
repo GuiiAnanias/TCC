@@ -360,6 +360,7 @@ test("os arquivos são baixados da fotografia, com aviso de sucesso ou do erro d
         const error = new Error("409");
         // Com responseType "blob", até o erro chega como Blob (o mesmo Blob global do app).
         error.response = {
+          status: 409,
           data: new Blob([JSON.stringify({ message: "Formato não suportado." })]),
         };
         throw error;
@@ -381,13 +382,13 @@ test("os arquivos são baixados da fotografia, com aviso de sucesso ou do erro d
     await esperar();
     assert.match(
       raiz.querySelector(".report-download-feedback[role='status']").textContent,
-      /relatorio-7-portal-desde-2026-10-01\.pdf baixado/,
+      /Relatório PDF exportado com sucesso: relatorio-7-portal-desde-2026-10-01\.pdf/,
     );
     await click(botao(raiz, "Baixar Excel"));
     await esperar();
     assert.match(
       raiz.querySelector(".report-download-feedback[role='alert']").textContent,
-      /Formato não suportado/,
+      /Não há relatório válido para exportar\./,
     );
     assert.deepEqual(pedidos, [
       ["/relatorios/7/pdf", "blob"],

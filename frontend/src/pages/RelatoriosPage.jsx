@@ -10,7 +10,8 @@ import { ReportTabs } from "../components/ReportTabs.jsx";
 import { BLOCOS } from "../config/reportBlocks.js";
 export { BLOCOS } from "../config/reportBlocks.js";
 import { projectStatusLabel } from "../config/projectOptions.js";
-import { mensagemDeErro as mensagemDoArquivo, salvarArquivo } from "../utils/download.js";
+import { salvarArquivo } from "../utils/download.js";
+import { falhaDoArquivo, sucessoDoArquivo } from "../utils/relatorioArquivos.js";
 
 const TIPOS_OCORRENCIA = {
   SEM_REMUNERACAO: "Sem valor/hora",
@@ -51,10 +52,10 @@ export function textoPeriodo({ dataInicio, dataFim }) {
 /** Mensagem do primeiro problema do formulário, ou vazio quando pode gerar. */
 export function validarFormulario(form) {
   if (!form.projetoIds.length && !form.clienteIds?.length && !form.dataInicio && !form.dataFim)
-    return "Escolha ao menos um filtro: projetos, clientes ou período.";
+    return "Selecione ao menos um filtro para gerar o relatório.";
   if (form.dataInicio && form.dataFim && form.dataFim < form.dataInicio)
     return "A data final não pode ser anterior à inicial.";
-  if (!form.blocos.length) return "Escolha ao menos um bloco do relatório.";
+  if (!form.blocos.length) return "Selecione ao menos um bloco de dados para o relatório.";
   return "";
 }
 
@@ -140,12 +141,13 @@ export function RelatoriosPage() {
         responseType: "blob",
       });
       const nome = salvarArquivo(response, `relatorio-${relatorio.id}.${formato}`);
-      setRetornoArquivo({ tipo: "success", texto: `Arquivo ${nome} baixado.` });
+      setRetornoArquivo({ tipo: "success", texto: sucessoDoArquivo(formato, nome) });
     } catch (error) {
       setRetornoArquivo({
         tipo: "error",
-        texto: await mensagemDoArquivo(
+        texto: await falhaDoArquivo(
           error,
+          formato,
           `Não foi possível gerar o ${FORMATOS_ARQUIVO[formato]}. Tente novamente.`,
         ),
       });

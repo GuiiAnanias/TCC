@@ -22,6 +22,8 @@ Clientes, Colaboradores, Remuneração, Projetos e Apontamento de Horas usam o m
 | Projetos             | Dashboard, Editar, Equipe                                          | Encerrar, ou Excluir definitivamente se não houver vínculos |
 | Apontamento de Horas | Editar                                                             | Excluir (não vale para faturados)                           |
 
+Sem nenhum cadastro, a tabela mostra "Nenhum cliente cadastrado", "Nenhum colaborador cadastrado", "Não há itens cadastrados" (Remuneração) ou "Nenhum projeto cadastrado"; com busca ou filtro sem resultado, "Nenhum registro encontrado". Usar um item de remuneração inativo responde "Item inativo na tabela de remuneração e bonificação".
+
 Inativar e excluir pedem confirmação. Cada tela tem a própria ajuda; as regras estão em [clientes.md](clientes.md), [composicao-financeira.md](composicao-financeira.md), [projetos.md](projetos.md), [equipe-projetos.md](equipe-projetos.md), [exclusao-projetos.md](exclusao-projetos.md) e [apontamentos.md](apontamentos.md).
 
 ## Dashboards

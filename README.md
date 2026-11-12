@@ -556,6 +556,7 @@ filtrada pelo projeto escolhido.
 - Avisos não bloqueiam: indicam horas que entram com custo incompleto (colaborador fora da
   equipe do projeto na data ou sem valor/hora vigente).
 - Limite de 2.000 linhas e 5 MB por arquivo.
+- Ao importar, a tela confirma com "Importação realizada com sucesso" e o resumo; se a importação for recusada, mostra "Falha ao importar arquivo" com o motivo.
 - **Histórico de Importações**, no fim da tela: cada importação confirmada fica registrada
   com data e hora, quem importou, nome do arquivo, projetos, status (Concluída ou Falhou) e
   resultado (apontamentos e horas, ou linhas com erro e o motivo da falha, com as primeiras

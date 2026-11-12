@@ -10,7 +10,7 @@ A tela **Relatórios** gera um relatório de um recorte escolhido e grava uma c�
 | Período              | Data inicial, final ou as duas; considera a data dos apontamentos                                                                                         |
 | Blocos               | Ao menos um entre Projetos, Clientes, Horas totais, Custo total e Inconsistências; todos vêm marcados                                                     |
 
-É obrigatório informar ao menos um filtro (projetos, clientes ou período) e um bloco. Projetos de qualquer estado entram: os escolhidos sempre, e os demais quando têm dados no período. As seleções são somadas: escolher um cliente e um projeto dele não duplica horas ou custos. Um cliente sem projetos não amplia a busca para outros clientes. Um recorte vazio não gera relatório; a tela pede para ajustar os filtros.
+É obrigatório informar ao menos um filtro (projetos, clientes ou período) e um bloco. Sem filtro, a tela mostra "Selecione ao menos um filtro para gerar o relatório"; sem bloco, "Selecione ao menos um bloco de dados para o relatório". Projetos de qualquer estado entram: os escolhidos sempre, e os demais quando têm dados no período. As seleções são somadas: escolher um cliente e um projeto dele não duplica horas ou custos. Um cliente sem projetos não amplia a busca para outros clientes. Um recorte vazio não gera relatório; a tela pede para ajustar os filtros.
 
 ## Personalizar a prévia
 
@@ -51,7 +51,7 @@ O **Exportar Excel** do Dashboard Geral continua igual e não grava fotografia.
 
 ## Baixar em PDF e Excel
 
-Ao lado de **Personalizar relatório**, os botões **Baixar PDF** e **Baixar Excel** geram o arquivo no servidor a partir da fotografia aberta: os números são os da prévia, mesmo que os dados tenham mudado depois, e entram só os blocos escolhidos. O download usa o login atual. A tela avisa o nome do arquivo baixado ou o motivo da falha.
+Ao lado de **Personalizar relatório**, os botões **Baixar PDF** e **Baixar Excel** geram o arquivo no servidor a partir da fotografia aberta: os números são os da prévia, mesmo que os dados tenham mudado depois, e entram só os blocos escolhidos. O download usa o login atual. A tela confirma com "Relatório PDF exportado com sucesso" ou "Relatório XLSX exportado com sucesso", seguido do nome do arquivo. Se não houver relatório válido (inexistente ou de um formato que esta versão não conhece), mostra "Não há dados disponíveis para exportação" no PDF e "Não há relatório válido para exportar" no Excel.
 
 O nome do arquivo traz o número do relatório, os clientes ou projetos e o período, por exemplo `relatorio-12-portal-do-cliente-2026-10-01-a-2026-10-31.pdf`, `relatorio-13-cliente-marina-oliveira-todos-os-periodos.xlsx`, `relatorio-14-3-projetos-desde-2026-09-01.pdf` ou `relatorio-15-todos-os-projetos-ate-2026-10-31.pdf`.
 
@@ -75,7 +75,7 @@ A aba **Histórico**, ao lado de **Gerar relatório** (endereço `/relatorios/hi
 | Downloads | Quantas vezes o PDF e o Excel já foram baixados                                                             |
 | Ações     | Abrir, Baixar PDF e Baixar Excel                                                                            |
 
-Os filtros são o projeto (relatórios em que ele entrou no recorte), os dias de geração (data inicial e final, em dias de Brasília) e **Só os que eu gerei**. Todas as contas ativas veem o histórico completo, como na geração.
+Os filtros são o projeto (relatórios em que ele entrou no recorte), os dias de geração (data inicial e final, em dias de Brasília) e **Só os que eu gerei**. Todas as contas ativas veem o histórico completo, como na geração. Sem nenhum relatório, a lista mostra "Nenhum relatório gerado"; com filtros sem resultado, "Nenhum relatório encontrado com esses filtros".
 
 Decisões desta etapa:
 

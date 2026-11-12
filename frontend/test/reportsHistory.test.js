@@ -156,7 +156,7 @@ test("o histórico lista, filtra, pagina e baixa os arquivos de cada relatório"
     await esperar();
     assert.match(
       raiz.querySelector(".report-download-feedback[role='status']").textContent,
-      /relatorio-9-cliente-a\.pdf baixado/,
+      /Relatório PDF exportado com sucesso: relatorio-9-cliente-a\.pdf/,
     );
     assert.equal(linhas(raiz)[0][4], "PDF (3), Excel (1)", "A contagem é recarregada.");
 
@@ -171,7 +171,10 @@ test("o histórico lista, filtra, pagina e baixa os arquivos de cada relatório"
     await change(raiz.querySelector("input[name='geradoDe']"), "2026-11-01");
     await click(botao(raiz, "Filtrar"));
     await esperar();
-    assert.match(raiz.querySelector(".dashboard-empty").textContent, /Nenhum relatório/);
+    assert.equal(
+      raiz.querySelector(".dashboard-empty").textContent,
+      "Nenhum relatório encontrado com esses filtros.",
+    );
     assert.equal(raiz.querySelector(".report-history-pages"), null);
 
     const consultas = simulada.pedidos.filter(([url]) => url === "/relatorios");

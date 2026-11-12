@@ -10,10 +10,10 @@ const mensagens = (resultado) => resultado.error.issues.map((issue) => issue.mes
 
 test("o pedido de relatório exige filtro e bloco, e normaliza projetos e blocos", () => {
   assert.deepEqual(mensagens(relatorioCreateSchema.safeParse({ blocos: ["CUSTO"] })), [
-    "Informe ao menos um filtro: projetos, clientes ou período.",
+    "Selecione ao menos um filtro para gerar o relatório.",
   ]);
   assert.deepEqual(mensagens(relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: [] })), [
-    "Selecione ao menos um bloco.",
+    "Selecione ao menos um bloco de dados para o relatório.",
   ]);
   const dados = relatorioCreateSchema.parse({
     projetoIds: [12, 3, 12],

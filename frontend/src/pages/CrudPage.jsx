@@ -1173,7 +1173,11 @@ export function CrudPage({ config }) {
               {records.length === 0 ? (
                 <tr>
                   <td className="empty-cell" colSpan={config.columns.length + 1}>
-                    {loading ? "Carregando registros" : "Nenhum registro encontrado"}
+                    {loading
+                      ? "Carregando registros"
+                      : filters.busca || filters.status
+                        ? "Nenhum registro encontrado"
+                        : (config.emptyMessage ?? "Nenhum registro encontrado")}
                   </td>
                 </tr>
               ) : (

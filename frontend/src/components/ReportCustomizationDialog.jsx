@@ -39,8 +39,12 @@ export function ReportCustomizationDialog({ relatorio, onClose, onApply }) {
   async function aplicar(event) {
     event.preventDefault();
     if (salvando) return;
-    if (!selecionados.length || !blocos.length) {
-      setErro("Selecione ao menos um projeto e um bloco.");
+    if (!blocos.length) {
+      setErro("Selecione ao menos um bloco de dados para o relatório.");
+      return;
+    }
+    if (!selecionados.length) {
+      setErro("Selecione ao menos um projeto ou cliente.");
       return;
     }
     setSalvando(true);
