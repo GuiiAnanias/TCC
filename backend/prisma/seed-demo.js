@@ -165,14 +165,14 @@ export async function seedDemo(prisma) {
         start = "2026-09-01",
       ] of [
         ["portal", "Portal do Cliente (demo)", "horizonte", "FEE_MENSAL", 40, 2424],
-        ["mobile", "Aplicativo Mobile (demo)", "acme", "ESCOPO_SEMIABERTO", 20, 539.5, "PAUSADO"],
+        ["mobile", "Aplicativo Mobile (demo)", "acme", "ESCOPO_FECHADO", 20, 539.5, "PAUSADO"],
         ["integracao", "Integração de Dados (demo)", "marina", "SQUAD", 14, 560],
         ["auditoria", "Projeto com pendências (demo)", "acme", "FEE_MENSAL", 30, 1000],
         [
           "planejamento",
           "Projeto em planejamento (demo)",
           "horizonte",
-          "ESCOPO_SEMIABERTO",
+          "POR_HORA",
           80,
           5000,
           "CANCELADO",

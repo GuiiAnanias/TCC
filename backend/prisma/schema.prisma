@@ -18,8 +18,9 @@ enum TipoPessoa {
 }
 
 enum TipoContrato {
+  ESCOPO_FECHADO
+  POR_HORA
   FEE_MENSAL
-  ESCOPO_SEMIABERTO
   SQUAD
 }
 

@@ -155,8 +155,9 @@ try {
     "PAUSADO",
   ]);
   assert.deepEqual([...new Set(initial.projeto.map((p) => p.tipoContrato))].sort(), [
-    "ESCOPO_SEMIABERTO",
+    "ESCOPO_FECHADO",
     "FEE_MENSAL",
+    "POR_HORA",
     "SQUAD",
   ]);
   for (const person of initial.colaborador) {

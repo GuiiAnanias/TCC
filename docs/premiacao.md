@@ -34,13 +34,13 @@ Os dois modelos começam com 10 pontos. Cada critério marcado como ocorrência 
 | Tarefas sem os requisitos mínimos definidos                        |       1 |
 | Tarefas fora de uma sprint                                         |       1 |
 
-O critério "Tarefas fora de uma sprint" foi mantido porque aparece na aba PO e SM, embora a soma da planilha omita essa linha. Cada critério guarda a referência da célula de origem.
+Cada critério informa onde conferi-lo (um indicador do dashboard, os dados das tarefas e sprints ou uma conferência manual do gestor).
 
 ## Regras publicadas
 
 Antes de avaliar, publique uma versão das regras da categoria, partindo do modelo. Uma versão publicada é imutável: mudanças exigem outra versão, e as avaliações existentes continuam com as regras e deduções que usaram.
 
-As faixas que convertem a nota em percentual de elegibilidade não constam da planilha fornecida, por isso os modelos começam sem faixas. Ao publicar, é possível cadastrar faixas com limites inclusivos e sem sobreposição. Percentuais e faixas são configurações da empresa, não valores extraídos da planilha.
+Os modelos começam sem faixas que convertem a nota em percentual de elegibilidade: o sistema não presume percentuais. Ao publicar, é possível cadastrar faixas com limites inclusivos e sem sobreposição. Percentuais e faixas são configurações da empresa.
 
 ## Cálculo
 

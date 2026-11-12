@@ -75,8 +75,8 @@ export function RoleBonusManager() {
               396 de custo total.
             </p>
             <p>
-              O percentual é definido pela empresa. A avaliação de desempenho da planilha ainda não
-              interfere neste cálculo.
+              O percentual é definido pela empresa. A avaliação de premiação não interfere neste
+              cálculo.
             </p>
           </section>
           <section>

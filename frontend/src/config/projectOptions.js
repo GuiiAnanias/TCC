@@ -6,8 +6,9 @@ export const projectStatusOptions = [
 ];
 
 export const projectContractOptions = [
+  { value: "ESCOPO_FECHADO", label: "Escopo fechado" },
+  { value: "POR_HORA", label: "Por hora" },
   { value: "FEE_MENSAL", label: "Fee mensal" },
-  { value: "ESCOPO_SEMIABERTO", label: "Escopo semiaberto" },
   { value: "SQUAD", label: "Squad" },
 ];
 

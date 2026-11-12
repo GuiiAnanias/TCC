@@ -2,7 +2,16 @@
 
 ## Tipos de contrato
 
-Novos projetos usam **Fee mensal**, **Escopo semiaberto** ou **Squad**. A escolha é obrigatória; não existe conversão automática dos antigos Fixo/Horas/Fechado. A classificação do contrato não cria cobrança recorrente nem muda a fórmula de custo dos apontamentos.
+Os tipos cobrem as formas mais comuns de contratação em empresas de software. A escolha é obrigatória. A classificação do contrato não cria cobrança recorrente nem muda a fórmula de custo dos apontamentos.
+
+| Tipo           | Uso típico                                                            |
+| -------------- | --------------------------------------------------------------------- |
+| Escopo fechado | Entrega definida, com valor e horas acordados antes de começar        |
+| Por hora       | Cobrança pelas horas trabalhadas (banco de horas ou tempo e material) |
+| Fee mensal     | Valor recorrente por mês para manutenção, suporte ou evolução         |
+| Squad          | Equipe alocada ao cliente por período                                 |
+
+A migração `20261111010000_tipos_contrato_genericos` troca o tipo antigo **Escopo semiaberto**, que era específico de uma empresa, por **Escopo fechado** nos projetos existentes e acrescenta **Por hora**. Os bancos do projeto são de demonstração; em uma base real, revise a classificação dos projetos convertidos depois da migração.
 
 ## Estados e operações
 
@@ -23,11 +32,11 @@ O dashboard geral abre com o filtro Ativo. É possível selecionar outro estado 
 
 ## Seed e migração do ambiente de demonstração
 
-Foi autorizada a recriação dos dados fictícios. A seed mantém seis projetos, com os três tipos de contrato e os quatro estados: Portal e Pendências em Fee mensal, Mobile e Planejamento em Escopo semiaberto e Integração e Histórico em Squad. Mobile começa Pausado, Planejamento Cancelado e Histórico Encerrado. Os demais começam Ativos.
+Foi autorizada a recriação dos dados fictícios. A seed mantém seis projetos, com os quatro tipos de contrato e os quatro estados: Portal e Pendências em Fee mensal, Mobile em Escopo fechado, Planejamento Por hora e Integração e Histórico em Squad. Mobile começa Pausado, Planejamento Cancelado e Histórico Encerrado. Os demais começam Ativos.
 
 A seed continua aditiva: executá-la novamente preserva as edições existentes. Apagar dados ocorre somente em uma recriação explicitamente executada pelo responsável, não dentro da seed ou da migração.
 
-A migração cria um enum exclusivo dos projetos, mantendo Ativo/Inativo para clientes, colaboradores e outros cadastros. Também substitui os tipos de contrato antigos. Se encontrar classificações antigas, ela **interrompe sem apagá-las ou convertê-las**. Para este ambiente local descartável, a preparação é:
+A migração `20261106010000_estados_contratos_projetos` cria um enum exclusivo dos projetos, mantendo Ativo/Inativo para clientes, colaboradores e outros cadastros. Também substitui os tipos de contrato anteriores a ela (Fixo/Horas/Fechado). Se encontrar essas classificações, ela **interrompe sem apagá-las ou convertê-las**. Para este ambiente local descartável, a preparação é:
 
 ```powershell
 # Somente no banco local fictício explicitamente autorizado.

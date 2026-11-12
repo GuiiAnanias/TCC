@@ -110,7 +110,7 @@ try {
     data: {
       nome: "Projeto de teste",
       clienteId: customer.id,
-      tipoContrato: "ESCOPO_SEMIABERTO",
+      tipoContrato: "ESCOPO_FECHADO",
       horasContratadas: 100,
       valorProjeto: 1000,
       dataInicio: new Date("2026-09-01"),
