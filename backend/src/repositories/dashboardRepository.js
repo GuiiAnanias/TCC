@@ -18,6 +18,7 @@ export const dashboardRepository = {
     colaboradorId,
     sprintId,
     statusProjeto,
+    statusApontamentos,
   } = {}) {
     const ids = projetoIds?.length ? projetoIds : projetoId ? [projetoId] : [];
     const projetos = await prisma.projeto.findMany({
@@ -110,6 +111,8 @@ export const dashboardRepository = {
                 }
               : {}),
             ...(equipe ? { colaborador: { departamento: equipe } } : {}),
+            // Só usado pelos relatórios (ex.: apenas horas aprovadas e faturadas).
+            ...(statusApontamentos?.length ? { status: { in: statusApontamentos } } : {}),
           },
           include: {
             colaborador: {

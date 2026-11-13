@@ -41,6 +41,11 @@ export const relatoriosController = {
     const dados = relatorioCreateSchema.parse(request.body);
     response.status(201).json(await relatoriosGeradosService.gerar(dados, request.user));
   }),
+  // [CONTROLLER] Prévia do relatório sem gravar no histórico. [VALIDACAO] Mesmas regras de gerar.
+  previa: asyncHandler(async (request, response) => {
+    const dados = relatorioCreateSchema.parse(request.body);
+    response.json(await relatoriosGeradosService.previa(dados, request.user));
+  }),
   // [CONTROLLER] Download em PDF; registra a exportação no histórico.
   pdf: asyncHandler(async (request, response) => {
     const { arquivo, nome } = await relatoriosArquivosService.pdf(
