@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Histórico de Importações da tela Importar horas: lista paginada (GET
+ * /importacoes/apontamentos/historico) com data, arquivo, projetos, status e resultado.
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, History } from "lucide-react";
 import { api } from "../api/client.js";
@@ -43,6 +48,8 @@ export function HistoricoImportacoes({ versao = 0 }) {
   const [erro, setErro] = useState("");
   const pedido = useRef(0);
 
+  // [REQUISICAO] Busca uma página do histórico; recarrega quando uma importação termina (prop
+  // versao).
   const carregar = useCallback(async (paginaPedida) => {
     const atual = ++pedido.current;
     setCarregando(true);

@@ -1,3 +1,9 @@
+/**
+ * [TELA][VALIDACAO] Configuração das telas de cadastro (Clientes, Colaboradores, Remuneração,
+ * Projetos, Apontamento de Horas): endpoint da API, campos do formulário (tipo, obrigatório,
+ * limites) e colunas da tabela. A tela genérica que usa isto é pages/CrudPage.jsx.
+ */
+
 import React from "react";
 import { BriefcaseBusiness, Building2, UsersRound, WalletCards, Clock } from "lucide-react";
 import { StatusBadge } from "../components/StatusBadge.jsx";
@@ -50,6 +56,8 @@ function currentRemuneration(item) {
   return `${activeConfig.nivelAplicado} - ${currency(activeConfig.valorHoraAplicado)}/h`;
 }
 
+// [TELA] Um item por cadastro. endpoint = caminho na API; fields = formulário; columns = tabela;
+// emptyMessage = mensagem de lista vazia.
 export const resources = [
   {
     key: "clientes",

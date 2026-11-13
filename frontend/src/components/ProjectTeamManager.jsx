@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Equipe do projeto (ação Equipe na lista de projetos): vincular colaborador, trocar
+ * papel a partir de uma data e encerrar participação.
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
 import { api } from "../api/client.js";
@@ -99,6 +104,7 @@ export function ProjectTeamManager({ project, onChanged, onClose, pendencia = nu
     return team;
   }, [team, teamStatusFilter]);
 
+  // [REQUISICAO] GET /projetos/:id/equipe: participações atuais e passadas.
   const loadTeam = useCallback(async () => {
     if (!project?.id) {
       return;
@@ -162,6 +168,8 @@ export function ProjectTeamManager({ project, onChanged, onClose, pendencia = nu
     loadTeam();
   }, [loadTeam]);
 
+  // [REQUISICAO] Vincula um colaborador (POST /projetos/:id/equipe). Erros da API aparecem no
+  // formulário.
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -206,6 +214,7 @@ export function ProjectTeamManager({ project, onChanged, onClose, pendencia = nu
     }
   }
 
+  // [REQUISICAO] Troca de papel a partir de uma data (PUT /projetos/:id/equipe/:vinculoId).
   async function updateRole(member) {
     if (isInactive || saving || loading || loadError) {
       return;
@@ -246,6 +255,7 @@ export function ProjectTeamManager({ project, onChanged, onClose, pendencia = nu
     }
   }
 
+  // [REQUISICAO] Encerra a participação hoje, após confirmação (DELETE).
   async function closeParticipation(member) {
     if (isInactive || saving || loading || loadError) {
       return;

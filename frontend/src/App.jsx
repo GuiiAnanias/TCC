@@ -1,3 +1,8 @@
+/**
+ * [TELA][ROTA] Estrutura do front: provedores de tema e login, rotas de cada tela (React Router) e
+ * o layout autenticado (menu lateral, barra superior e conteúdo).
+ */
+
 import { AwardsPage } from "./pages/AwardsPage.jsx";
 import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
 import { TasksPage } from "./pages/TasksPage.jsx";
@@ -30,6 +35,7 @@ import { ThemeProvider, ThemeToggle } from "./ThemeContext.jsx";
 import { PageActionsSlot } from "./components/PageActions.jsx";
 import { FontSizeControl } from "./components/FontSizeControl.jsx";
 
+// Link do menu para um cadastro definido em config/resources.jsx.
 const resourceLink = (key) => {
   const resource = resources.find((item) => item.key === key);
   return { to: `/${key}`, label: resource.title, icon: resource.icon };
@@ -61,6 +67,7 @@ const NAV_GROUPS = [
   },
 ];
 
+// [TELA] Raiz da aplicação: tema e sessão disponíveis para todas as telas.
 export function App() {
   return (
     <ThemeProvider>
@@ -71,6 +78,7 @@ export function App() {
   );
 }
 
+// [ROTA] Mapa de endereços para telas. Enquanto a sessão é conferida mostra "Verificando sessão…".
 function AppRoutes() {
   const auth = useAuth();
   if (auth.loading)
@@ -98,6 +106,7 @@ function AppRoutes() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/esqueci-senha" element={<EsqueciSenhaPage />} />
       <Route path="/redefinir-senha" element={<RedefinirSenhaPage />} />
+      {/* [SEGURANCA] Rotas internas: só abrem com login (ver ProtectedLayout). */}
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
@@ -131,10 +140,13 @@ function AppRoutes() {
   );
 }
 
+// [SEGURANCA][TELA] Layout das telas internas. Sem usuário logado, redireciona para /login
+// guardando o endereço pedido.
 function ProtectedLayout() {
   const auth = useAuth();
   const location = useLocation();
   const [actionsSlot, setActionsSlot] = useState(null);
+  // [ESTADO] Menu recolhido ou não; a escolha fica salva no navegador.
   const [collapsed, setCollapsed] = useState(() => {
     try {
       const saved = localStorage.getItem("code-bi-sidebar-collapsed");
@@ -235,6 +247,7 @@ function ProtectedLayout() {
       </aside>
 
       <main className="main-area">
+        {/* [TELA] Barra superior: ações da página (Atualizar), tamanho do texto (Aa) e tema. */}
         <header className="topbar">
           <div className="page-actions" ref={setActionsSlot} />
           <div className="topbar-controls" role="group" aria-label="Preferências de exibição">

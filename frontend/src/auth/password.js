@@ -29,11 +29,13 @@ export const passwordRules = [
   },
 ];
 
+// [VALIDACAO] O bcrypt só considera 72 bytes; senha maior é recusada.
 const byteLimit = {
   test: (value) => bytes(value) <= 72,
   error: "A nova senha pode ter no máximo 72 bytes UTF-8; acentos e emojis ocupam mais de um byte.",
 };
 
+// [VALIDACAO] Primeira regra de senha não cumprida, para mostrar ao usuário antes de enviar.
 export function newPasswordError(value) {
   return [...passwordRules, byteLimit].find((rule) => !rule.test(value))?.error || "";
 }

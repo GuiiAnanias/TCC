@@ -1,9 +1,15 @@
+/**
+ * [SEGURANCA] "Lembrar meu usuário" do login: guarda só o usuário ou e-mail no navegador
+ * (localStorage), nunca a senha nem a sessão.
+ */
+
 const STORAGE_KEY = "code-bi-remembered-login";
 
 function validLogin(value) {
   return typeof value === "string" && value.trim().length <= 254 ? value.trim() : "";
 }
 
+// Lê o usuário lembrado; sem armazenamento disponível, volta vazio.
 export function readRememberedLogin() {
   try {
     return validLogin(localStorage.getItem(STORAGE_KEY));
@@ -23,6 +29,7 @@ export function saveRememberedLogin(login) {
   }
 }
 
+// Apaga o usuário lembrado (checkbox desmarcado).
 export function forgetRememberedLogin() {
   try {
     localStorage.removeItem(STORAGE_KEY);

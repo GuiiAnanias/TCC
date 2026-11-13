@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Partes do dashboard reaproveitadas no geral e nos individuais: cartões dos
+ * indicadores operacionais, tabela da auditoria operacional e tabela de tarefas dos indicadores.
+ */
+
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { TIPOS_PENDENCIA_CUSTO, linkDaPendencia } from "../utils/pendencias.js";
@@ -26,6 +31,7 @@ export function taskUrl(row) {
   return `/tarefas?projetoId=${row.projetoId}&tarefaId=${row.tarefaId ?? row.id}`;
 }
 
+// [TELA] Quatro indicadores operacionais com o motivo quando não há base de cálculo.
 export function OperationalMetrics({ summary, loading = false, context = false }) {
   const cards = [
     {
@@ -79,6 +85,7 @@ export function OperationalMetrics({ summary, loading = false, context = false }
   );
 }
 
+// [TELA] Ocorrências da auditoria com filtro por tipo e link para corrigir.
 export function AuditTable({ occurrences = [] }) {
   const [type, setType] = useState("");
   const [search, setSearch] = useState("");
@@ -179,6 +186,7 @@ export function AuditTable({ occurrences = [] }) {
   );
 }
 
+// [TELA] Tarefas que entram nos indicadores (estimativa, horas, correção).
 export function IndicatorTasksTable({ tasks = [], individual = false }) {
   return (
     <div className="dashboard-table">

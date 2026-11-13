@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Gráfico do Comparativo por projeto (custo base e bonificação), carregado só quando a
+ * seção é aberta.
+ */
+
 import React from "react";
 import {
   Bar,

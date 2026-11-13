@@ -1,3 +1,13 @@
+/*
+ * [ESTILO] Visual de todo o front. Ordem do arquivo: fonte e tamanho do texto (botão Aa), cores
+ * do tema claro (:root) e do escuro ([data-theme="dark"]), estrutura (menu lateral, barra
+ * superior, conteúdo), formulários e botões, tabelas e status, dashboard e gráficos, e depois
+ * as telas (tarefas, premiação, importação, relatórios).
+ * Cores sempre por variável (var(--primary), var(--line)...): mudar a variável muda o sistema
+ * todo. Tamanhos em rem para acompanhar o botão Aa; as grades do conteúdo usam
+ * @container conteudo para mudar de colunas pela largura disponível.
+ */
+
 /* Fonte da interface: IBM Plex Sans (licença OFL, em assets/fonts), servida pelo próprio
    sistema para a tela ficar igual com ou sem internet. */
 @font-face {

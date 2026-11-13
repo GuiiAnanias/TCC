@@ -1,3 +1,9 @@
+/**
+ * [TELA] Visão por projeto e Visão por colaborador (/dashboard/projetos/:id e
+ * /dashboard/colaboradores/:id): escolha da entidade, filtros, indicadores e abas de detalhe
+ * (Evolução, Tarefas, Apontamentos, Participação e custos, Auditoria).
+ */
+
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Filter, RotateCcw } from "lucide-react";
@@ -22,6 +28,7 @@ import {
 } from "../components/OperationalDashboard.jsx";
 
 const emptyFilters = { dataInicio: "", dataFim: "", projetoIds: [], sprintId: "" };
+// [TELA] type = "projetos" ou "colaboradores".
 export function EntityDashboardPage({ type }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -62,6 +69,7 @@ export function EntityDashboardPage({ type }) {
     },
     [id, type],
   );
+  // [REQUISICAO] GET /dashboard/opcoes para a lista de projetos/colaboradores.
   const loadOptions = useCallback(async () => {
     try {
       const response = await api.get("/dashboard/opcoes");
@@ -595,6 +603,7 @@ const monthLabel = (month) => {
 };
 
 /** Gráfico do projeto com a tabela dos mesmos números, para ler sem o gráfico. */
+// [TELA] Aba Evolução: gráfico e tabela do custo mensal e acumulado contra o orçamento.
 function ProjectEvolution({ rows, budget, partial }) {
   if (!rows.length)
     return (
@@ -658,6 +667,7 @@ function ProjectEvolution({ rows, budget, partial }) {
 }
 
 /** Entrada pelo menu: escolhe o projeto ou o colaborador antes de abrir o dashboard. */
+// [TELA] Tela de escolha quando o endereço não tem o projeto/colaborador.
 function EntitySelection({ individual, options, optionsError, onRefresh, onPick }) {
   const rows = individual ? options.colaboradores : options.projetos;
   const noun = individual ? "colaborador" : "projeto";

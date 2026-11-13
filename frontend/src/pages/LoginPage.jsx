@@ -1,3 +1,9 @@
+/**
+ * [TELA][SEGURANCA] Tela de login (/login). Envia usuário ou e-mail e senha para POST
+ * /api/auth/login (via AuthContext). Mensagens: "Preencha este campo" (navegador) e "Usuário ou
+ * senha inválidos" (API).
+ */
+
 import React, { useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
@@ -10,6 +16,7 @@ import {
   forgetRememberedLogin,
 } from "../auth/rememberedLogin.js";
 
+// [TELA] Formulário de acesso, "Lembrar meu usuário" e link Esqueci minha senha.
 export function LoginPage() {
   const auth = useAuth();
   const location = useLocation();
@@ -28,6 +35,9 @@ export function LoginPage() {
       ? from
       : "/dashboard";
   if (auth.user) return <Navigate to={destination} replace />;
+  // [REQUISICAO] Faz o login pelo AuthContext; quando o usuário fica logado, a tela redireciona.
+  // [ERRO] Mostra a mensagem da API ("Usuário ou senha inválidos") ou a de servidor fora do ar.
+  // [SEGURANCA] Com "lembrar" marcado salva só o usuário, nunca a senha.
   async function submit(event) {
     event.preventDefault();
     setBusy(true);

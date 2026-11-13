@@ -1,8 +1,14 @@
+/**
+ * [ESTADO] Tema claro/escuro. O tema fica em html[data-theme] (lido pelo styles.css) e é salvo no
+ * navegador (code-bi-theme).
+ */
+
 import React, { createContext, useContext, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 const ThemeContext = createContext(null);
 
+// [ESTADO] Guarda o tema atual e a função de troca para toda a aplicação.
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => document.documentElement.dataset.theme || "light");
 
@@ -20,6 +26,7 @@ export function ThemeProvider({ children }) {
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>;
 }
 
+// [COMPONENTE] Botão de tema da barra superior e das telas de login.
 export function ThemeToggle() {
   const { theme, toggleTheme } = useContext(ThemeContext);
   const dark = theme === "dark";

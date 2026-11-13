@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Equipe inicial opcional no cadastro de projeto: escolha dos colaboradores com papel
+ * e data de entrada.
+ */
+
 import React, { useEffect, useState } from "react";
 import { api } from "../api/client.js";
 

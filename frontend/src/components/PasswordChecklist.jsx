@@ -1,3 +1,7 @@
+/**
+ * [COMPONENTE][VALIDACAO] Lista das regras da nova senha, marcadas enquanto o usuário digita.
+ */
+
 import React from "react";
 import { Check, X } from "lucide-react";
 import { passwordRules, passwordTooLong } from "../auth/password.js";

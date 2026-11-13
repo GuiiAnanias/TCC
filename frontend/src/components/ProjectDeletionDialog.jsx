@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Diálogo de exclusão definitiva de projeto: mostra o que impede a exclusão e só
+ * permite confirmar quando não há vínculos.
+ */
+
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "../api/client.js";

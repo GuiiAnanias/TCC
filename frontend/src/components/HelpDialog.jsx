@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Botão "?" ao lado do título que abre a ajuda da tela num <dialog> (fecha com Esc ou
+ * pelo botão).
+ */
+
 import React, { useId, useRef } from "react";
 import { createPortal } from "react-dom";
 import { CircleHelp, X } from "lucide-react";

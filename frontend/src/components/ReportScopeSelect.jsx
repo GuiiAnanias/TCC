@@ -1,3 +1,7 @@
+/**
+ * [COMPONENTE] Campo "Projetos ou clientes" do relatório: uma busca que aceita os dois.
+ */
+
 import React from "react";
 import { MultiSelect } from "./MultiSelect.jsx";
 import { projectStatusLabel } from "../config/projectOptions.js";

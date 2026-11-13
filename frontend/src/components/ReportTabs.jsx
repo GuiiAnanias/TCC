@@ -1,3 +1,7 @@
+/**
+ * [COMPONENTE] Abas Gerar relatório / Histórico da tela de relatórios.
+ */
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { FileChartColumn, History } from "lucide-react";

@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Visão em gráficos do Dashboard Geral (Recharts): custo por mês, orçamento x custo,
+ * rosca de horas e de tarefas por status e rankings. Os dados vêm de utils/dashboardCharts.js.
+ */
+
 import React from "react";
 import {
   Bar,
@@ -56,6 +61,7 @@ const eixo = { fill: "var(--muted)", fontSize: 12 };
 const grade = <CartesianGrid stroke="var(--line)" vertical={false} />;
 const gradeHorizontal = <CartesianGrid stroke="var(--line)" horizontal={false} />;
 
+// [COMPONENTE] Dica (tooltip) dos gráficos com os valores do ponto.
 function Dica({ active, payload, label, titulo, linhas }) {
   if (!active || !payload?.length) return null;
   const dados = payload[0].payload;
@@ -77,6 +83,7 @@ function Dica({ active, payload, label, titulo, linhas }) {
   );
 }
 
+// [COMPONENTE] Moldura de cada gráfico: título, subtítulo e aviso quando não há dados.
 function Cartao({ titulo, subtitulo, vazio, children, nota, className = "" }) {
   return (
     <article className={`chart-card ${className}`}>
@@ -90,6 +97,7 @@ function Cartao({ titulo, subtitulo, vazio, children, nota, className = "" }) {
   );
 }
 
+// [TELA] Colunas empilhadas: custo base e bonificação de cada mês.
 function CustoPorMes({ evolucao }) {
   const dados = evolucao.map((row) => ({ ...row, rotulo: mesCurto(row.mes) }));
   return (
@@ -178,6 +186,7 @@ function CustoPorMes({ evolucao }) {
   );
 }
 
+// [TELA] Barras em pares: orçamento integral x custo do recorte por projeto.
 function OrcamentoXCusto({ projetos, recortado }) {
   const { itens, ocultos } = orcamentoPorProjeto(projetos);
   const altura = Math.max(160, itens.length * 64 + 56);

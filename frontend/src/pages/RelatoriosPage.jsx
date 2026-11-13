@@ -1,3 +1,8 @@
+/**
+ * [TELA] Relatórios (/relatorios e /relatorios/:id): escolher projetos/clientes, período e blocos,
+ * gerar o relatório (grava uma cópia dos dados), ver a prévia, personalizar e baixar PDF e Excel.
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { FileChartColumn, FileDown, FileSpreadsheet, Play, X } from "lucide-react";
@@ -50,6 +55,8 @@ export function textoPeriodo({ dataInicio, dataFim }) {
 }
 
 /** Mensagem do primeiro problema do formulário, ou vazio quando pode gerar. */
+// [VALIDACAO] Antes de gerar: "Selecione ao menos um filtro para gerar o relatório." e "Selecione
+// ao menos um bloco de dados para o relatório."
 export function validarFormulario(form) {
   if (!form.projetoIds.length && !form.clienteIds?.length && !form.dataInicio && !form.dataFim)
     return "Selecione ao menos um filtro para gerar o relatório.";
@@ -65,6 +72,7 @@ function mensagemDeErro(error, padrao) {
   return error.response?.data?.errors?.[0]?.message || error.response?.data?.message || padrao;
 }
 
+// [TELA] Componente da tela.
 export function RelatoriosPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -95,6 +103,7 @@ export function RelatoriosPage() {
     }
   }, []);
 
+  // [REQUISICAO] Abre um relatório gerado (GET /relatorios/:id).
   const carregarRelatorio = useCallback(async (relatorioId, signal) => {
     setCarregando(true);
     setErro("");
@@ -133,6 +142,8 @@ export function RelatoriosPage() {
   useEffect(() => setRetornoArquivo(null), [relatorio?.id]);
 
   // O arquivo é gerado no servidor a partir da mesma fotografia da prévia, com o login atual.
+  // [REQUISICAO] Download do PDF ou do Excel; mensagens de sucesso e de falha em
+  // utils/relatorioArquivos.js.
   async function baixar(formato) {
     setBaixando(formato);
     setRetornoArquivo(null);
@@ -174,6 +185,7 @@ export function RelatoriosPage() {
     setErro("");
   }
 
+  // [VALIDACAO] Valida o formulário e gera o relatório.
   async function gerar(event) {
     event.preventDefault();
     const problema = validarFormulario(form);
@@ -189,6 +201,7 @@ export function RelatoriosPage() {
     }
   }
 
+  // [REQUISICAO] POST /relatorios e abre o relatório gerado.
   async function criarRelatorio(escolhas) {
     if (pedido.current) return false;
     const controller = new AbortController();
@@ -628,6 +641,7 @@ const conteudoDoBloco = {
   ),
 };
 
+// [TELA] Prévia de um relatório, lida da cópia gravada.
 export function RelatorioPrevia({ relatorio }) {
   const { conteudo } = relatorio;
   const escolhidos = new Set(conteudo.filtros.projetoIds ?? []);

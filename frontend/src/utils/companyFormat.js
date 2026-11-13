@@ -1,3 +1,7 @@
+/**
+ * Máscaras de exibição: CNPJ, CPF, CEP e telefone, enquanto o usuário digita e nas tabelas.
+ */
+
 export function formatCnpj(value) {
   return String(value || "")
     .toUpperCase()

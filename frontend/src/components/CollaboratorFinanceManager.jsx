@@ -1,3 +1,9 @@
+/**
+ * [COMPONENTE] Financeiro do colaborador (ação Financeiro na lista de colaboradores): histórico de
+ * vigências de valor/hora, nova vigência e encerramento. Aberto também pelo aviso de custo
+ * incompleto do dashboard.
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, Check, Copy, WalletCards, X } from "lucide-react";
 import { api } from "../api/client.js";
@@ -15,6 +21,7 @@ const currency = (value) =>
 const rateLabel = (item) => `${item.nivel} — ${currency(item.valorHora)}/h`;
 const nextDay = (value) =>
   new Date(new Date(`${value}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+// [REGRA] Menor data de início aceita para a nova vigência (depois das anteriores).
 const minimumStart = (rows) =>
   rows.length
     ? nextDay(
@@ -76,6 +83,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, p
     [configs, statusFilter],
   );
 
+  // [REQUISICAO] GET das vigências do colaborador.
   const loadConfigs = useCallback(async () => {
     if (!collaborator?.id) return;
     const request = requestScope.begin("load");
@@ -125,6 +133,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, p
     setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
   }
 
+  // [REQUISICAO] Cria a nova vigência (POST). A anterior é encerrada pela API.
   async function submit(event) {
     event.preventDefault();
     if (isInactive || saving || loading || loadError) return;
@@ -158,6 +167,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, p
     }
   }
 
+  // [REQUISICAO] Encerra a vigência aberta hoje (DELETE), após confirmação.
   async function close(config) {
     if (
       isInactive ||
@@ -189,6 +199,7 @@ export function CollaboratorFinanceManager({ collaborator, onChanged, onClose, p
     }
   }
 
+  // Preenche o formulário com a faixa e os benefícios de uma vigência anterior.
   function usarComoBase(config) {
     if (loading || saving || loadError) return;
     if (!remunerations.some((item) => item.id === config.itemTabelaId)) {

@@ -1,3 +1,9 @@
+/**
+ * [TELA] Importar horas (/importacao): baixar o modelo, escolher o .xlsx, conferir as linhas (sem
+ * gravar) e importar. Mensagens: "Importação realizada com sucesso" ou "Falha ao importar arquivo".
+ * Embaixo, o Histórico de Importações.
+ */
+
 import React, { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -90,6 +96,7 @@ function Resumo({ resumo }) {
   );
 }
 
+// [TELA] Erros por linha do Excel.
 function TabelaErros({ erros }) {
   return (
     <div className="table-panel">
@@ -117,6 +124,7 @@ function TabelaErros({ erros }) {
   );
 }
 
+// [TELA] Prévia das linhas reconhecidas, com os avisos de custo incompleto.
 function TabelaPrevia({ linhas }) {
   const visiveis = linhas.slice(0, PREVIA);
   return (
@@ -166,6 +174,7 @@ function TabelaPrevia({ linhas }) {
   );
 }
 
+// [TELA] Componente da tela.
 export function ImportacaoPage() {
   const input = useRef(null);
   const [arquivo, setArquivo] = useState(null);
@@ -184,6 +193,7 @@ export function ImportacaoPage() {
     if (input.current) input.current.value = "";
   }
 
+  // [REQUISICAO] GET do modelo .xlsx.
   async function baixarModelo() {
     setEtapa("modelo");
     setError("");
@@ -199,6 +209,7 @@ export function ImportacaoPage() {
     }
   }
 
+  // [REQUISICAO][VALIDACAO] Envia o arquivo para conferência (POST .../validacao); nada é gravado.
   async function escolher(event) {
     const escolhido = event.target.files?.[0];
     event.target.value = "";
@@ -230,6 +241,8 @@ export function ImportacaoPage() {
     }
   }
 
+  // [REQUISICAO] Importa (POST /importacoes/apontamentos) com o nome do arquivo no cabeçalho
+  // X-Nome-Arquivo e atualiza o histórico.
   async function importar() {
     setEtapa("importando");
     setError("");

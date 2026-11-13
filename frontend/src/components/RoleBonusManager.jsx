@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Bonificação por papel no projeto (tela Remuneração): histórico das regras por papel
+ * e cadastro de uma nova regra com data de início.
+ */
+
 import React, { useCallback, useEffect, useState } from "react";
 import { HelpDialog } from "./HelpDialog.jsx";
 import { api } from "../api/client.js";
@@ -13,6 +18,7 @@ export function RoleBonusManager() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  // [REQUISICAO] GET /bonificacoes-papeis.
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -35,6 +41,7 @@ export function RoleBonusManager() {
     load();
   }, [load]);
 
+  // [REQUISICAO] POST de uma nova regra; erros de vigência vêm da API.
   async function submit(event) {
     event.preventDefault();
     setSaving(true);
