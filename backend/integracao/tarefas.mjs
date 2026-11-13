@@ -315,7 +315,7 @@ try {
   // Exercitar o contrato HTTP autenticado com o mesmo schema isolado.
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const { createTestSession } = await import("./apoio/sessao-teste.mjs");
   const user = await client.usuario.create({
     data: { nomeUsuario: "tasks-test", email: "tasks-test@example.local", senhaHash: "test-only" },
   });

@@ -200,7 +200,7 @@ try {
   assert.equal((await find(pending.id)).status, "APROVADO");
   const { env } = await import("../src/config/env.js");
   env.jwtSecret = "segredo-somente-teste-custos";
-  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const { createTestSession } = await import("./apoio/sessao-teste.mjs");
   const { app } = await import("../src/app.js");
   const user = await client.usuario.create({
     data: {

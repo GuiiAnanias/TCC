@@ -89,7 +89,7 @@ try {
       return sum + Number(entry.horas) * Number(config.valorHoraAplicado);
     }, 0);
   };
-  const { todayFinanceDate } = await import("../src/utils/financeDates.js");
+  const { todayFinanceDate } = await import("../src/utils/datasFinanceiras.js");
   const author = await client.usuario.create({
     data: {
       nomeUsuario: "finance-test",

@@ -5,8 +5,8 @@
 
 import prisma from "../config/prisma.js";
 import { projetosRepository } from "./projetosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
-import { financeDate } from "../utils/financeDates.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { financeDate } from "../utils/datasFinanceiras.js";
 
 export const importacaoApontamentosRepository = {
   // Cadastros usados para reconhecer colaborador, projeto e tarefa de cada linha.
@@ -96,7 +96,7 @@ export const importacaoApontamentosRepository = {
           db,
         ))
       )
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "Vincule uma equipe válida na data das horas antes de importar apontamentos.",
         );

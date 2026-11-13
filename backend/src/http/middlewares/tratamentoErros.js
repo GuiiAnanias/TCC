@@ -7,20 +7,20 @@ import prismaPackage from "@prisma/client";
 const { Prisma } = prismaPackage;
 import { ZodError } from "zod";
 import { env } from "../../config/env.js";
-import { custoConflict } from "../../utils/custoConflict.js";
+import { conflitoCusto } from "../../utils/conflitoCusto.js";
 
 // [ERRO] Rota que não existe: 404 "Rota não encontrada."
-export function notFoundHandler(request, response) {
+export function rotaNaoEncontrada(request, response) {
   response.status(404).json({
     message: "Rota não encontrada.",
   });
 }
 
 // [ERRO] Converte cada tipo de erro no status certo. A ordem dos testes abaixo importa.
-export function errorHandler(error, request, response, _next) {
+export function tratarErros(error, request, response, _next) {
   // [ERRO] Bloqueio dos gatilhos do banco (custo de apontamento faturado) vira 409 com orientação
-  // ao usuário (utils/custoConflict.js).
-  const conflict = custoConflict(error);
+  // ao usuário (utils/conflitoCusto.js).
+  const conflict = conflitoCusto(error);
   if (conflict) return response.status(conflict.statusCode).json({ message: conflict.message });
   // [ERRO][VALIDACAO] Falha de schema Zod: 400 "Dados inválidos." com a lista de campos e
   // mensagens.
@@ -58,7 +58,7 @@ export function errorHandler(error, request, response, _next) {
     });
   }
 
-  // [ERRO] Erros de regra de negócio (HttpError) trazem o próprio status; qualquer outro vira 500.
+  // [ERRO] Erros de regra de negócio (ErroHttp) trazem o próprio status; qualquer outro vira 500.
   // [SEGURANCA] O stack só aparece em desenvolvimento (NODE_ENV).
   const statusCode = error.statusCode || 500;
 

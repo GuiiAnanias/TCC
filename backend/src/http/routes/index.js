@@ -1,6 +1,6 @@
 /**
  * [ROTA] Registro de todas as rotas da API (/api/...). Rotas públicas ficam antes de
- * routes.use(authenticate); todas as demais exigem login.
+ * routes.use(autenticar); todas as demais exigem login.
  */
 
 import { premiacaoRoutes } from "./premiacaoRoutes.js";
@@ -17,9 +17,9 @@ import {
   cargosTi,
   niveisRemuneracao,
   papeisProjeto,
-} from "../../schemas/cadastroOptions.js";
-import { authRoutes } from "./authRoutes.js";
-import { authenticate } from "../middlewares/authenticate.js";
+} from "../../schemas/opcoesCadastro.js";
+import { autenticacaoRoutes } from "./autenticacaoRoutes.js";
+import { autenticar } from "../middlewares/autenticar.js";
 import { bonificacoesPapeisRoutes } from "./bonificacoesPapeisRoutes.js";
 import { relatoriosRoutes } from "./relatoriosRoutes.js";
 import { importacoesRoutes } from "./importacoesRoutes.js";
@@ -34,10 +34,10 @@ routes.get("/health", (request, response) => {
   });
 });
 
-// [ROTA] Pública: login, esqueci a senha e redefinição (http/routes/authRoutes.js).
-routes.use("/auth", authRoutes);
-// [SEGURANCA] Daqui para baixo toda rota exige token válido (http/middlewares/authenticate.js).
-routes.use(authenticate);
+// [ROTA] Pública: login, esqueci a senha e redefinição (http/routes/autenticacaoRoutes.js).
+routes.use("/auth", autenticacaoRoutes);
+// [SEGURANCA] Daqui para baixo toda rota exige token válido (http/middlewares/autenticar.js).
+routes.use(autenticar);
 routes.use("/dashboard", dashboardRoutes);
 routes.use("/bonificacoes-papeis", bonificacoesPapeisRoutes);
 // [ROTA] Listas fixas dos formulários (cargos, papéis no projeto, níveis, departamentos).

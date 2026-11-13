@@ -1,6 +1,6 @@
 /**
  * [REPOSITORY][BANCO][SEGURANCA] Contador de tentativas de login e de recuperação de senha (usado
- * pelo middleware authRateLimit).
+ * pelo middleware limiteAutenticacao).
  */
 
 import prisma from "../config/prisma.js";

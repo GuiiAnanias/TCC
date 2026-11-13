@@ -1,7 +1,7 @@
 // Verificação somente de leitura, segura antes de aplicar as novas migrações.
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { financeDay } from "../src/utils/financeDates.js";
+import { financeDay } from "../src/utils/datasFinanceiras.js";
 
 const client = new PrismaClient();
 try {

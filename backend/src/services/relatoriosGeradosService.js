@@ -4,9 +4,9 @@
  */
 
 import { dashboardService } from "./dashboardService.js";
-import { round } from "./operationalIndicators.js";
+import { round } from "./indicadoresOperacionais.js";
 import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 import { LIMITE_PROJETOS_RELATORIO } from "../schemas/relatoriosSchemas.js";
 
 // Versão do formato da fotografia. Mudanças no conteúdo gravado exigem outra versão,
@@ -277,7 +277,7 @@ export const relatoriosGeradosService = {
       );
     } catch (error) {
       if (error.code === "P2003")
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "Um projeto do recorte foi excluído durante a geração. Gere o relatório de novo.",
         );
@@ -287,7 +287,7 @@ export const relatoriosGeradosService = {
   // [SERVICE][ERRO] Abre um relatório pelo número; inexistente: 404.
   async buscar(id) {
     const registro = await relatoriosGeradosRepository.findById(id);
-    if (!registro) throw new HttpError(404, "Relatório não encontrado.");
+    if (!registro) throw new ErroHttp(404, "Relatório não encontrado.");
     return formatar(registro);
   },
 };
@@ -300,12 +300,12 @@ async function montarConteudo(dados, agora) {
     escolhidos.length &&
     (await relatoriosGeradosRepository.countProjects(escolhidos)) !== escolhidos.length
   )
-    throw new HttpError(400, "Um dos projetos escolhidos não existe mais. Atualize a lista.");
+    throw new ErroHttp(400, "Um dos projetos escolhidos não existe mais. Atualize a lista.");
   const clientes = clienteIds.length
     ? await relatoriosGeradosRepository.findClients(clienteIds)
     : [];
   if (clientes.length !== clienteIds.length)
-    throw new HttpError(400, "Um dos clientes escolhidos não existe mais. Atualize a lista.");
+    throw new ErroHttp(400, "Um dos clientes escolhidos não existe mais. Atualize a lista.");
   // Clientes e projetos são escolhas aditivas. A união por ID evita duplicar custos.
   const projetoIds = [
     ...new Set([
@@ -314,13 +314,13 @@ async function montarConteudo(dados, agora) {
     ]),
   ].sort((a, b) => a - b);
   if (projetoIds.length > LIMITE_PROJETOS_RELATORIO)
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       "O recorte inclui mais de 50 projetos. Selecione projetos individualmente para reduzir.",
     );
   // Cliente sem projetos não pode virar uma consulta sem filtro de projeto.
   if (clienteIds.length && !projetoIds.length)
-    throw new HttpError(422, "Os clientes escolhidos não têm projetos para gerar o relatório.");
+    throw new ErroHttp(422, "Os clientes escolhidos não têm projetos para gerar o relatório.");
   // Filtros extras só entram no registro quando foram usados.
   const extras = {
     ...(dados.equipe ? { equipe: dados.equipe } : {}),
@@ -343,9 +343,9 @@ async function montarConteudo(dados, agora) {
     ...extras,
   });
   if (dados.colaboradorId && !relatorio.nomesFiltros?.colaborador)
-    throw new HttpError(400, "O colaborador escolhido não existe mais. Atualize a lista.");
+    throw new ErroHttp(400, "O colaborador escolhido não existe mais. Atualize a lista.");
   if (!relatorio.projetos.length)
-    throw new HttpError(
+    throw new ErroHttp(
       422,
       "Nenhum projeto tem dados no recorte escolhido. Ajuste os filtros antes de gerar.",
     );

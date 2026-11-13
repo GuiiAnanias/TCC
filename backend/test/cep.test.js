@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { consultarCep } from "../src/services/cepService.js";
 import { clienteCreateSchema } from "../src/schemas/clientesSchemas.js";
-import { formatTelefone } from "../../frontend/src/utils/companyFormat.js";
+import { formatTelefone } from "../../frontend/src/utils/formatosCadastro.js";
 
 test("telephone accepts landlines and mobiles with DDD, rejects incomplete and excessive digits", () => {
   assert.equal(formatTelefone("11999991234567890"), "(11) 99999-1234");

@@ -2,7 +2,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import prisma from "../src/config/prisma.js";
-import { seedAwards } from "../prisma/seed-awards.js";
+import { seedAwards } from "../prisma/seed-premiacao.js";
 import { dashboardService } from "../src/services/dashboardService.js";
 const url = new URL(process.env.DATABASE_URL);
 if (

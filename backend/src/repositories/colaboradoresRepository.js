@@ -4,7 +4,7 @@
  */
 
 import prisma from "../config/prisma.js";
-import { todayFinanceDate } from "../utils/financeDates.js";
+import { todayFinanceDate } from "../utils/datasFinanceiras.js";
 
 const colaboradorInclude = () => ({
   configuracoesFinanceiras: {

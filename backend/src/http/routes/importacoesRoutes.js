@@ -6,7 +6,7 @@
 import express, { Router } from "express";
 import { importacoesController } from "../controllers/importacoesController.js";
 import { TAMANHO_MAXIMO } from "../../services/importacaoApontamentosService.js";
-import { HttpError } from "../../utils/HttpError.js";
+import { ErroHttp } from "../../utils/ErroHttp.js";
 
 // [VALIDACAO] O corpo é o próprio arquivo, lido como bytes, com tamanho máximo; acima disso
 // responde 413.
@@ -17,7 +17,7 @@ function lerArquivo(request, response, next) {
   leitorBruto(request, response, (error) => {
     if (error?.type === "entity.too.large")
       return next(
-        new HttpError(413, "O arquivo passa de 5 MB. Divida os apontamentos em mais arquivos."),
+        new ErroHttp(413, "O arquivo passa de 5 MB. Divida os apontamentos em mais arquivos."),
       );
     next(error);
   });

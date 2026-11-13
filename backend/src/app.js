@@ -7,7 +7,7 @@
 
 import cors from "cors";
 import express from "express";
-import { errorHandler, notFoundHandler } from "./http/middlewares/errorHandler.js";
+import { tratarErros, rotaNaoEncontrada } from "./http/middlewares/tratamentoErros.js";
 import { routes } from "./http/routes/index.js";
 
 export const app = express();
@@ -39,6 +39,6 @@ app.get("/", (request, response) => {
 app.use("/api", routes);
 
 // [ERRO] Depois das rotas: endereço inexistente responde 404 e qualquer erro lançado cai no
-// errorHandler.
-app.use(notFoundHandler);
-app.use(errorHandler);
+// tratarErros.
+app.use(rotaNaoEncontrada);
+app.use(tratarErros);

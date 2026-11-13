@@ -4,14 +4,14 @@
  */
 
 import { remuneracoesRepository } from "../repositories/remuneracoesRepository.js";
-import { HttpError } from "../utils/HttpError.js";
-import { niveisRemuneracao } from "../schemas/cadastroOptions.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { niveisRemuneracao } from "../schemas/opcoesCadastro.js";
 
 async function ensureRemuneracaoExists(id) {
   const remuneracao = await remuneracoesRepository.findById(id);
 
   if (!remuneracao) {
-    throw new HttpError(404, "Item da tabela de remuneração não encontrado.");
+    throw new ErroHttp(404, "Item da tabela de remuneração não encontrado.");
   }
 
   return remuneracao;
@@ -30,7 +30,7 @@ export const remuneracoesService = {
     const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
     if (remuneracao) {
-      throw new HttpError(409, "Já existe um item com este nível.");
+      throw new ErroHttp(409, "Já existe um item com este nível.");
     }
 
     return remuneracoesRepository.create(data);
@@ -41,7 +41,7 @@ export const remuneracoesService = {
 
     if (data.nivel) {
       if (data.nivel !== current.nivel && !niveisRemuneracao.includes(data.nivel)) {
-        throw new HttpError(
+        throw new ErroHttp(
           400,
           "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.",
         );
@@ -49,7 +49,7 @@ export const remuneracoesService = {
       const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
       if (remuneracao && remuneracao.id !== id) {
-        throw new HttpError(409, "Já existe um item com este nível.");
+        throw new ErroHttp(409, "Já existe um item com este nível.");
       }
     }
 

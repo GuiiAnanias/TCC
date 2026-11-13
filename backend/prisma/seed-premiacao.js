@@ -3,7 +3,7 @@
  * concluída e um rascunho).
  */
 
-import { premiacaoTemplates } from "../src/services/premiacaoRules.js";
+import { premiacaoTemplates } from "../src/services/regrasPremiacao.js";
 import { buildAwardContent } from "../src/repositories/premiacaoRepository.js";
 
 // Exemplos de avaliação autorizados para o seed. Percentuais informados são

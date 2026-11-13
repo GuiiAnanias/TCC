@@ -4,8 +4,8 @@
  */
 
 import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
-import { niveisRemuneracao } from "./cadastroOptions.js";
+import { optionalStatusSchema, paginationQuerySchema } from "./comunsSchemas.js";
+import { niveisRemuneracao } from "./opcoesCadastro.js";
 
 // As colunas bonificacao e tipoBonificacao continuam no banco como legado, mas não
 // são mais aceitas pela API: a bonificação usada nos custos é definida por papel no

@@ -4,7 +4,7 @@
  */
 
 import { dashboardService } from "./dashboardService.js";
-import { round } from "./operationalIndicators.js";
+import { round } from "./indicadoresOperacionais.js";
 import {
   FORMATOS,
   dataBr,

@@ -5,15 +5,15 @@
  */
 
 import { apontamentosRepository } from "../repositories/apontamentosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../repositories/projetosRepository.js";
 import { tarefasRepository } from "../repositories/tarefasRepository.js";
-import { financeDay, financeDate, todayFinanceDate } from "../utils/financeDates.js";
+import { financeDay, financeDate, todayFinanceDate } from "../utils/datasFinanceiras.js";
 
 async function ensureApontamentoExists(id, db) {
   const record = await apontamentosRepository.findById(id, db);
-  if (!record) throw new HttpError(404, "Apontamento não encontrado.");
+  if (!record) throw new ErroHttp(404, "Apontamento não encontrado.");
   return record;
 }
 // [REGRA] Confere colaborador, projeto e tarefa do apontamento (novo ou editado).
@@ -25,15 +25,15 @@ async function validate(data, previous = {}, db) {
   await apontamentosRepository.lockReferences({ colaboradorId, projetoId }, db);
   if (colaboradorId) {
     const person = await colaboradoresRepository.findById(colaboradorId, db);
-    if (!person) throw new HttpError(404, "Colaborador não encontrado.");
+    if (!person) throw new ErroHttp(404, "Colaborador não encontrado.");
     if (person.status !== "ATIVO")
-      throw new HttpError(409, "Selecione um colaborador ativo para lançar horas.");
+      throw new ErroHttp(409, "Selecione um colaborador ativo para lançar horas.");
   }
   if (projetoId) {
     const project = await projetosRepository.findById(projetoId, db);
-    if (!project) throw new HttpError(404, "Projeto não encontrado.");
+    if (!project) throw new ErroHttp(404, "Projeto não encontrado.");
     if (project.status !== "ATIVO")
-      throw new HttpError(409, "Selecione um projeto ativo para lançar horas.");
+      throw new ErroHttp(409, "Selecione um projeto ativo para lançar horas.");
   }
   // Novas horas (ou transferência para outro projeto) exigem uma equipe válida
   // na data trabalhada. Correções no próprio projeto preservam o fluxo histórico.
@@ -45,16 +45,16 @@ async function validate(data, previous = {}, db) {
     if (
       !(await projetosRepository.hasOperationalTeam(merged.projetoId, financeDate(merged.data), db))
     )
-      throw new HttpError(
+      throw new ErroHttp(
         409,
         "Vincule ao menos um colaborador ativo à equipe do projeto, com participação na data das horas, antes de lançar apontamentos.",
       );
   }
   if (merged.tarefaId) {
     const task = await tarefasRepository.findById(merged.tarefaId, db);
-    if (!task) throw new HttpError(404, "Tarefa não encontrada.");
+    if (!task) throw new ErroHttp(404, "Tarefa não encontrada.");
     if (task.projetoId !== merged.projetoId)
-      throw new HttpError(
+      throw new ErroHttp(
         400,
         "A tarefa deve pertencer ao mesmo projeto do apontamento. Selecione outra tarefa ou remova o vínculo.",
       );
@@ -62,7 +62,7 @@ async function validate(data, previous = {}, db) {
       merged.tarefaId !== previous.tarefaId &&
       (task.statusRegistro !== "ATIVO" || task.projeto.status !== "ATIVO")
     )
-      throw new HttpError(409, "Selecione uma tarefa e um projeto ativos para vincular horas.");
+      throw new ErroHttp(409, "Selecione uma tarefa e um projeto ativos para vincular horas.");
   }
 }
 // Horas faturadas já foram cobradas do cliente: os dados que formam o custo ficam
@@ -89,7 +89,7 @@ function ensureEditavel(anterior, data) {
     (campo) => data[campo] !== undefined && !camposTravados[campo](data[campo], anterior),
   );
   if (alterados.length) {
-    throw new HttpError(
+    throw new ErroHttp(
       409,
       "Apontamento faturado não pode ser alterado: as horas já foram cobradas do cliente. Para corrigir, volte o status para Aprovado e salve antes de editar.",
     );
@@ -99,7 +99,7 @@ function ensureEditavel(anterior, data) {
 // [REGRA][ERRO] Apontamento faturado não pode ser excluído.
 function ensureExcluivel(registro) {
   if (registro.status === STATUS_TRAVADO) {
-    throw new HttpError(
+    throw new ErroHttp(
       409,
       "Apontamento faturado não pode ser excluído: as horas já foram cobradas do cliente. Para corrigir, volte o status para Aprovado antes.",
     );
@@ -119,7 +119,7 @@ async function validateDiaEHoras(data, previous = {}, db) {
   const dataMudou =
     data.data !== undefined && (!previous.data || !mesmoDia(data.data, previous.data));
   if (dataMudou && financeDay(data.data) > financeDay(todayFinanceDate())) {
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       `A data do apontamento não pode ser depois de hoje (${dataBr(todayFinanceDate())}).`,
     );
@@ -136,7 +136,7 @@ async function validateDiaEHoras(data, previous = {}, db) {
     db,
   );
   if (centesimos(outras) + centesimos(merged.horas) > LIMITE_HORAS_DIA * 100) {
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       `O colaborador passaria de ${LIMITE_HORAS_DIA} h em ${dataBr(merged.data)}: já existem ${Number(outras)} h lançadas nesse dia.`,
     );

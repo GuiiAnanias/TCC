@@ -7,7 +7,7 @@
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import { usuariosRepository } from "../repositories/usuariosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 import { novaSenhaSchema } from "../schemas/senhaSchemas.js";
 import { emailService } from "./emailService.js";
 
@@ -37,7 +37,7 @@ async function usuarioDoLink(token, agora) {
   const tokenHash = hashToken(token);
   const usuario = await usuariosRepository.findByResetToken(tokenHash);
   const expirado = !usuario?.resetTokenExpiraEm || new Date(usuario.resetTokenExpiraEm) <= agora;
-  if (!usuario || usuario.status !== "ATIVO" || expirado) throw new HttpError(400, LINK_INVALIDO);
+  if (!usuario || usuario.status !== "ATIVO" || expirado) throw new ErroHttp(400, LINK_INVALIDO);
   return { usuario, tokenHash };
 }
 
@@ -72,9 +72,9 @@ export const senhaService = {
   // Gera o link para um usuário pelo login (uso administrativo, sem e-mail).
   async gerarLink(login, { frontendUrl, agora = new Date() }) {
     const usuario = await usuariosRepository.findByLogin(login);
-    if (!usuario) throw new HttpError(404, `Usuário "${login}" não encontrado.`);
+    if (!usuario) throw new ErroHttp(404, `Usuário "${login}" não encontrado.`);
     if (usuario.status !== "ATIVO")
-      throw new HttpError(409, `O usuário "${usuario.nomeUsuario}" está inativo.`);
+      throw new ErroHttp(409, `O usuário "${usuario.nomeUsuario}" está inativo.`);
     const { expiraEm, link } = await criarLink(usuario, frontendUrl, agora);
     return { usuario: usuario.nomeUsuario, expiraEm, link };
   },
@@ -104,6 +104,6 @@ export const senhaService = {
     const { usuario, tokenHash } = await usuarioDoLink(token, agora);
     const senhaHash = await bcrypt.hash(novaSenha, 10);
     if (!(await usuariosRepository.consumeResetToken(usuario.id, tokenHash, senhaHash, agora)))
-      throw new HttpError(400, LINK_INVALIDO);
+      throw new ErroHttp(400, LINK_INVALIDO);
   },
 };

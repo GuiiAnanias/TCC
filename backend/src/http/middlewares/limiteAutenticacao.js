@@ -16,7 +16,11 @@ const key = (scope, value) =>
     .digest("hex");
 
 // Cria o middleware para um escopo (ex.: "login") com os limites do env.js.
-export function authRateLimit(scope, { originLimit, identifierLimit, windowMs }, identifierField) {
+export function limiteAutenticacao(
+  scope,
+  { originLimit, identifierLimit, windowMs },
+  identifierField,
+) {
   return async (request, response, next) => {
     try {
       const raw = request.body?.[identifierField];

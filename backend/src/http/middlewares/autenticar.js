@@ -1,6 +1,6 @@
 /**
  * [SEGURANCA] Middleware de autenticação. Roda antes de todas as rotas protegidas (ver
- * routes.use(authenticate) em http/routes/index.js). Sem token válido e sessão ativa no banco,
+ * routes.use(autenticar) em http/routes/index.js). Sem token válido e sessão ativa no banco,
  * responde 401.
  */
 
@@ -10,7 +10,7 @@ import { env } from "../../config/env.js";
 
 // [SEGURANCA] Confere o cabeçalho Authorization: Bearer <token>, a assinatura e a validade do JWT e
 // a sessão gravada no banco.
-export async function authenticate(request, response, next) {
+export async function autenticar(request, response, next) {
   // [SEGURANCA] Sem o cabeçalho no formato Bearer: 401.
   const match = request.headers.authorization?.match(/^Bearer (\S+)$/i);
   if (!match) return response.status(401).json({ message: "Faça login para acessar o sistema." });

@@ -4,9 +4,9 @@
  */
 
 import prisma from "../config/prisma.js";
-import { HttpError } from "../utils/HttpError.js";
-import { previousFinanceDay, todayFinanceDate } from "../utils/financeDates.js";
-import { custoConflict } from "../utils/custoConflict.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { previousFinanceDay, todayFinanceDate } from "../utils/datasFinanceiras.js";
+import { conflitoCusto } from "../utils/conflitoCusto.js";
 
 const operationalTeamWhere = (date) => ({
   dataEntrada: { lte: date },
@@ -33,20 +33,17 @@ export const projetosRepository = {
       try {
         return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
       } catch (error) {
-        const conflict = custoConflict(error);
+        const conflict = conflitoCusto(error);
         if (conflict) throw conflict;
         if (
           error.code === "P2002" ||
           error.code === "P2004" ||
           error.message?.includes("equipe_periodos_sem_sobreposicao")
         )
-          throw new HttpError(
-            409,
-            "Já existe participação deste colaborador no período informado.",
-          );
+          throw new ErroHttp(409, "Já existe participação deste colaborador no período informado.");
         if (error.code !== "P2034") throw error;
         if (attempt === 2)
-          throw new HttpError(
+          throw new ErroHttp(
             409,
             "A equipe foi alterada em outra operação. Atualize e tente novamente.",
           );
@@ -183,7 +180,7 @@ export const projetosRepository = {
       data: { dataSaida: previousFinanceDay(dataVigencia) },
     });
     if (closed.count !== 1)
-      throw new HttpError(409, "O vínculo foi alterado. Atualize a equipe e tente novamente.");
+      throw new ErroHttp(409, "O vínculo foi alterado. Atualize a equipe e tente novamente.");
     return tx.projetoColaborador.create({
       data: {
         projetoId: member.projetoId,

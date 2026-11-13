@@ -8,12 +8,12 @@ import {
   configuracaoFinanceiraUpdateSchema,
 } from "../../schemas/configuracoesFinanceirasSchemas.js";
 import { configuracoesFinanceirasService } from "../../services/configuracoesFinanceirasService.js";
-import { parseId } from "../../utils/parseId.js";
+import { lerId } from "../../utils/lerId.js";
 
 export const configuracoesFinanceirasController = {
   // [CONTROLLER] Histórico de vigências do colaborador.
   async index(request, response) {
-    const colaboradorId = parseId(request.params.id, "colaborador");
+    const colaboradorId = lerId(request.params.id, "colaborador");
     const configuracoes = await configuracoesFinanceirasService.listByColaborador(colaboradorId);
     return response.json(configuracoes);
   },
@@ -21,7 +21,7 @@ export const configuracoesFinanceirasController = {
   // [CONTROLLER] Cria uma vigência nova. [VALIDACAO] schemas/configuracoesFinanceirasSchemas.js; o
   // autor vem de request.user.
   async store(request, response) {
-    const colaboradorId = parseId(request.params.id, "colaborador");
+    const colaboradorId = lerId(request.params.id, "colaborador");
     const data = configuracaoFinanceiraCreateSchema.parse(request.body);
     const configuracao = await configuracoesFinanceirasService.createForColaborador(
       colaboradorId,
@@ -33,8 +33,8 @@ export const configuracoesFinanceirasController = {
 
   // [CONTROLLER] "Editar" cria outra vigência a partir de uma data: o histórico nunca é alterado.
   async update(request, response) {
-    const colaboradorId = parseId(request.params.id, "colaborador");
-    const configuracaoId = parseId(request.params.configuracaoId, "configuração financeira");
+    const colaboradorId = lerId(request.params.id, "colaborador");
+    const configuracaoId = lerId(request.params.configuracaoId, "configuração financeira");
     const data = configuracaoFinanceiraUpdateSchema.parse(request.body);
     const configuracao = await configuracoesFinanceirasService.updateForColaborador(
       colaboradorId,
@@ -47,8 +47,8 @@ export const configuracoesFinanceirasController = {
 
   // [CONTROLLER] Encerra a vigência aberta com a data de hoje.
   async destroy(request, response) {
-    const colaboradorId = parseId(request.params.id, "colaborador");
-    const configuracaoId = parseId(request.params.configuracaoId, "configuração financeira");
+    const colaboradorId = lerId(request.params.id, "colaborador");
+    const configuracaoId = lerId(request.params.configuracaoId, "configuração financeira");
     const configuracao = await configuracoesFinanceirasService.closeForColaborador(
       colaboradorId,
       configuracaoId,

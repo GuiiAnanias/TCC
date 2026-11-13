@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cargosTi, niveisRemuneracao, papeisProjeto } from "../src/schemas/cadastroOptions.js";
+import { cargosTi, niveisRemuneracao, papeisProjeto } from "../src/schemas/opcoesCadastro.js";
 import { colaboradorCreateSchema } from "../src/schemas/colaboradoresSchemas.js";
 import {
   remuneracaoCreateSchema,

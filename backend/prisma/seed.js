@@ -6,7 +6,7 @@
 
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import { seedDemo } from "./seed-demo.js";
+import { seedDemo } from "./seed-demonstracao.js";
 
 const prisma = new PrismaClient();
 try {

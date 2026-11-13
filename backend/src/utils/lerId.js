@@ -3,13 +3,13 @@
  * "Identificador de cliente inválido.").
  */
 
-import { HttpError } from "./HttpError.js";
+import { ErroHttp } from "./ErroHttp.js";
 
-export function parseId(value, entityName = "registro") {
+export function lerId(value, entityName = "registro") {
   const id = Number(value);
 
   if (!Number.isInteger(id) || id <= 0) {
-    throw new HttpError(400, `Identificador de ${entityName} inválido.`);
+    throw new ErroHttp(400, `Identificador de ${entityName} inválido.`);
   }
 
   return id;

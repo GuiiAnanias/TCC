@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
+import { optionalStatusSchema, paginationQuerySchema } from "./comunsSchemas.js";
 import { isValidCnpj, normalizeCnpj } from "../utils/cnpj.js";
 import { isValidCpf, normalizeCpf } from "../utils/cpf.js";
 

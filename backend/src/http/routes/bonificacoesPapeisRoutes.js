@@ -4,20 +4,20 @@
  */
 
 import { Router } from "express";
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { tratarAssincrono } from "../../utils/tratarAssincrono.js";
 import { bonificacaoPapelCreateSchema } from "../../schemas/bonificacoesPapeisSchemas.js";
 import { bonificacoesPapeisRepository } from "../../repositories/bonificacoesPapeisRepository.js";
 
 export const bonificacoesPapeisRoutes = Router();
 bonificacoesPapeisRoutes.get(
   "/",
-  asyncHandler(async (request, response) => {
+  tratarAssincrono(async (request, response) => {
     response.json(await bonificacoesPapeisRepository.findAll());
   }),
 );
 bonificacoesPapeisRoutes.post(
   "/",
-  asyncHandler(async (request, response) => {
+  tratarAssincrono(async (request, response) => {
     response
       .status(201)
       .json(

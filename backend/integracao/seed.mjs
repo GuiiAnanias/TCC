@@ -70,15 +70,15 @@ try {
       `Falha ao preparar o schema temporário:\n${migration.stdout}\n${migration.stderr}`,
     );
   ({ default: client } = await import("../src/config/prisma.js"));
-  const { seedDemo } = await import("../prisma/seed-demo.js");
-  const { seedCompanies } = await import("../prisma/seed-companies.js");
+  const { seedDemo } = await import("../prisma/seed-demonstracao.js");
+  const { seedCompanies } = await import("../prisma/seed-empresas.js");
   const { clienteCreateSchema } = await import("../src/schemas/clientesSchemas.js");
   const { dashboardService } = await import("../src/services/dashboardService.js");
   const { tarefasRepository } = await import("../src/repositories/tarefasRepository.js");
   const { projetosService } = await import("../src/services/projetosService.js");
   const { apontamentosService } = await import("../src/services/apontamentosService.js");
   const { cargosTi, departamentosTi, niveisRemuneracao, papeisProjeto } =
-    await import("../src/schemas/cadastroOptions.js");
+    await import("../src/schemas/opcoesCadastro.js");
   const summary = await seedDemo(client);
   assert.deepEqual(summary, {
     clientes: 4,

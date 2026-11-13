@@ -4,7 +4,7 @@
  * faturado usa a composição gravada no faturamento.
  */
 
-import { round } from "./operationalIndicators.js";
+import { round } from "./indicadoresOperacionais.js";
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 
 // [REGRA] Custo de um apontamento; marca semCusto (sem valor/hora) e semVinculo (fora da equipe)

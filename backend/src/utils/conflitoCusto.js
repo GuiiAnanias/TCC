@@ -3,13 +3,13 @@
  * apontamentos faturados em respostas 409 com orientação ao usuário.
  */
 
-import { HttpError } from "./HttpError.js";
+import { ErroHttp } from "./ErroHttp.js";
 
-class CustoConflict extends HttpError {}
+class CustoConflict extends ErroHttp {}
 
 // Traduz somente as violações das regras de consolidação conhecidas. Nunca
 // devolve mensagens internas do PostgreSQL/Prisma para o usuário.
-export function custoConflict(error) {
+export function conflitoCusto(error) {
   if (error instanceof CustoConflict) return error;
   const message = String(error.message ?? "");
   if (message.includes("CODEBI_CUSTO_PENDENTE:"))

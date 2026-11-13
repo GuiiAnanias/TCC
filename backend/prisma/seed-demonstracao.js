@@ -5,13 +5,13 @@
  */
 
 import bcrypt from "bcrypt";
-import { seedCompanies } from "./seed-companies.js";
-import { seedAwards } from "./seed-awards.js";
+import { seedCompanies } from "./seed-empresas.js";
+import { seedAwards } from "./seed-premiacao.js";
 
 const date = (day) => new Date(`${day}T00:00:00Z`);
 
 // Preços, percentuais, pessoas e projetos são fictícios; os dois clientes com
-// CNPJ usam dados públicos reais documentados em seed-companies.js.
+// CNPJ usam dados públicos reais documentados em seed-empresas.js.
 // O seed acrescenta registros ausentes; não apaga dados nem restaura edições manuais.
 export async function seedDemo(prisma) {
   const senhaHash = await bcrypt.hash("admin123", 10);

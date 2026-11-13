@@ -65,7 +65,7 @@ try {
       `Falha ao preparar o schema temporário:\n${migration.stdout}\n${migration.stderr}`,
     );
   ({ default: client } = await import("../src/config/prisma.js"));
-  const { seedDemo } = await import("../prisma/seed-demo.js");
+  const { seedDemo } = await import("../prisma/seed-demonstracao.js");
   await seedDemo(client);
   const { relatoriosGeradosService: service, VERSAO_RELATORIO } =
     await import("../src/services/relatoriosGeradosService.js");
@@ -197,7 +197,7 @@ try {
   // API autenticada.
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const { createTestSession } = await import("./apoio/sessao-teste.mjs");
   const token = await createTestSession(client, user, env.jwtSecret);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { operationalIndicators } from "../src/services/operationalIndicators.js";
-import { entryCost } from "../src/services/dashboardCosts.js";
+import { operationalIndicators } from "../src/services/indicadoresOperacionais.js";
+import { entryCost } from "../src/services/custosDashboard.js";
 
 const entry = (id, tarefaId, horas, data = "2026-10-02", person = 1) => ({
   id,

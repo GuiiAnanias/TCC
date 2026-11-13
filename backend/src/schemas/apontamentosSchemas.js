@@ -5,7 +5,7 @@
  */
 
 import { z } from "zod";
-import { paginationQuerySchema } from "./commonSchemas.js";
+import { paginationQuerySchema } from "./comunsSchemas.js";
 // [REGRA] Pendente, Aprovado ou Faturado.
 const statusApontamentoSchema = z.enum(["PENDENTE", "APROVADO", "FATURADO"]);
 export const apontamentoQuerySchema = paginationQuerySchema.extend({

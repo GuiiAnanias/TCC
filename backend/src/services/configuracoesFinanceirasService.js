@@ -5,12 +5,12 @@
 
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { configuracoesFinanceirasRepository } from "../repositories/configuracoesFinanceirasRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 export const configuracoesFinanceirasService = {
   async listByColaborador(colaboradorId) {
     if (!(await colaboradoresRepository.findById(colaboradorId)))
-      throw new HttpError(404, "Colaborador não encontrado.");
+      throw new ErroHttp(404, "Colaborador não encontrado.");
     return configuracoesFinanceirasRepository.findByColaborador(colaboradorId);
   },
   createForColaborador(colaboradorId, data, usuarioId) {
@@ -21,14 +21,14 @@ export const configuracoesFinanceirasService = {
   async updateForColaborador(colaboradorId, configuracaoId, data, usuarioId) {
     const config = await configuracoesFinanceirasRepository.findById(configuracaoId);
     if (!config || config.colaboradorId !== colaboradorId)
-      throw new HttpError(404, "Configuração financeira não encontrada para este colaborador.");
+      throw new ErroHttp(404, "Configuração financeira não encontrada para este colaborador.");
     if (config.dataFim)
-      throw new HttpError(
+      throw new ErroHttp(
         409,
         "Uma vigência encerrada não pode ser editada. Cadastre uma nova vigência.",
       );
     if (data.dataInicio !== undefined || data.dataFim !== undefined || !data.dataVigencia)
-      throw new HttpError(
+      throw new ErroHttp(
         409,
         "O histórico não pode ser sobrescrito. Informe dataVigencia para criar uma nova configuração, ou use o formulário de nova vigência.",
       );

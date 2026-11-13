@@ -4,7 +4,7 @@ import { apontamentosService } from "../src/services/apontamentosService.js";
 import { apontamentosRepository } from "../src/repositories/apontamentosRepository.js";
 import { colaboradoresRepository } from "../src/repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../src/repositories/projetosRepository.js";
-import { todayFinanceDate } from "../src/utils/financeDates.js";
+import { todayFinanceDate } from "../src/utils/datasFinanceiras.js";
 
 const day = (offset) => new Date(todayFinanceDate().getTime() + offset * 86400000);
 const existente = {

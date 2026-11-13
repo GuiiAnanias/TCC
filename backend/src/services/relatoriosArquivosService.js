@@ -7,7 +7,7 @@
 import PDFDocument from "pdfkit";
 import { relatoriosGeradosService } from "./relatoriosGeradosService.js";
 import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 import {
   FORMATOS,
   dataBr,
@@ -411,7 +411,7 @@ function cabecalho(relatorio) {
 
 function conferirVersao(relatorio) {
   if (!VERSOES_EXPORTAVEIS.includes(relatorio.versao))
-    throw new HttpError(
+    throw new ErroHttp(
       409,
       `Este relatório foi gravado no formato ${relatorio.versao}, que esta versão do sistema não exporta.`,
     );

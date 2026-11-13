@@ -309,7 +309,7 @@ try {
   // Confirmar também que o contrato HTTP devolve validação, sem gravar o excesso.
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const { createTestSession } = await import("./apoio/sessao-teste.mjs");
   const user = await client.usuario.create({
     data: { nomeUsuario: "hours-test", email: "hours-test@example.local", senhaHash: "test-only" },
   });

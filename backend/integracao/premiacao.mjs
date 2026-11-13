@@ -56,10 +56,10 @@ try {
   if (migration.status !== 0)
     throw new Error(`Falha nas migrações:\n${migration.stdout}\n${migration.stderr}`);
   ({ default: client } = await import("../src/config/prisma.js"));
-  const { seedDemo } = await import("../prisma/seed-demo.js");
+  const { seedDemo } = await import("../prisma/seed-demonstracao.js");
   const { premiacaoRepository: repository } =
     await import("../src/repositories/premiacaoRepository.js");
-  const { premiacaoTemplates } = await import("../src/services/premiacaoRules.js");
+  const { premiacaoTemplates } = await import("../src/services/regrasPremiacao.js");
   const { awardRuleSchema, awardCreateSchema, awardUpdateSchema } =
     await import("../src/schemas/premiacaoSchemas.js");
   const { dashboardService } = await import("../src/services/dashboardService.js");
@@ -197,7 +197,7 @@ try {
   assert.equal(saves.filter((row) => row.status === "rejected").length, 1);
   const { app } = await import("../src/app.js");
   const { env } = await import("../src/config/env.js");
-  const { createTestSession } = await import("./helpers/session-fixture.mjs");
+  const { createTestSession } = await import("./apoio/sessao-teste.mjs");
   const token = await createTestSession(client, user, env.jwtSecret);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
