@@ -159,23 +159,23 @@ Essa separação facilita manutenção, testes, troca de interface e evolução 
 
 As regras de cada módulo ficam na pasta `docs/`:
 
-| Documento | Conteúdo |
-|---|---|
-| [docs/clientes.md](docs/clientes.md) | Clientes PF/PJ, validações e consultas de CNPJ e CEP |
-| [docs/projetos.md](docs/projetos.md) | Tipos de contrato e estados dos projetos |
-| [docs/equipe-projetos.md](docs/equipe-projetos.md) | Equipe inicial e quando as horas ficam liberadas |
-| [docs/exclusao-projetos.md](docs/exclusao-projetos.md) | Exclusão definitiva condicionada |
-| [docs/tarefas-sprints.md](docs/tarefas-sprints.md) | Tarefas e sprints manuais |
-| [docs/apontamentos.md](docs/apontamentos.md) | Apontamentos de horas e regras de faturamento |
-| [docs/composicao-financeira.md](docs/composicao-financeira.md) | Remuneração, vigências, papéis, bonificação e custo |
-| [docs/indicadores.md](docs/indicadores.md) | Fórmulas dos indicadores e da auditoria |
-| [docs/filtros.md](docs/filtros.md) | Filtros dos dashboards e da exportação |
-| [docs/dashboards.md](docs/dashboards.md) | Visões dos dashboards, ranking de inconsistências, resumo por equipe e evolução do projeto |
-| [docs/premiacao.md](docs/premiacao.md) | Avaliação de premiação Dev e PO/SM |
-| [docs/seguranca.md](docs/seguranca.md) | Login, sessões, limites e proteção dos dados |
-| [docs/login.md](docs/login.md) | Lembrar usuário e recuperação de senha |
-| [docs/interface.md](docs/interface.md) | Menu, telas e elementos comuns |
-| [docs/guia-do-codigo.md](docs/guia-do-codigo.md) | Mapa do código: etiquetas dos comentários para busca (Ctrl+F), caminho de uma requisição, migrations e onde mostrar cada parte |
+| Documento                                                      | Conteúdo                                                                                                                       |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/clientes.md](docs/clientes.md)                           | Clientes PF/PJ, validações e consultas de CNPJ e CEP                                                                           |
+| [docs/projetos.md](docs/projetos.md)                           | Tipos de contrato e estados dos projetos                                                                                       |
+| [docs/equipe-projetos.md](docs/equipe-projetos.md)             | Equipe inicial e quando as horas ficam liberadas                                                                               |
+| [docs/exclusao-projetos.md](docs/exclusao-projetos.md)         | Exclusão definitiva condicionada                                                                                               |
+| [docs/tarefas-sprints.md](docs/tarefas-sprints.md)             | Tarefas e sprints manuais                                                                                                      |
+| [docs/apontamentos.md](docs/apontamentos.md)                   | Apontamentos de horas e regras de faturamento                                                                                  |
+| [docs/composicao-financeira.md](docs/composicao-financeira.md) | Remuneração, vigências, papéis, bonificação e custo                                                                            |
+| [docs/indicadores.md](docs/indicadores.md)                     | Fórmulas dos indicadores e da auditoria                                                                                        |
+| [docs/filtros.md](docs/filtros.md)                             | Filtros dos dashboards e da exportação                                                                                         |
+| [docs/dashboards.md](docs/dashboards.md)                       | Visões dos dashboards, ranking de inconsistências, resumo por equipe e evolução do projeto                                     |
+| [docs/premiacao.md](docs/premiacao.md)                         | Avaliação de premiação Dev e PO/SM                                                                                             |
+| [docs/seguranca.md](docs/seguranca.md)                         | Login, sessões, limites e proteção dos dados                                                                                   |
+| [docs/login.md](docs/login.md)                                 | Lembrar usuário e recuperação de senha                                                                                         |
+| [docs/interface.md](docs/interface.md)                         | Menu, telas e elementos comuns                                                                                                 |
+| [docs/guia-do-codigo.md](docs/guia-do-codigo.md)               | Mapa do código: etiquetas dos comentários para busca (Ctrl+F), caminho de uma requisição, migrations e onde mostrar cada parte |
 
 ---
 
@@ -224,25 +224,37 @@ sistema-indicadores/
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   ├── migrations/
-│   │   └── seed.js
+│   │   └── seed.js               # seed-demonstracao, seed-empresas e seed-premiacao
 │   ├── src/
 │   │   ├── app.js
 │   │   ├── server.js
-│   │   ├── config/
-│   │   ├── http/
+│   │   ├── config/               # variáveis de ambiente e Prisma
+│   │   ├── http/                 # routes, controllers e middlewares
 │   │   ├── repositories/
 │   │   ├── schemas/
 │   │   ├── services/
 │   │   └── utils/
+│   ├── test/                     # testes automáticos (sem banco)
+│   ├── integracao/               # testes com o PostgreSQL local (pnpm run test:*-db)
+│   ├── scripts/                  # ferramentas: link de senha, conferência de custos
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── config/
+│   │   ├── api/                  # conexão com a API
+│   │   ├── aparencia/            # tema claro/escuro e tamanho do texto
+│   │   ├── autenticacao/         # login, sessão e regras de senha
+│   │   ├── components/           # comum/, dashboard/, financeiro/, importacao/,
+│   │   │                         # projetos/ e relatorios/
+│   │   ├── config/               # telas de cadastro, opções e blocos de relatório
+│   │   ├── estilos/              # CSS dividido por área (ordem em styles.css)
+│   │   ├── hooks/
 │   │   ├── pages/
+│   │   ├── utils/
 │   │   ├── App.jsx
-│   │   └── main.jsx
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── test/
+│   ├── scripts/testes/           # apoio aos testes (DOM e JSX)
 │   └── package.json
 ├── docs/
 │   └── postman/
@@ -254,26 +266,26 @@ sistema-indicadores/
 
 ## Modelo de Dados
 
-| Tabela | Descrição |
-|---|---|
-| `usuarios` | Contas de acesso e recuperação de senha |
-| `sessoes` | Sessões de login, com expiração e revogação |
-| `limites_autenticacao` | Contadores do limite de tentativas de acesso |
-| `clientes` | Clientes pessoa física ou jurídica |
-| `colaboradores` | Profissionais internos ou alocados |
-| `itens_tabela_remuneracao` | Faixas de remuneração e valor/hora |
-| `configuracoes_financeiras` | Vigências de valor/hora e benefícios por colaborador |
-| `bonificacoes_papeis` | Percentual de bonificação por papel, com vigência |
-| `projetos` | Projetos contratados por cliente |
-| `projetos_colaboradores` | Relação entre projeto, colaborador, papel e período |
-| `sprints` | Sprints de cada projeto |
-| `tarefas` | Tarefas de cada projeto, com estimativa e status |
-| `tarefas_responsaveis` | Responsáveis de cada tarefa |
-| `apontamentos_horas` | Horas trabalhadas, com status e composição do custo faturado |
-| `importacoes_apontamentos` | Histórico das importações de apontamentos por planilha (concluídas e com falha) |
-| `regras_premiacao` | Versões publicadas das regras de premiação |
-| `avaliacoes_premiacao` | Avaliações mensais de premiação e suas versões |
-| `projetos_avaliacoes` | Projetos usados em cada avaliação |
+| Tabela                      | Descrição                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `usuarios`                  | Contas de acesso e recuperação de senha                                         |
+| `sessoes`                   | Sessões de login, com expiração e revogação                                     |
+| `limites_autenticacao`      | Contadores do limite de tentativas de acesso                                    |
+| `clientes`                  | Clientes pessoa física ou jurídica                                              |
+| `colaboradores`             | Profissionais internos ou alocados                                              |
+| `itens_tabela_remuneracao`  | Faixas de remuneração e valor/hora                                              |
+| `configuracoes_financeiras` | Vigências de valor/hora e benefícios por colaborador                            |
+| `bonificacoes_papeis`       | Percentual de bonificação por papel, com vigência                               |
+| `projetos`                  | Projetos contratados por cliente                                                |
+| `projetos_colaboradores`    | Relação entre projeto, colaborador, papel e período                             |
+| `sprints`                   | Sprints de cada projeto                                                         |
+| `tarefas`                   | Tarefas de cada projeto, com estimativa e status                                |
+| `tarefas_responsaveis`      | Responsáveis de cada tarefa                                                     |
+| `apontamentos_horas`        | Horas trabalhadas, com status e composição do custo faturado                    |
+| `importacoes_apontamentos`  | Histórico das importações de apontamentos por planilha (concluídas e com falha) |
+| `regras_premiacao`          | Versões publicadas das regras de premiação                                      |
+| `avaliacoes_premiacao`      | Avaliações mensais de premiação e suas versões                                  |
+| `projetos_avaliacoes`       | Projetos usados em cada avaliação                                               |
 
 Regras importantes:
 
@@ -680,15 +692,15 @@ corepack pnpm run lint
 
 ## Cronograma
 
-| Data | Entrega |
-|---|---|
-| 05/09 | 1ª orientação |
-| 11/09 | Especificação do MVP |
-| 14/09 e 21/09 | Apresentação para avaliação dos CRUDs |
-| 28/09 a 02/10 | 2ª orientação |
-| 30/10 a 06/11 | 3ª orientação |
-| 13/11 | Entrega do relatório do projeto de TCC |
-| 23 a 25/11 | Banca examinadora |
+| Data          | Entrega                                |
+| ------------- | -------------------------------------- |
+| 05/09         | 1ª orientação                          |
+| 11/09         | Especificação do MVP                   |
+| 14/09 e 21/09 | Apresentação para avaliação dos CRUDs  |
+| 28/09 a 02/10 | 2ª orientação                          |
+| 30/10 a 06/11 | 3ª orientação                          |
+| 13/11         | Entrega do relatório do projeto de TCC |
+| 23 a 25/11    | Banca examinadora                      |
 
 ---
 
@@ -763,7 +775,7 @@ ou sobrescrever registros já encontrados. Em uma base nova, o acesso inicial é
 2026 e valores financeiros fictícios, sem depender do dia da execução.
 
 Os clientes com CNPJ usam os dados públicos preservados em
-`backend/prisma/seed-companies.js`, consultados na ReceitaWS em 17/10/2026:
+`backend/prisma/seed-empresas.js`, consultados na ReceitaWS em 17/10/2026:
 CAIXA ESCOLAR DA ESCOLA ESTADUAL DE ENSINO FUNDAMENTAL JOSEFINA JACQUES NORONHA
 (11.222.333/0001-81) e Z R DE BRITO EMPREITEIRA (11.444.777/0001-61).
 O seed utiliza esse snapshot sem consultar a internet. Projetos, pessoas, valores,
@@ -771,22 +783,22 @@ horas e vínculos são exemplos fictícios; não representam relações reais de
 
 ### Conteúdo inicial
 
-| Cadastro | Quantidade |
-| --- | ---: |
-| Usuário administrador | 1 |
-| Clientes PF/PJ | 4 |
-| Colaboradores | 9 |
-| Faixas de remuneração | 9 |
-| Configurações financeiras | 10 |
-| Bonificações por papel e vigência | 5 |
-| Projetos | 6 |
-| Participações de equipe | 12 |
-| Sprints | 7 |
-| Tarefas | 17 |
-| Associações de responsáveis | 18 |
-| Apontamentos de horas | 16 |
-| Regras de premiação sem faixas presumidas | 2 |
-| Avaliações de premiação | 2 |
+| Cadastro                                  | Quantidade |
+| ----------------------------------------- | ---------: |
+| Usuário administrador                     |          1 |
+| Clientes PF/PJ                            |          4 |
+| Colaboradores                             |          9 |
+| Faixas de remuneração                     |          9 |
+| Configurações financeiras                 |         10 |
+| Bonificações por papel e vigência         |          5 |
+| Projetos                                  |          6 |
+| Participações de equipe                   |         12 |
+| Sprints                                   |          7 |
+| Tarefas                                   |         17 |
+| Associações de responsáveis               |         18 |
+| Apontamentos de horas                     |         16 |
+| Regras de premiação sem faixas presumidas |          2 |
+| Avaliações de premiação                   |          2 |
 
 Há reajustes financeiros, troca de papel, bônus com vigências, uma configuração
 futura, pessoas e projetos inativos, tarefas compartilhadas, correções, tarefas sem
@@ -798,14 +810,14 @@ multiplicadas pela quantidade de responsáveis. O seed também inclui os exemplo
 Os números abaixo pressupõem uma base inicialmente vazia, sem edições manuais,
 e o dashboard sem filtros, incluindo projetos ativos e inativos.
 
-| Projeto | Orçamento | Horas | Custo | Assertividade do orçamento |
-| --- | ---: | ---: | ---: | ---: |
-| Portal do Cliente (demo) | R$ 2.424,00 | 22 | R$ 1.212,00 | 200% |
-| Aplicativo Mobile (demo) | R$ 539,50 | 14 | R$ 1.079,00 | 50% |
-| Integração de Dados (demo) | R$ 560,00 | 14 | R$ 560,00 | 100% |
-| Projeto com pendências (demo) | R$ 1.000,00 | 15 | R$ 300,00 parcial | Indisponível |
-| Projeto em planejamento (demo) | R$ 5.000,00 | 0 | R$ 0,00 | Indisponível |
-| Projeto encerrado (demo) | R$ 680,00 | 4 | R$ 340,00 | 200% |
+| Projeto                        |   Orçamento | Horas |             Custo | Assertividade do orçamento |
+| ------------------------------ | ----------: | ----: | ----------------: | -------------------------: |
+| Portal do Cliente (demo)       | R$ 2.424,00 |    22 |       R$ 1.212,00 |                       200% |
+| Aplicativo Mobile (demo)       |   R$ 539,50 |    14 |       R$ 1.079,00 |                        50% |
+| Integração de Dados (demo)     |   R$ 560,00 |    14 |         R$ 560,00 |                       100% |
+| Projeto com pendências (demo)  | R$ 1.000,00 |    15 | R$ 300,00 parcial |               Indisponível |
+| Projeto em planejamento (demo) | R$ 5.000,00 |     0 |           R$ 0,00 |               Indisponível |
+| Projeto encerrado (demo)       |   R$ 680,00 |     4 |         R$ 340,00 |                       200% |
 
 Totais: **69 horas**, **R$ 3.491,00 de custo parcial**, incluindo R$ 281,00 de
 bonificação. Há 5 horas sem remuneração e um apontamento sem vínculo de equipe.
@@ -897,7 +909,7 @@ API autenticada: `GET /api/premiacoes/modelos`, `GET/POST /api/premiacoes/regras
 (AAAA-MM), categoria (DEV/PO_SM) e status (RASCUNHO/CONCLUIDA).
 
 Depois de aplicar as migrações, o seed completo inclui os exemplos de avaliação.
-Em uma base demo já existente, `node scripts/seed-awards-local.mjs` acrescenta apenas
+Em uma base demo já existente, `node scripts/seed-premiacao-local.mjs` acrescenta apenas
 os exemplos de premiação. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
 `corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
 As integrações criam e removem somente schemas temporários no PostgreSQL local.
