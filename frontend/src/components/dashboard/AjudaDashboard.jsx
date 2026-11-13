@@ -12,8 +12,8 @@ export function AjudaDashboard() {
       <section>
         <h3>Custo e horas por projeto</h3>
         <p>
-          O comparativo mostra custo de mão de obra, bonificação e horas por projeto. A tabela
-          apresenta os valores exatos.
+          A seção Comparativo por projeto mostra, em tabela, custo de mão de obra, bonificação e
+          horas de cada projeto. Em gráfico, o Orçamento × custo traz os projetos de maior custo.
         </p>
         <p className="dashboard-help-formula">
           Custo por colaborador = horas × custo/hora × (1 + bonificação percentual do papel no
