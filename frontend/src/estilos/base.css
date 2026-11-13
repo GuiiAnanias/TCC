@@ -1,0 +1,579 @@
+/* [ESTILO] Fonte, tamanho do texto (botão Aa), cores dos temas claro e escuro, transição de tema e telas de acesso (login e senha). */
+
+/* Fonte da interface: IBM Plex Sans (licença OFL, em assets/fonts), servida pelo próprio
+   sistema para a tela ficar igual com ou sem internet. */
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../assets/fonts/ibm-plex-sans-latin-500-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../assets/fonts/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+
+/* Tamanho do texto (botão Aa). Todos os tamanhos de fonte e de controles usam rem, então
+   crescem juntos a partir daqui sem alterar a largura das colunas. */
+html {
+  font-size: 100%;
+}
+html[data-font-size="grande"] {
+  font-size: 112.5%;
+}
+html[data-font-size="maior"] {
+  font-size: 125%;
+}
+
+:root {
+  color-scheme: light;
+  font-family:
+    "IBM Plex Sans",
+    "Segoe UI",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--background);
+  color: var(--text);
+  --radius-sm: 6px;
+  --radius: 8px;
+  --background: #f4f5f7;
+  --surface: #ffffff;
+  --surface-soft: #f8f9fa;
+  --hover: #f1f3f5;
+  --disabled: #f3f4f6;
+  --line: #e3e6ea;
+  --line-strong: #cdd2d9;
+  --line-hover: #9ba3ae;
+  --text: #1a1f27;
+  --text-secondary: #464e5a;
+  --muted: #687180;
+  --primary: #1f4fbf;
+  --primary-dark: #1a43a3;
+  --button-text: #ffffff;
+  --accent-text: #1b46aa;
+  --accent-soft: #edf2fc;
+  --accent-line: #c5d3f2;
+  --danger: #b42332;
+  --danger-soft: #fdeff0;
+  --danger-line: #f2c3c8;
+  --success: #1e7a4c;
+  --success-soft: #eaf6ef;
+  --success-line: #bfe0cb;
+  --warning: #8a5300;
+  --warning-soft: #fef6e7;
+  --warning-line: #efd3a1;
+  --info: #1f4fbf;
+  --info-soft: #edf2fc;
+  --focus-ring: rgba(31, 79, 191, 0.22);
+  --shadow: none;
+  /* Gráficos: paleta categórica validada para daltonismo, em ordem fixa (tema claro). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-muted: #b8c3cc;
+  --dropdown-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #15181d;
+  --surface: #1c2027;
+  --surface-soft: #20252d;
+  --hover: #262c35;
+  --disabled: #22272f;
+  --line: #2d333c;
+  --line-strong: #3d444f;
+  --line-hover: #5a6370;
+  --text: #e6e8eb;
+  --text-secondary: #bac0c8;
+  --muted: #9098a3;
+  --primary: #4a72e0;
+  --primary-dark: #5b80e6;
+  --button-text: #ffffff;
+  --accent-text: #a3bbf6;
+  --accent-soft: #1f2a41;
+  --accent-line: #34466e;
+  --danger: #f08a95;
+  --danger-soft: #3a2026;
+  --danger-line: #6a3540;
+  --success: #6cc795;
+  --success-soft: #1b2f25;
+  --success-line: #2f5440;
+  --warning: #e5b567;
+  --warning-soft: #362c1b;
+  --warning-line: #66512f;
+  --info: #a3bbf6;
+  --info-soft: #1f2a41;
+  --focus-ring: rgba(122, 156, 240, 0.32);
+  --shadow: none;
+  /* Mesmas cores, ajustadas para o fundo escuro. */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-muted: #4b5e6c;
+  --dropdown-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.dashboard-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.finance-history-panel > h3,
+.finance-history-panel > .field-help {
+  margin: 0;
+}
+.finance-history-panel caption {
+  text-align: left;
+  padding-bottom: 12px;
+  color: var(--text-secondary);
+}
+.finance-history-reason {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+.dashboard-title-row h1,
+.dashboard-title-row h2 {
+  margin: 0;
+}
+.icon-button.dashboard-help-trigger {
+  flex: 0 0 auto;
+  width: 2rem;
+  min-height: 2rem;
+  color: var(--muted);
+  background: transparent;
+  border-color: transparent;
+}
+.icon-button.dashboard-help-trigger:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+body:has(.dashboard-help-dialog[open]) {
+  overflow: hidden;
+}
+.dashboard-help-dialog {
+  width: min(720px, calc(100% - 32px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--dropdown-shadow);
+  overflow: hidden;
+}
+.dashboard-help-dialog::backdrop {
+  background: rgba(10, 18, 25, 0.6);
+}
+.dashboard-help-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+.dashboard-help-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  line-height: 1.35;
+}
+.dashboard-help-header .icon-button {
+  flex: 0 0 auto;
+}
+.dashboard-help-content {
+  max-height: calc(100dvh - 160px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+.dashboard-help-content section + section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+}
+.dashboard-help-content h3 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 1rem;
+}
+.dashboard-help-content p {
+  margin: 0 0 12px;
+}
+.dashboard-help-content p:last-child,
+.dashboard-help-content dl {
+  margin-bottom: 0;
+}
+.dashboard-help-formula {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+.dashboard-help-content dl {
+  margin-top: 12px;
+}
+.dashboard-help-content dt {
+  margin-top: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.dashboard-help-content dd {
+  margin: 4px 0 0;
+}
+@media (max-width: 600px) {
+  .dashboard-help-header {
+    padding: 16px;
+    gap: 10px;
+  }
+  .dashboard-help-header h2 {
+    font-size: 1.125rem;
+  }
+  .dashboard-help-content {
+    padding: 16px;
+    max-height: calc(100dvh - 180px);
+  }
+}
+.role-bonus-panel h2 {
+  font-size: 1.25rem;
+  margin: 0 0 12px;
+}
+.role-bonus-fields {
+  padding: 0;
+  margin: 16px 0;
+  border: 0;
+  align-items: end;
+}
+.role-bonus-panel .dashboard-table {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.role-bonus-panel .dashboard-table table {
+  width: 100%;
+  min-width: 540px;
+}
+.role-bonus-panel .dashboard-table caption {
+  padding: 12px 16px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* Botão Aa: escolha do tamanho do texto. */
+.font-size-control {
+  position: relative;
+}
+.font-size-trigger span {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.font-size-menu {
+  position: absolute;
+  top: calc(100% + 0.375rem);
+  right: 0;
+  z-index: 80;
+  display: grid;
+  gap: 2px;
+  width: 15rem;
+  padding: 0.375rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--dropdown-shadow);
+}
+.font-size-option {
+  display: grid;
+  grid-template-columns: 2.25rem minmax(0, 1fr) auto 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+}
+.font-size-option:hover,
+.font-size-option:focus-visible {
+  background: var(--hover);
+}
+.font-size-option:focus-visible {
+  outline-offset: -2px;
+}
+.font-size-option[aria-checked="true"] {
+  color: var(--accent-text);
+}
+.font-size-sample {
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+}
+.font-size-name {
+  font-size: 0.875rem;
+}
+.font-size-percent {
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+.font-size-option svg {
+  grid-column: 4;
+}
+.login-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+/* Troca de tema: o novo tema se espalha em círculo a partir do botão (TemaContext). O
+   navegador não faz o esmaecimento padrão; quem anima é o recorte do círculo. */
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+.login-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+input::placeholder {
+  color: var(--muted);
+  opacity: 1;
+}
+* {
+  box-sizing: border-box;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+.login-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.login-card h1 {
+  margin: 32px 0 8px;
+  font-size: 1.625rem;
+}
+.login-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.login-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+}
+.login-form label {
+  font-weight: 500;
+}
+.login-form input {
+  width: 100%;
+  min-height: 2.625rem;
+  padding: 10px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+}
+.login-form input:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.login-form button {
+  margin-top: 8px;
+}
+/* Checklist da nova senha: flutua sobre a tela para não empurrar os campos. */
+.password-field {
+  position: relative;
+}
+.password-checklist {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.password-checklist[hidden] {
+  display: none;
+}
+.password-checklist-title {
+  margin: 0 0 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.password-checklist ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.password-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.password-checklist li svg {
+  flex: none;
+}
+.password-checklist li.ok {
+  color: var(--success);
+}
+.password-checklist li.error {
+  color: var(--danger);
+}
+/* Em telas largas, ao lado do campo, fora do cartão. */
+@media (min-width: 1100px) {
+  .password-checklist {
+    top: 0;
+    left: calc(100% + 16px);
+    right: auto;
+    width: 260px;
+  }
+}
+.login-remember label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+.login-remember input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--primary);
+}
+.login-remember small {
+  display: block;
+  margin: 6px 0 0 28px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.login-link {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.login-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.login-help {
+  margin: 8px 0 0;
+}
+.login-card .feedback {
+  margin-top: 16px;
+}
+.session-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.session-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.logout-button {
+  flex: 0 0 auto;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: var(--background);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  letter-spacing: -0.005em;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
