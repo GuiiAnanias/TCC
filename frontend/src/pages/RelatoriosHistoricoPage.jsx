@@ -275,6 +275,7 @@ export function RelatoriosHistoricoPage() {
                       <Link className="report-history-number" to={`/relatorios/${item.id}`}>
                         Nº {item.id}
                       </Link>
+                      {item.titulo && <span className="report-history-choice">{item.titulo}</span>}
                       <span className="report-history-note">
                         {dataHora(item.criadoEm)} · {item.autor ?? "Usuário removido"}
                       </span>
