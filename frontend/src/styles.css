@@ -354,6 +354,25 @@ body:has(.dashboard-help-dialog[open]) {
   align-items: center;
   gap: 0.25rem;
 }
+/* Troca de tema: o novo tema se espalha em círculo a partir do botão (ThemeContext). O
+   navegador não faz o esmaecimento padrão; quem anima é o recorte do círculo. */
+::view-transition-group(root) {
+  animation: none;
+}
+::view-transition-image-pair(root) {
+  isolation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
 .login-brand-row {
   display: flex;
   align-items: center;
