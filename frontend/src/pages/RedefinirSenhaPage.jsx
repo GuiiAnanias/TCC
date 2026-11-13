@@ -6,11 +6,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
-import { api } from "../api/client.js";
-import { ThemeToggle } from "../ThemeContext.jsx";
-import { FontSizeControl } from "../components/FontSizeControl.jsx";
-import { newPasswordError } from "../auth/password.js";
-import { PasswordChecklist } from "../components/PasswordChecklist.jsx";
+import { api } from "../api/conexao.js";
+import { BotaoTema } from "../aparencia/TemaContext.jsx";
+import { ControleTamanhoTexto } from "../aparencia/ControleTamanhoTexto.jsx";
+import { newPasswordError } from "../autenticacao/senha.js";
+import { RequisitosSenha } from "../components/comum/RequisitosSenha.jsx";
 
 const LINK_INVALIDO = "Este link já foi usado, expirou ou não é válido.";
 export const SENHA_ATUALIZADA = "Senha atualizada com sucesso";
@@ -116,8 +116,8 @@ export function RedefinirSenhaPage() {
             </div>
           </div>
           <div className="login-controls">
-            <FontSizeControl />
-            <ThemeToggle />
+            <ControleTamanhoTexto />
+            <BotaoTema />
           </div>
         </div>
         <h1>Redefinir senha</h1>
@@ -168,7 +168,7 @@ export function RedefinirSenhaPage() {
                   aria-describedby="regras-senha"
                   disabled={busy}
                 />
-                <PasswordChecklist id="regras-senha" value={senha} visible={showRules} />
+                <RequisitosSenha id="regras-senha" value={senha} visible={showRules} />
               </div>
               <label htmlFor="confirmar-senha">Confirmar nova senha</label>
               <input

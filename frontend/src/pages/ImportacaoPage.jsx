@@ -15,12 +15,12 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { api } from "../api/client.js";
-import { PageActions } from "../components/PageActions.jsx";
-import { HelpDialog } from "../components/HelpDialog.jsx";
-import { HistoricoImportacoes } from "../components/HistoricoImportacoes.jsx";
-import { date, number } from "../components/OperationalDashboard.jsx";
-import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
+import { api } from "../api/conexao.js";
+import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { HistoricoImportacoes } from "../components/importacao/HistoricoImportacoes.jsx";
+import { date, number } from "../components/dashboard/DashboardOperacional.jsx";
+import { mensagemDeErro, salvarArquivo } from "../utils/baixarArquivos.js";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const TAMANHO_MAXIMO = 5 * 1024 * 1024;
@@ -37,7 +37,7 @@ const periodo = (intervalo) =>
 
 function AjudaImportacao() {
   return (
-    <HelpDialog title="Ajuda — Importar horas">
+    <DialogoAjuda title="Ajuda — Importar horas">
       <section>
         <h3>Como funciona</h3>
         <p>
@@ -72,7 +72,7 @@ function AjudaImportacao() {
           arquivo em si não é guardado.
         </p>
       </section>
-    </HelpDialog>
+    </DialogoAjuda>
   );
 }
 
@@ -277,7 +277,7 @@ export function ImportacaoPage() {
             <AjudaImportacao />
           </div>
         </div>
-        <PageActions
+        <AcoesPagina
           onRefresh={() => {
             recomecar();
             setVersaoHistorico((versao) => versao + 1);

@@ -7,7 +7,7 @@ export default [
   { ignores: ["dist/"] },
   js.configs.recommended,
   {
-    files: ["test/**/*.js", "scripts/testing/*.mjs"],
+    files: ["test/**/*.js", "scripts/testes/*.mjs"],
     languageOptions: { globals: { ...globals.node, ...globals.browser } },
   },
   {

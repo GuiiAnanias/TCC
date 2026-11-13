@@ -6,13 +6,13 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Search } from "lucide-react";
-import { api } from "../api/client.js";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { PageActions } from "../components/PageActions.jsx";
-import { HelpDialog } from "../components/HelpDialog.jsx";
-import { ReportTabs } from "../components/ReportTabs.jsx";
-import { BLOCOS } from "../config/reportBlocks.js";
-import { mensagemDeErro, salvarArquivo } from "../utils/download.js";
+import { api } from "../api/conexao.js";
+import { useAutenticacao } from "../autenticacao/AutenticacaoContext.jsx";
+import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { AbasRelatorios } from "../components/relatorios/AbasRelatorios.jsx";
+import { BLOCOS } from "../config/blocosRelatorio.js";
+import { mensagemDeErro, salvarArquivo } from "../utils/baixarArquivos.js";
 import { falhaDoArquivo, sucessoDoArquivo } from "../utils/relatorioArquivos.js";
 
 const POR_PAGINA = 20;
@@ -70,7 +70,7 @@ export function parametrosDoHistorico(filtros, pagina, usuarioId) {
 
 // [TELA] Componente da tela.
 export function RelatoriosHistoricoPage() {
-  const { user } = useAuth() ?? {};
+  const { user } = useAutenticacao() ?? {};
   const [filtros, setFiltros] = useState(filtrosVazios);
   const [aplicados, setAplicados] = useState(filtrosVazios);
   const [pagina, setPagina] = useState(1);
@@ -168,9 +168,9 @@ export function RelatoriosHistoricoPage() {
             <HistoricoHelp />
           </div>
         </div>
-        <PageActions onRefresh={carregar} loading={carregando} />
+        <AcoesPagina onRefresh={carregar} loading={carregando} />
       </header>
-      <ReportTabs />
+      <AbasRelatorios />
 
       <form className="dashboard-overview report-history-filters" onSubmit={aplicar} noValidate>
         <div className="dashboard-filters">
@@ -361,7 +361,7 @@ export function RelatoriosHistoricoPage() {
 
 function HistoricoHelp() {
   return (
-    <HelpDialog title="Ajuda — Histórico de relatórios">
+    <DialogoAjuda title="Ajuda — Histórico de relatórios">
       <section>
         <h3>O que aparece</h3>
         <p>
@@ -387,6 +387,6 @@ function HistoricoHelp() {
           protege os projetos usados contra exclusão.
         </p>
       </section>
-    </HelpDialog>
+    </DialogoAjuda>
   );
 }
