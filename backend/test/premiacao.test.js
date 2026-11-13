@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { calculateAward, premiacaoTemplates } from "../src/services/premiacaoRules.js";
+import { calculateAward, premiacaoTemplates } from "../src/services/regrasPremiacao.js";
 import {
   awardRuleSchema,
   awardInputSchema,

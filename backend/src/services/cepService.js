@@ -3,7 +3,7 @@
  * cache de 10 minutos e mensagens de erro próprias; nada é gravado.
  */
 
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 const cache = new Map();
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
@@ -12,7 +12,7 @@ const clean = (value) => (typeof value === "string" ? value.trim() : "");
 // mensagens que permitem preencher à mão.
 export async function consultarCep(input) {
   const cep = String(input).replace(/[\s.-]/g, "");
-  if (!/^\d{8}$/.test(cep)) throw new HttpError(400, "Informe um CEP com 8 dígitos.");
+  if (!/^\d{8}$/.test(cep)) throw new ErroHttp(400, "Informe um CEP com 8 dígitos.");
   const cached = cache.get(cep);
   if (cached && cached.expires > Date.now()) return cached.data;
   let data;
@@ -22,19 +22,19 @@ export async function consultarCep(input) {
       headers: { Accept: "application/json" },
     });
     if (!response.ok)
-      throw new HttpError(502, "Consulta de CEP indisponível. Preencha o endereço manualmente.");
+      throw new ErroHttp(502, "Consulta de CEP indisponível. Preencha o endereço manualmente.");
     data = await response.json();
   } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError(503, "Não foi possível consultar o CEP. Preencha o endereço manualmente.");
+    if (error instanceof ErroHttp) throw error;
+    throw new ErroHttp(503, "Não foi possível consultar o CEP. Preencha o endereço manualmente.");
   }
   if (data?.erro)
-    throw new HttpError(
+    throw new ErroHttp(
       404,
       "CEP não encontrado. Confira o CEP ou preencha o endereço manualmente.",
     );
   if (!clean(data?.localidade) || !/^[A-Z]{2}$/.test(clean(data?.uf)))
-    throw new HttpError(
+    throw new ErroHttp(
       502,
       "A consulta retornou dados inválidos. Preencha o endereço manualmente.",
     );

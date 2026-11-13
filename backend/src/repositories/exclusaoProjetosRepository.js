@@ -4,7 +4,7 @@
  */
 
 import prisma from "../config/prisma.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 const blockedMessage =
   "Este projeto possui vínculos ou histórico e não pode ser excluído. Use a alteração de estado para preservá-lo.";
@@ -29,7 +29,7 @@ export const exclusaoProjetosRepository = {
         },
       },
     });
-    if (!project) throw new HttpError(404, "Projeto não encontrado.");
+    if (!project) throw new ErroHttp(404, "Projeto não encontrado.");
     return {
       id: project.id,
       nome: project.nome,
@@ -46,16 +46,16 @@ export const exclusaoProjetosRepository = {
             // As FKs das operações concorrentes disputam este mesmo registro.
             await db.$queryRaw`SELECT id FROM projetos WHERE id = ${id} FOR UPDATE`;
             const project = await exclusaoProjetosRepository.inspect(id, db);
-            if (!project.podeExcluir) throw new HttpError(409, blockedMessage, project.vinculos);
+            if (!project.podeExcluir) throw new ErroHttp(409, blockedMessage, project.vinculos);
             await db.projeto.delete({ where: { id } });
           },
           { isolationLevel: "Serializable" },
         );
       } catch (error) {
-        if (error.code === "P2003") throw new HttpError(409, blockedMessage);
+        if (error.code === "P2003") throw new ErroHttp(409, blockedMessage);
         if (error.code !== "P2034") throw error;
         if (attempt === 2)
-          throw new HttpError(
+          throw new ErroHttp(
             409,
             "O projeto mudou em outra operação. Confira os vínculos e tente novamente.",
           );

@@ -3,9 +3,9 @@
  * o layout autenticado (menu lateral, barra superior e conteúdo).
  */
 
-import { AwardsPage } from "./pages/AwardsPage.jsx";
-import { EntityDashboardPage } from "./pages/EntityDashboardPage.jsx";
-import { TasksPage } from "./pages/TasksPage.jsx";
+import { PremiacaoPage } from "./pages/PremiacaoPage.jsx";
+import { DashboardEntidadePage } from "./pages/DashboardEntidadePage.jsx";
+import { TarefasPage } from "./pages/TarefasPage.jsx";
 import { ImportacaoPage } from "./pages/ImportacaoPage.jsx";
 import { RelatoriosPage } from "./pages/RelatoriosPage.jsx";
 import { RelatoriosHistoricoPage } from "./pages/RelatoriosHistoricoPage.jsx";
@@ -24,18 +24,18 @@ import {
   UserRoundSearch,
   FileChartColumn,
 } from "lucide-react";
-import { resources } from "./config/resources.jsx";
-import { CrudPage } from "./pages/CrudPage.jsx";
-import { DashboardPage } from "./pages/DashboardPage.jsx";
-import { AuthProvider, useAuth } from "./auth/AuthContext.jsx";
+import { resources } from "./config/cadastros.jsx";
+import { CadastroPage } from "./pages/CadastroPage.jsx";
+import { DashboardGeralPage } from "./pages/DashboardGeralPage.jsx";
+import { AutenticacaoProvider, useAutenticacao } from "./autenticacao/AutenticacaoContext.jsx";
 import { LoginPage } from "./pages/LoginPage.jsx";
 import { RedefinirSenhaPage } from "./pages/RedefinirSenhaPage.jsx";
 import { EsqueciSenhaPage } from "./pages/EsqueciSenhaPage.jsx";
-import { ThemeProvider, ThemeToggle } from "./ThemeContext.jsx";
-import { PageActionsSlot } from "./components/PageActions.jsx";
-import { FontSizeControl } from "./components/FontSizeControl.jsx";
+import { TemaProvider, BotaoTema } from "./aparencia/TemaContext.jsx";
+import { EspacoAcoesPagina } from "./components/comum/AcoesPagina.jsx";
+import { ControleTamanhoTexto } from "./aparencia/ControleTamanhoTexto.jsx";
 
-// Link do menu para um cadastro definido em config/resources.jsx.
+// Link do menu para um cadastro definido em config/cadastros.jsx.
 const resourceLink = (key) => {
   const resource = resources.find((item) => item.key === key);
   return { to: `/${key}`, label: resource.title, icon: resource.icon };
@@ -70,17 +70,17 @@ const NAV_GROUPS = [
 // [TELA] Raiz da aplicação: tema e sessão disponíveis para todas as telas.
 export function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <TemaProvider>
+      <AutenticacaoProvider>
         <AppRoutes />
-      </AuthProvider>
-    </ThemeProvider>
+      </AutenticacaoProvider>
+    </TemaProvider>
   );
 }
 
 // [ROTA] Mapa de endereços para telas. Enquanto a sessão é conferida mostra "Verificando sessão…".
 function AppRoutes() {
-  const auth = useAuth();
+  const auth = useAutenticacao();
   if (auth.loading)
     return (
       <main className="login-page" role="status">
@@ -109,20 +109,20 @@ function AppRoutes() {
       {/* [SEGURANCA] Rotas internas: só abrem com login (ver ProtectedLayout). */}
       <Route element={<ProtectedLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard" element={<DashboardGeralPage />} />
         {/* Sem o código na URL, o dashboard individual abre na escolha do projeto/colaborador. */}
-        <Route path="/dashboard/projetos" element={<EntityDashboardPage type="projetos" />} />
-        <Route path="/dashboard/projetos/:id" element={<EntityDashboardPage type="projetos" />} />
+        <Route path="/dashboard/projetos" element={<DashboardEntidadePage type="projetos" />} />
+        <Route path="/dashboard/projetos/:id" element={<DashboardEntidadePage type="projetos" />} />
         <Route
           path="/dashboard/colaboradores"
-          element={<EntityDashboardPage type="colaboradores" />}
+          element={<DashboardEntidadePage type="colaboradores" />}
         />
         <Route
           path="/dashboard/colaboradores/:id"
-          element={<EntityDashboardPage type="colaboradores" />}
+          element={<DashboardEntidadePage type="colaboradores" />}
         />
-        <Route path="/premiacao" element={<AwardsPage />} />
-        <Route path="/tarefas" element={<TasksPage />} />
+        <Route path="/premiacao" element={<PremiacaoPage />} />
+        <Route path="/tarefas" element={<TarefasPage />} />
         <Route path="/importacao" element={<ImportacaoPage />} />
         <Route path="/relatorios" element={<RelatoriosPage />} />
         <Route path="/relatorios/historico" element={<RelatoriosHistoricoPage />} />
@@ -131,7 +131,7 @@ function AppRoutes() {
           <Route
             key={resource.key}
             path={`/${resource.key}`}
-            element={<CrudPage key={resource.key} config={resource} />}
+            element={<CadastroPage key={resource.key} config={resource} />}
           />
         ))}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -143,7 +143,7 @@ function AppRoutes() {
 // [SEGURANCA][TELA] Layout das telas internas. Sem usuário logado, redireciona para /login
 // guardando o endereço pedido.
 function ProtectedLayout() {
-  const auth = useAuth();
+  const auth = useAutenticacao();
   const location = useLocation();
   const [actionsSlot, setActionsSlot] = useState(null);
   // [ESTADO] Menu recolhido ou não; a escolha fica salva no navegador.
@@ -251,14 +251,14 @@ function ProtectedLayout() {
         <header className="topbar">
           <div className="page-actions" ref={setActionsSlot} />
           <div className="topbar-controls" role="group" aria-label="Preferências de exibição">
-            <FontSizeControl />
-            <ThemeToggle />
+            <ControleTamanhoTexto />
+            <BotaoTema />
           </div>
         </header>
         <div className="main-content">
-          <PageActionsSlot.Provider value={actionsSlot}>
+          <EspacoAcoesPagina.Provider value={actionsSlot}>
             <Outlet />
-          </PageActionsSlot.Provider>
+          </EspacoAcoesPagina.Provider>
         </div>
       </main>
     </div>

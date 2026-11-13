@@ -1,0 +1,725 @@
+/* [ESTILO] Dashboard Geral, gráficos e dashboards por projeto e colaborador. */
+
+.dashboard-page {
+  gap: 0;
+}
+.dashboard-page > .page-header {
+  margin-bottom: 18px;
+}
+.dashboard-detail {
+  padding: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.dashboard-filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+  padding: 1.125rem 1.25rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+@container conteudo (width >= 60rem) {
+  .dashboard-filters:not(.entity-dashboard-filters) > .dashboard-period {
+    grid-column: span 2;
+  }
+}
+.dashboard-period {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.dashboard-period legend {
+  padding: 0;
+  margin-bottom: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+.dashboard-period > div {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-period .field > span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.dashboard-filter-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dashboard-scope,
+.dashboard-help,
+.dashboard-method {
+  font-size: 0.8125rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.dashboard-scope {
+  margin: 16px 0;
+}
+/* Barra do Dashboard Geral: período e atalhos sempre à vista, os demais filtros abrem sob
+   demanda no mesmo quadro e o Excel fica sempre à mão. */
+.dashboard-filter-card {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.dashboard-toolbar .dashboard-export {
+  margin-left: auto;
+}
+.dashboard-quick-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(9.5rem, 10.5rem));
+  gap: 0.625rem;
+}
+.dashboard-quick-dates .field > span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+/* Atalhos de período: o mesmo controle segmentado das abas. */
+.dashboard-quick-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+.dashboard-chip {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-chip:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+.dashboard-chip.is-selected,
+.dashboard-chip.is-selected:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.dashboard-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+.dashboard-filter-toggle > svg:last-child {
+  transition: transform 200ms ease;
+}
+.dashboard-filter-toggle[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
+}
+.dashboard-filter-count {
+  min-width: 1.25rem;
+  padding: 0 0.4375rem;
+  border-radius: 999px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+/* Os filtros abertos ficam no mesmo quadro da barra, separados por uma linha fina. */
+.dashboard-filter-card .dashboard-filters-general {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.dashboard-indicators {
+  margin-top: 0.5rem;
+}
+@container conteudo (width < 60rem) {
+  .dashboard-filter-card .dashboard-filters-general {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container conteudo (width < 32rem) {
+  .dashboard-filter-card {
+    padding: 0.875rem;
+  }
+  .dashboard-filter-card .dashboard-filters-general {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-quick-dates {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-toolbar > button {
+    flex: 1;
+  }
+  .dashboard-toolbar .dashboard-export {
+    margin-left: 0;
+  }
+}
+/* Recorte aplicado, em etiquetas: o que os cartões, as tabelas e o Excel estão mostrando. */
+.dashboard-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -6px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+.dashboard-tags li {
+  max-width: 100%;
+  padding: 0.1875rem 0.625rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: var(--surface);
+  font-size: 0.8125rem;
+  overflow-wrap: anywhere;
+}
+.dashboard-tags li span {
+  color: var(--muted);
+  font-weight: 400;
+}
+.dashboard-summary.summary-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.dashboard-summary .summary-card {
+  min-width: 0;
+  box-shadow: none;
+}
+.dashboard-summary .summary-card > div:last-child {
+  min-width: 0;
+}
+.dashboard-summary .summary-card strong {
+  font-size: 1.625rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.dashboard-summary .summary-card small {
+  font-weight: 500;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.dashboard-sections {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 24px;
+}
+.dashboard-section-button {
+  min-height: 3rem;
+  text-align: left;
+  justify-content: flex-start;
+}
+.dashboard-section-button span {
+  flex: 1;
+}
+.dashboard-section-button > svg {
+  flex-shrink: 0;
+}
+.dashboard-section-button > svg:last-child {
+  transition: transform 180ms ease;
+}
+.dashboard-section-button.is-selected {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border-color: var(--primary);
+}
+.dashboard-section-button.is-selected > svg:last-child {
+  transform: rotate(180deg);
+}
+.dashboard-detail {
+  margin-top: 16px;
+  min-width: 0;
+}
+.dashboard-detail h2 {
+  margin: 0 0 16px;
+  font-size: 1.1875rem;
+}
+/* Aviso de apontamentos com custo incompleto, no Dashboard Geral. */
+.cost-issues {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem 0.5rem;
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+  border-radius: var(--radius);
+}
+.cost-issues > header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--warning);
+}
+.cost-issues > header svg {
+  flex: none;
+  margin-top: 2px;
+}
+.cost-issues h2 {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+.cost-issues header p {
+  margin: 2px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+.cost-issues ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cost-issues li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem 1rem;
+  padding: 0.75rem 0 0.75rem 1.625rem;
+  border-top: 1px solid var(--warning-line);
+}
+.cost-issue-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cost-issue-text strong {
+  color: var(--text);
+}
+.cost-issue-text span {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+}
+.cost-issue-text small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.cost-issues li .secondary-button {
+  flex: none;
+}
+.cost-issues-more {
+  justify-self: start;
+  margin: 0 0 0.5rem 1.625rem;
+  padding: 0;
+  color: var(--primary);
+  font-weight: 600;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+/* Pendência trazida do dashboard, nas telas de equipe e de financeiro. */
+.pending-fix {
+  display: grid;
+  gap: 4px;
+}
+.pending-fix strong {
+  color: var(--text);
+}
+.team-row-pending td {
+  background: var(--warning-soft);
+}
+
+/* Gráficos do Dashboard Geral. */
+.dashboard-charts-block {
+  margin-top: 28px;
+}
+.dashboard-charts-block > h2 {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+.dashboard-charts-block > p {
+  margin: 0 0 14px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 21rem), 1fr));
+  gap: 16px;
+  transition: opacity 0.2s;
+}
+.dashboard-charts-block[aria-busy="true"] .dashboard-charts {
+  opacity: 0.55;
+}
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 18px 18px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.chart-card-wide {
+  grid-column: 1 / -1;
+}
+.chart-card header h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--text);
+}
+.chart-card header p {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.chart-area {
+  min-width: 0;
+}
+.chart-empty {
+  margin: auto 0;
+  padding: 32px 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.8125rem;
+}
+.chart-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.chart-tooltip {
+  min-width: 170px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  font-size: 0.8125rem;
+}
+.chart-tooltip strong {
+  display: block;
+  margin-bottom: 6px;
+}
+.chart-tooltip dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.chart-tooltip dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.chart-tooltip dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+}
+.chart-tooltip dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.chart-swatch {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.chart-donut {
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) 1fr;
+  align-items: center;
+  gap: 16px;
+}
+.chart-donut-plot {
+  position: relative;
+}
+.chart-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+.chart-donut-center strong {
+  font-size: 1.25rem;
+  color: var(--text);
+}
+.chart-donut-center span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.chart-legend {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+.chart-legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+.chart-legend-name {
+  color: var(--text-secondary);
+}
+.chart-legend-value {
+  color: var(--text);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.chart-legend-value small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 600;
+}
+@media (max-width: 520px) {
+  .chart-donut {
+    grid-template-columns: 1fr;
+  }
+}
+.dashboard-chart {
+  width: 100%;
+  height: 300px;
+  min-width: 0;
+  margin: 16px 0 24px;
+}
+.dashboard-table {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.dashboard-table table {
+  width: 100%;
+  min-width: 540px;
+}
+.dashboard-table caption {
+  padding: 12px 16px;
+  text-align: left;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.dashboard-cell-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--warning);
+  font-size: 0.75rem;
+}
+.dashboard-audit-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.dashboard-audit-metrics article {
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+.dashboard-audit-metrics span {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--muted);
+}
+.dashboard-audit-metrics strong {
+  display: block;
+  font-size: 1.375rem;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+}
+.dashboard-empty {
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+}
+.dashboard-method {
+  margin-top: 16px;
+}
+.dashboard-operational-title {
+  font-size: 1.125rem;
+  margin: 26px 0 14px;
+}
+.operational-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.operational-metrics strong {
+  font-size: 1.5rem;
+  overflow-wrap: anywhere;
+}
+.operational-metrics small {
+  display: block;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.dashboard-detail-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+.dashboard-table td {
+  white-space: normal;
+  /* Quebra só entre palavras: valores como "R$ 1.079,00" e datas nunca se partem. */
+  overflow-wrap: break-word;
+  /* Mínimo baixo: números e valores não quebram, e textos quebram linha. Com 110 px por
+     coluna, tabelas de 10 colunas (como Projetos no relatório) passavam da tela. */
+  min-width: 72px;
+  max-width: 300px;
+}
+/* Tabelas de relatório e dashboard têm muitas colunas: espaçamento menor para caberem
+   em notebooks (1366 px) mesmo com o menu lateral aberto. */
+.dashboard-table th,
+.dashboard-table td {
+  padding: 11px 8px;
+}
+.dashboard-table th {
+  font-size: 0.75rem;
+}
+.operational-audit .table-toolbar {
+  flex-wrap: wrap;
+}
+.operational-audit .table-toolbar select {
+  width: auto;
+  max-width: 100%;
+}
+
+@container conteudo (width < 56rem) {
+  .operational-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container conteudo (width < 30rem) {
+  .operational-metrics {
+    grid-template-columns: 1fr;
+  }
+}
+@container conteudo (width < 60rem) {
+  .dashboard-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-period {
+    grid-column: 1 / -1;
+  }
+  .dashboard-summary.summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-sections {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+@container conteudo (width < 32rem) {
+  .dashboard-overview,
+  .dashboard-detail {
+    padding: 14px;
+  }
+  .dashboard-filters,
+  .dashboard-summary.summary-grid,
+  .dashboard-audit-metrics {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-filter-actions > button {
+    flex: 1;
+  }
+  .dashboard-period > div {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-page .client-form-reveal,
+  .dashboard-section-button > svg:last-child {
+    transition: none;
+  }
+}
+
+.entity-dashboard .page-header > div {
+  min-width: 0;
+}
+.entity-dashboard h1 {
+  overflow-wrap: anywhere;
+}
+.entity-dashboard .dashboard-title-row {
+  align-items: flex-start;
+}
+.entity-dashboard-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+  margin: 0 0 1.25rem;
+}
+.entity-dashboard-tabs {
+  margin-top: 24px;
+}
+.entity-picker {
+  max-width: 600px;
+  margin-bottom: 18px;
+}
+.entity-dashboard select {
+  width: 100%;
+  min-width: 0;
+}
+.entity-dashboard-filters {
+  grid-template-columns: minmax(260px, 1.4fr) minmax(180px, 1fr);
+}
+.entity-memberships {
+  margin-top: 24px;
+}
+
+@container conteudo (width < 34rem) {
+  .entity-dashboard-filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Seis gráficos pequenos em duas linhas de três; o comparativo por projeto ocupa a linha toda.
+   As colunas seguem a largura da área dos gráficos e diminuem com o texto maior (Aa). */
+.dashboard-charts-block {
+  container-type: inline-size;
+}
+.dashboard-charts {
+  grid-template-columns: 1fr;
+}
+@container (width >= 44rem) {
+  .dashboard-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (width >= 66rem) {
+  .dashboard-charts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

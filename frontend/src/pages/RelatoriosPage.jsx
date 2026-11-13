@@ -15,22 +15,22 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { api } from "../api/client.js";
-import { PageActions } from "../components/PageActions.jsx";
-import { HelpDialog } from "../components/HelpDialog.jsx";
-import { ReportScopeSelect } from "../components/ReportScopeSelect.jsx";
-import { ReportCustomizationDialog } from "../components/ReportCustomizationDialog.jsx";
-import { ReportTabs } from "../components/ReportTabs.jsx";
+import { api } from "../api/conexao.js";
+import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { SelecaoEscopoRelatorio } from "../components/relatorios/SelecaoEscopoRelatorio.jsx";
+import { DialogoPersonalizacaoRelatorio } from "../components/relatorios/DialogoPersonalizacaoRelatorio.jsx";
+import { AbasRelatorios } from "../components/relatorios/AbasRelatorios.jsx";
 import {
   BLOCOS,
   BLOCOS_PADRAO,
   COLUNAS_PROJETOS,
   ORDENACOES,
   STATUS_HORAS,
-} from "../config/reportBlocks.js";
-export { BLOCOS } from "../config/reportBlocks.js";
-import { projectStatusLabel, projectStatusOptions } from "../config/projectOptions.js";
-import { salvarArquivo } from "../utils/download.js";
+} from "../config/blocosRelatorio.js";
+export { BLOCOS } from "../config/blocosRelatorio.js";
+import { projectStatusLabel, projectStatusOptions } from "../config/opcoesProjeto.js";
+import { salvarArquivo } from "../utils/baixarArquivos.js";
 import { falhaDoArquivo, sucessoDoArquivo } from "../utils/relatorioArquivos.js";
 
 const TIPOS_OCORRENCIA = {
@@ -403,7 +403,7 @@ export function RelatoriosPage() {
             <RelatoriosHelp />
           </div>
         </div>
-        <PageActions
+        <AcoesPagina
           onRefresh={() => {
             carregarOpcoes();
             if (id) carregarRelatorio(id);
@@ -411,13 +411,13 @@ export function RelatoriosPage() {
           loading={ocupado}
         />
       </header>
-      <ReportTabs />
+      <AbasRelatorios />
 
       <form className="dashboard-overview report-form" onSubmit={gerarPrevia} noValidate>
         <div className="dashboard-filters report-filters">
           <div className="field report-projects">
             <span id="relatorio-projetos-rotulo">Projetos ou clientes</span>
-            <ReportScopeSelect
+            <SelecaoEscopoRelatorio
               projetos={projetos}
               clientes={clientes}
               form={form}
@@ -731,7 +731,7 @@ export function RelatoriosPage() {
         </>
       )}
       {personalizando && relatorio && (
-        <ReportCustomizationDialog
+        <DialogoPersonalizacaoRelatorio
           relatorio={relatorio}
           onClose={() => setPersonalizando(false)}
           onApply={personalizar}
@@ -743,7 +743,7 @@ export function RelatoriosPage() {
 
 function RelatoriosHelp() {
   return (
-    <HelpDialog title="Ajuda — Relatórios">
+    <DialogoAjuda title="Ajuda — Relatórios">
       <section>
         <h3>Montar</h3>
         <p>
@@ -797,7 +797,7 @@ function RelatoriosHelp() {
           custos internos e é de uso interno.
         </p>
       </section>
-    </HelpDialog>
+    </DialogoAjuda>
   );
 }
 

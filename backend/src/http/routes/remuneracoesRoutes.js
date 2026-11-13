@@ -4,12 +4,12 @@
 
 import { Router } from "express";
 import { remuneracoesController } from "../controllers/remuneracoesController.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
+import { tratarAssincrono } from "../../utils/tratarAssincrono.js";
 
 export const remuneracoesRoutes = Router();
 
-remuneracoesRoutes.get("/", asyncHandler(remuneracoesController.index));
-remuneracoesRoutes.get("/:id", asyncHandler(remuneracoesController.show));
-remuneracoesRoutes.post("/", asyncHandler(remuneracoesController.store));
-remuneracoesRoutes.put("/:id", asyncHandler(remuneracoesController.update));
-remuneracoesRoutes.delete("/:id", asyncHandler(remuneracoesController.destroy));
+remuneracoesRoutes.get("/", tratarAssincrono(remuneracoesController.index));
+remuneracoesRoutes.get("/:id", tratarAssincrono(remuneracoesController.show));
+remuneracoesRoutes.post("/", tratarAssincrono(remuneracoesController.store));
+remuneracoesRoutes.put("/:id", tratarAssincrono(remuneracoesController.update));
+remuneracoesRoutes.delete("/:id", tratarAssincrono(remuneracoesController.destroy));

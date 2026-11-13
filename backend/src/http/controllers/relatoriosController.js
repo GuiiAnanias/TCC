@@ -8,8 +8,8 @@ import { relatoriosGeradosService } from "../../services/relatoriosGeradosServic
 import { relatoriosArquivosService } from "../../services/relatoriosArquivosService.js";
 import { dashboardQuerySchema } from "../../schemas/dashboardSchemas.js";
 import { relatorioCreateSchema, relatorioListaSchema } from "../../schemas/relatoriosSchemas.js";
-import { asyncHandler } from "../../utils/asyncHandler.js";
-import { parseId } from "../../utils/parseId.js";
+import { tratarAssincrono } from "../../utils/tratarAssincrono.js";
+import { lerId } from "../../utils/lerId.js";
 import { XLSX_MIME } from "../../utils/planilha.js";
 
 // Responde um arquivo para download, com o nome no Content-Disposition e sem cache.
@@ -31,39 +31,39 @@ export function enviarPlanilha(response, { arquivo, nome }) {
 export const relatoriosController = {
   // [CONTROLLER] Excel do Dashboard Geral. [VALIDACAO] Mesmos filtros da tela
   // (dashboardQuerySchema).
-  indicadores: asyncHandler(async (request, response) => {
+  indicadores: tratarAssincrono(async (request, response) => {
     const filtros = dashboardQuerySchema.parse(request.query);
     enviarPlanilha(response, await relatoriosService.indicadoresXlsx(filtros));
   }),
   // [CONTROLLER] Gera e grava o relatório. [VALIDACAO] relatorioCreateSchema exige ao menos um
   // filtro e um bloco.
-  gerar: asyncHandler(async (request, response) => {
+  gerar: tratarAssincrono(async (request, response) => {
     const dados = relatorioCreateSchema.parse(request.body);
     response.status(201).json(await relatoriosGeradosService.gerar(dados, request.user));
   }),
   // [CONTROLLER] Prévia do relatório sem gravar no histórico. [VALIDACAO] Mesmas regras de gerar.
-  previa: asyncHandler(async (request, response) => {
+  previa: tratarAssincrono(async (request, response) => {
     const dados = relatorioCreateSchema.parse(request.body);
     response.json(await relatoriosGeradosService.previa(dados, request.user));
   }),
   // [CONTROLLER] Download em PDF; registra a exportação no histórico.
-  pdf: asyncHandler(async (request, response) => {
+  pdf: tratarAssincrono(async (request, response) => {
     const { arquivo, nome } = await relatoriosArquivosService.pdf(
-      parseId(request.params.id, "relatório"),
+      lerId(request.params.id, "relatório"),
       request.user,
     );
     enviarArquivo(response, { arquivo, nome, tipo: "application/pdf" });
   }),
-  xlsx: asyncHandler(async (request, response) => {
+  xlsx: tratarAssincrono(async (request, response) => {
     enviarPlanilha(
       response,
-      await relatoriosArquivosService.xlsx(parseId(request.params.id, "relatório"), request.user),
+      await relatoriosArquivosService.xlsx(lerId(request.params.id, "relatório"), request.user),
     );
   }),
-  listar: asyncHandler(async (request, response) => {
+  listar: tratarAssincrono(async (request, response) => {
     response.json(await relatoriosGeradosService.listar(relatorioListaSchema.parse(request.query)));
   }),
-  buscar: asyncHandler(async (request, response) => {
-    response.json(await relatoriosGeradosService.buscar(parseId(request.params.id, "relatório")));
+  buscar: tratarAssincrono(async (request, response) => {
+    response.json(await relatoriosGeradosService.buscar(lerId(request.params.id, "relatório")));
   }),
 };

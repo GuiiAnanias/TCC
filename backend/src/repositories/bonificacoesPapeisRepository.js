@@ -4,8 +4,8 @@
  */
 
 import prisma from "../config/prisma.js";
-import { custoConflict } from "../utils/custoConflict.js";
-import { HttpError } from "../utils/HttpError.js";
+import { conflitoCusto } from "../utils/conflitoCusto.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 export const bonificacoesPapeisRepository = {
   findAll() {
@@ -25,7 +25,7 @@ export const bonificacoesPapeisRepository = {
               where: { papel: data.papel, dataFim: null },
             });
             if (current && data.dataInicio <= current.dataInicio) {
-              throw new HttpError(
+              throw new ErroHttp(
                 400,
                 "A nova vigência deve começar após a configuração anterior. O histórico é preservado.",
               );
@@ -40,11 +40,11 @@ export const bonificacoesPapeisRepository = {
           { isolationLevel: "Serializable" },
         );
       } catch (error) {
-        const conflict = custoConflict(error);
+        const conflict = conflitoCusto(error);
         if (conflict) throw conflict;
         if (error.code !== "P2034") throw error;
         if (attempt === 2)
-          throw new HttpError(
+          throw new ErroHttp(
             409,
             "A bonificação foi alterada em outra operação. Atualize e tente novamente.",
           );

@@ -4,9 +4,9 @@
  */
 
 import prisma from "../config/prisma.js";
-import { HttpError } from "../utils/HttpError.js";
-import { calculateAward, premiacaoTemplates } from "../services/premiacaoRules.js";
-import { operationalIndicators } from "../services/operationalIndicators.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { calculateAward, premiacaoTemplates } from "../services/regrasPremiacao.js";
+import { operationalIndicators } from "../services/indicadoresOperacionais.js";
 
 const relations = {
   regra: true,
@@ -26,7 +26,7 @@ async function transaction(operation) {
     } catch (error) {
       if (error.code !== "P2034") throw error;
       if (attempt === 2)
-        throw new HttpError(409, "A avaliação mudou em outra operação. Atualize a tela.");
+        throw new ErroHttp(409, "A avaliação mudou em outra operação. Atualize a tela.");
     }
   }
 }
@@ -35,9 +35,9 @@ async function transaction(operation) {
 export async function buildAwardContent(tx, identity, rule, dados, actor) {
   const known = new Set(rule.definicao.criterios.map((row) => row.chave));
   if (dados.respostas.some((row) => !known.has(row.chave)))
-    throw new HttpError(400, "Resposta não pertence à versão das regras selecionada.");
+    throw new ErroHttp(400, "Resposta não pertence à versão das regras selecionada.");
   const person = await tx.colaborador.findUnique({ where: { id: identity.colaboradorId } });
-  if (!person) throw new HttpError(404, "Colaborador não encontrado.");
+  if (!person) throw new ErroHttp(404, "Colaborador não encontrado.");
   const start = new Date(`${identity.competencia}-01T00:00:00Z`);
   const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
   const projects = await tx.projeto.findMany({
@@ -76,9 +76,9 @@ export async function buildAwardContent(tx, identity, rule, dados, actor) {
     orderBy: { nome: "asc" },
   });
   if (projects.length !== dados.projetoIds.length)
-    throw new HttpError(400, "Um dos projetos não existe mais.");
+    throw new ErroHttp(400, "Um dos projetos não existe mais.");
   if (projects.flatMap((row) => row.sprints).length !== dados.sprintIds.length)
-    throw new HttpError(400, "As sprints precisam pertencer aos projetos selecionados.");
+    throw new ErroHttp(400, "As sprints precisam pertencer aos projetos selecionados.");
   const filters = {
     dataInicio: start,
     dataFim: end,
@@ -145,14 +145,14 @@ export const premiacaoRepository = {
   },
   async find(id) {
     const row = await prisma.avaliacaoPremiacao.findUnique({ where: { id }, include: relations });
-    if (!row) throw new HttpError(404, "Avaliação não encontrada.");
+    if (!row) throw new ErroHttp(404, "Avaliação não encontrada.");
     return row;
   },
   // [BANCO] Cria a avaliação em rascunho (ou a reavaliação de uma concluída).
   create(data, actor) {
     return transaction(async (tx) => {
       const rule = await tx.regraPremiacao.findUnique({ where: { id: data.regraId } });
-      if (!rule) throw new HttpError(404, "Versão das regras não encontrada.");
+      if (!rule) throw new ErroHttp(404, "Versão das regras não encontrada.");
       const identity = {
         colaboradorId: data.colaboradorId,
         competencia: data.competencia,
@@ -173,7 +173,7 @@ export const premiacaoRepository = {
           previous.competencia !== identity.competencia ||
           previous.categoria !== identity.categoria)
       )
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "A reavaliação exige a última versão concluída da mesma pessoa, competência e categoria.",
         );
@@ -199,9 +199,9 @@ export const premiacaoRepository = {
         where: { id },
         include: { regra: true },
       });
-      if (!previous) throw new HttpError(404, "Avaliação não encontrada.");
+      if (!previous) throw new ErroHttp(404, "Avaliação não encontrada.");
       if (previous.status !== "RASCUNHO" || previous.revisao !== data.revisao)
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "Avaliação concluída ou alterada em outra sessão. Atualize a tela.",
         );
@@ -217,14 +217,14 @@ export const premiacaoRepository = {
   close(id, data, actor) {
     return transaction(async (tx) => {
       const previous = await tx.avaliacaoPremiacao.findUnique({ where: { id } });
-      if (!previous) throw new HttpError(404, "Avaliação não encontrada.");
+      if (!previous) throw new ErroHttp(404, "Avaliação não encontrada.");
       if (previous.status !== "RASCUNHO" || previous.revisao !== data.revisao)
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "Avaliação concluída ou alterada em outra sessão. Atualize a tela.",
         );
       if (previous.conteudo.resultado.pendentes)
-        throw new HttpError(400, "Confira todos os critérios antes de concluir a avaliação.");
+        throw new ErroHttp(400, "Confira todos os critérios antes de concluir a avaliação.");
       // Preservar exatamente a base e as respostas que foram revisadas e salvas.
       return tx.avaliacaoPremiacao.update({
         where: { id },

@@ -3,8 +3,8 @@
  */
 
 import prisma from "../config/prisma.js";
-import { HttpError } from "../utils/HttpError.js";
-import { custoConflict } from "../utils/custoConflict.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { conflitoCusto } from "../utils/conflitoCusto.js";
 
 export const apontamentosRepository = {
   // [TRANSACAO] Trava colaborador e projeto do apontamento até o fim da transação.
@@ -24,7 +24,7 @@ export const apontamentosRepository = {
         // Serializable protege inclusive o primeiro lançamento de um dia vazio.
         return await prisma.$transaction(operation, { isolationLevel: "Serializable" });
       } catch (error) {
-        const conflict = custoConflict(error);
+        const conflict = conflitoCusto(error);
         if (conflict) throw conflict;
         if (
           error.code !== "P2034" &&
@@ -32,7 +32,7 @@ export const apontamentosRepository = {
         )
           throw error;
         if (attempt === 2)
-          throw new HttpError(
+          throw new ErroHttp(
             409,
             "Os apontamentos foram alterados em outra operação. Atualize e tente novamente.",
           );

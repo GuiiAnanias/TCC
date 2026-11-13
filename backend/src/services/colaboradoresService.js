@@ -3,13 +3,13 @@
  */
 
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 async function ensureColaboradorExists(id) {
   const colaborador = await colaboradoresRepository.findById(id);
 
   if (!colaborador) {
-    throw new HttpError(404, "Colaborador não encontrado.");
+    throw new ErroHttp(404, "Colaborador não encontrado.");
   }
 
   return colaborador;
@@ -29,7 +29,7 @@ export const colaboradoresService = {
     const colaborador = await colaboradoresRepository.findByEmail(data.email);
 
     if (colaborador) {
-      throw new HttpError(409, "Já existe um colaborador com este e-mail.");
+      throw new ErroHttp(409, "Já existe um colaborador com este e-mail.");
     }
 
     return colaboradoresRepository.create(data);
@@ -42,7 +42,7 @@ export const colaboradoresService = {
       const colaborador = await colaboradoresRepository.findByEmail(data.email);
 
       if (colaborador && colaborador.id !== id) {
-        throw new HttpError(409, "Já existe um colaborador com este e-mail.");
+        throw new ErroHttp(409, "Já existe um colaborador com este e-mail.");
       }
     }
 

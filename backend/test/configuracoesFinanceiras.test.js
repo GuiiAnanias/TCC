@@ -6,7 +6,7 @@ import {
 } from "../src/schemas/configuracoesFinanceirasSchemas.js";
 import { configuracoesFinanceirasService as service } from "../src/services/configuracoesFinanceirasService.js";
 import { configuracoesFinanceirasRepository as repo } from "../src/repositories/configuracoesFinanceirasRepository.js";
-import { previousFinanceDay } from "../src/utils/financeDates.js";
+import { previousFinanceDay } from "../src/utils/datasFinanceiras.js";
 
 test("financial inputs reject invalid dates and money and never accept caller-supplied frozen values", () => {
   const base = { itemTabelaId: 1, beneficios: 20, dataInicio: "2026-09-01" };

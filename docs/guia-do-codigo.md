@@ -36,18 +36,18 @@ teclado.
 
 ```txt
 Tela (frontend/src/pages)            [TELA] [REQUISICAO]
-  -> api/client.js (axios + token)   [SEGURANCA]
+  -> api/conexao.js (axios + token)   [SEGURANCA]
   -> http/routes/*Routes.js          [ROTA]
-  -> middlewares/authenticate.js     [SEGURANCA]  (rotas protegidas)
+  -> middlewares/autenticar.js     [SEGURANCA]  (rotas protegidas)
   -> http/controllers/*Controller.js [CONTROLLER]
   -> schemas/*Schemas.js (Zod)       [SCHEMA] [VALIDACAO]
   -> services/*Service.js            [SERVICE] [REGRA]
   -> repositories/*Repository.js     [REPOSITORY] [BANCO] [TRANSACAO]
   -> Prisma -> PostgreSQL            (gatilhos das migrations)
-Erro em qualquer etapa -> middlewares/errorHandler.js [ERRO] -> JSON com status e mensagem
+Erro em qualquer etapa -> middlewares/tratamentoErros.js [ERRO] -> JSON com status e mensagem
 ```
 
-Exemplo: o campo CNPJ do formulário de cliente sai de `pages/CrudPage.jsx` (`handleSubmit`), chega
+Exemplo: o campo CNPJ do formulário de cliente sai de `pages/CadastroPage.jsx` (`handleSubmit`), chega
 em `POST /api/clientes` (`clientesRoutes.js`), passa por `clientesController.store`, é validado em
 `schemas/clientesSchemas.js` (dígitos verificadores em `utils/cnpj.js`), tem a duplicidade
 conferida em `services/clientesService.js` e é gravado por `repositories/clientesRepository.js`.
@@ -81,30 +81,30 @@ os bancos existentes acusarem diferença. O que cada uma faz:
 
 ## Onde mostrar na banca
 
-| Pergunta provável                                 | Abrir                                                      | Buscar               |
-| ------------------------------------------------- | ---------------------------------------------------------- | -------------------- |
-| Onde as rotas da API são registradas?             | `backend/src/http/routes/index.js`                         | `[ROTA]`             |
-| Onde o campo de um formulário chega no backend?   | `pages/CrudPage.jsx` (`handleSubmit`) e o `*Controller.js` | `[REQUISICAO]`       |
-| Para que servem controller, service e repository? | cabeçalho de cada arquivo                                  | `[CONTROLLER]`       |
-| Onde está a validação do CNPJ?                    | `schemas/clientesSchemas.js` e `utils/cnpj.js`             | `[VALIDACAO]`        |
-| Validam no front ou no back?                      | `config/resources.jsx` e `backend/src/schemas`             | `[VALIDACAO]`        |
-| Onde está a regra das 24 h por dia?               | `services/apontamentosService.js`                          | `24 h`               |
-| Id inválido na URL?                               | `utils/parseId.js`                                         | `parseId`            |
-| Regra da senha forte?                             | `schemas/senhaSchemas.js`                                  | `senha forte`        |
-| Como os erros são tratados?                       | `http/middlewares/errorHandler.js`                         | `[ERRO]`             |
-| O que é o HttpError?                              | `utils/HttpError.js`                                       | `HttpError`          |
-| E se a ReceitaWS cair?                            | `services/cnpjService.js`                                  | `[API-EXTERNA]`      |
-| Como o front mostra o erro da API?                | `utils/download.js` (`mensagemDeErro`) e `api/client.js`   | `[ERRO]`             |
-| Onde está a tabela de clientes?                   | `backend/prisma/schema.prisma` (`model Cliente`)           | `[BANCO]`            |
-| O que é uma migration?                            | esta página e `prisma/migrations`                          | `migration`          |
-| Como o custo faturado não muda?                   | migration `custos_faturados_preservados`                   | `faturado`           |
-| Como o Prisma se conecta?                         | `config/prisma.js` e `config/env.js`                       | `DATABASE_URL`       |
-| Como funciona o login?                            | `http/routes/authRoutes.js`                                | `[SEGURANCA]`        |
-| Como protegem as rotas?                           | `http/middlewares/authenticate.js`                         | `[SEGURANCA]`        |
-| E se tentarem adivinhar a senha?                  | `http/middlewares/authRateLimit.js`                        | `Muitas tentativas`  |
-| Como funciona o esqueci minha senha?              | `services/senhaService.js`                                 | `[SEGURANCA]`        |
-| Como a planilha é lida?                           | `services/importacaoApontamentosService.js`                | `lerPlanilha`        |
-| Onde é calculado o custo do dashboard?            | `services/dashboardCosts.js`                               | `custo base`         |
-| Como o PDF é gerado?                              | `services/relatoriosArquivosService.js`                    | `montarPdfRelatorio` |
-| Transação e concorrência?                         | `repositories/apontamentosRepository.js`                   | `[TRANSACAO]`        |
-| Como o front sabe se está logado?                 | `frontend/src/auth/AuthContext.jsx`                        | `[SEGURANCA]`        |
+| Pergunta provável                                 | Abrir                                                           | Buscar               |
+| ------------------------------------------------- | --------------------------------------------------------------- | -------------------- |
+| Onde as rotas da API são registradas?             | `backend/src/http/routes/index.js`                              | `[ROTA]`             |
+| Onde o campo de um formulário chega no backend?   | `pages/CadastroPage.jsx` (`handleSubmit`) e o `*Controller.js`  | `[REQUISICAO]`       |
+| Para que servem controller, service e repository? | cabeçalho de cada arquivo                                       | `[CONTROLLER]`       |
+| Onde está a validação do CNPJ?                    | `schemas/clientesSchemas.js` e `utils/cnpj.js`                  | `[VALIDACAO]`        |
+| Validam no front ou no back?                      | `config/cadastros.jsx` e `backend/src/schemas`                  | `[VALIDACAO]`        |
+| Onde está a regra das 24 h por dia?               | `services/apontamentosService.js`                               | `24 h`               |
+| Id inválido na URL?                               | `utils/lerId.js`                                                | `lerId`              |
+| Regra da senha forte?                             | `schemas/senhaSchemas.js`                                       | `senha forte`        |
+| Como os erros são tratados?                       | `http/middlewares/tratamentoErros.js`                           | `[ERRO]`             |
+| O que é o ErroHttp?                               | `utils/ErroHttp.js`                                             | `ErroHttp`           |
+| E se a ReceitaWS cair?                            | `services/cnpjService.js`                                       | `[API-EXTERNA]`      |
+| Como o front mostra o erro da API?                | `utils/baixarArquivos.js` (`mensagemDeErro`) e `api/conexao.js` | `[ERRO]`             |
+| Onde está a tabela de clientes?                   | `backend/prisma/schema.prisma` (`model Cliente`)                | `[BANCO]`            |
+| O que é uma migration?                            | esta página e `prisma/migrations`                               | `migration`          |
+| Como o custo faturado não muda?                   | migration `custos_faturados_preservados`                        | `faturado`           |
+| Como o Prisma se conecta?                         | `config/prisma.js` e `config/env.js`                            | `DATABASE_URL`       |
+| Como funciona o login?                            | `http/routes/autenticacaoRoutes.js`                             | `[SEGURANCA]`        |
+| Como protegem as rotas?                           | `http/middlewares/autenticar.js`                                | `[SEGURANCA]`        |
+| E se tentarem adivinhar a senha?                  | `http/middlewares/limiteAutenticacao.js`                        | `Muitas tentativas`  |
+| Como funciona o esqueci minha senha?              | `services/senhaService.js`                                      | `[SEGURANCA]`        |
+| Como a planilha é lida?                           | `services/importacaoApontamentosService.js`                     | `lerPlanilha`        |
+| Onde é calculado o custo do dashboard?            | `services/custosDashboard.js`                                   | `custo base`         |
+| Como o PDF é gerado?                              | `services/relatoriosArquivosService.js`                         | `montarPdfRelatorio` |
+| Transação e concorrência?                         | `repositories/apontamentosRepository.js`                        | `[TRANSACAO]`        |
+| Como o front sabe se está logado?                 | `frontend/src/autenticacao/AutenticacaoContext.jsx`             | `[SEGURANCA]`        |

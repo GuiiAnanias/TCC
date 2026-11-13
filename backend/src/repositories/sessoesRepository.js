@@ -25,7 +25,7 @@ export const sessoesRepository = {
       });
     });
   },
-  // [SEGURANCA] Usado pelo middleware authenticate em toda requisição protegida.
+  // [SEGURANCA] Usado pelo middleware autenticar em toda requisição protegida.
   findById(id) {
     return prisma.sessao.findUnique({
       where: { id },

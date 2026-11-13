@@ -1,6 +1,6 @@
 # Fórmulas dos indicadores
 
-Os dashboards, a exportação em Excel e a base da premiação usam os mesmos cálculos, feitos no backend (`dashboardService.js`, `dashboardCosts.js` e `operationalIndicators.js`). O botão "?" do Dashboard Geral traz o mesmo conteúdo em linguagem de tela. Os filtros disponíveis estão em [filtros.md](filtros.md), e as visões do dashboard em [dashboards.md](dashboards.md).
+Os dashboards, a exportação em Excel e a base da premiação usam os mesmos cálculos, feitos no backend (`dashboardService.js`, `custosDashboard.js` e `indicadoresOperacionais.js`). O botão "?" do Dashboard Geral traz o mesmo conteúdo em linguagem de tela. Os filtros disponíveis estão em [filtros.md](filtros.md), e as visões do dashboard em [dashboards.md](dashboards.md).
 
 ## Custo e horas
 

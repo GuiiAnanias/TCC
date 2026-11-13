@@ -4,7 +4,7 @@
  */
 
 import { z } from "zod";
-import { paginationQuerySchema } from "./commonSchemas.js";
+import { paginationQuerySchema } from "./comunsSchemas.js";
 import { statusProjetoSchema } from "./statusProjetoSchema.js";
 import { equipeInicialSchema } from "./equipeProjetoSchemas.js";
 

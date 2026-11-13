@@ -7,8 +7,8 @@
 
 import { apontamentosRepository } from "../repositories/apontamentosRepository.js";
 import { importacaoApontamentosRepository as repositorio } from "../repositories/importacaoApontamentosRepository.js";
-import { HttpError } from "../utils/HttpError.js";
-import { financeDay, todayFinanceDate } from "../utils/financeDates.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { financeDay, todayFinanceDate } from "../utils/datasFinanceiras.js";
 import {
   FORMATOS,
   dataBr,
@@ -67,7 +67,7 @@ const chaveCabecalho = (texto) => normalizarTexto(String(texto ?? "").replace(/\
 // ---------------------------------------------------------------- leitura do arquivo
 
 const arquivoInvalido = () =>
-  new HttpError(
+  new ErroHttp(
     400,
     "O arquivo não é uma planilha .xlsx. No Excel, use Salvar como > Pasta de Trabalho do Excel (.xlsx) e envie de novo.",
   );
@@ -75,15 +75,15 @@ const arquivoInvalido = () =>
 // [VALIDACAO][SEGURANCA] Abre o .xlsx com limite de tamanho e de linhas e acha a aba e o cabeçalho;
 // arquivo inválido vira 400.
 export async function lerPlanilha(buffer) {
-  if (!buffer?.length) throw new HttpError(400, "Envie um arquivo .xlsx com os apontamentos.");
+  if (!buffer?.length) throw new ErroHttp(400, "Envie um arquivo .xlsx com os apontamentos.");
   if (buffer.length > TAMANHO_MAXIMO)
-    throw new HttpError(413, "O arquivo passa de 5 MB. Divida os apontamentos em mais arquivos.");
+    throw new ErroHttp(413, "O arquivo passa de 5 MB. Divida os apontamentos em mais arquivos.");
   // Todo .xlsx é um arquivo ZIP, que começa com "PK".
   if (buffer[0] !== 0x50 || buffer[1] !== 0x4b) throw arquivoInvalido();
   const descompactado = tamanhoDescompactado(buffer);
   if (descompactado === null) throw arquivoInvalido();
   if (descompactado > TAMANHO_MAXIMO_DESCOMPACTADO)
-    throw new HttpError(
+    throw new ErroHttp(
       413,
       "O conteúdo da planilha é grande demais para importar de uma vez. Divida os apontamentos em mais arquivos.",
     );
@@ -96,7 +96,7 @@ export async function lerPlanilha(buffer) {
   const aba =
     pasta.getWorksheet(ABA_APONTAMENTOS) ??
     pasta.worksheets.find((item) => !ABAS_DE_APOIO.includes(item.name));
-  if (!aba) throw new HttpError(400, `A planilha não tem a aba "${ABA_APONTAMENTOS}".`);
+  if (!aba) throw new ErroHttp(400, `A planilha não tem a aba "${ABA_APONTAMENTOS}".`);
 
   const mapa = new Map();
   aba.getRow(1).eachCell((celula, numeroColuna) => {
@@ -104,14 +104,14 @@ export async function lerPlanilha(buffer) {
     const coluna = COLUNAS.find((item) => item.apelidos.includes(texto));
     if (!coluna) return;
     if ([...mapa.values()].includes(coluna.chave))
-      throw new HttpError(400, `A coluna "${coluna.titulo}" aparece duas vezes no cabeçalho.`);
+      throw new ErroHttp(400, `A coluna "${coluna.titulo}" aparece duas vezes no cabeçalho.`);
     mapa.set(numeroColuna, coluna.chave);
   });
   const faltando = COLUNAS.filter(
     (coluna) => coluna.obrigatoria && ![...mapa.values()].includes(coluna.chave),
   );
   if (faltando.length)
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       `Faltam colunas obrigatórias na linha 1 da aba "${aba.name}": ${faltando
         .map((coluna) => coluna.titulo)
@@ -128,12 +128,12 @@ export async function lerPlanilha(buffer) {
     linhas.push({ linha: numero, valores });
   });
   if (!linhas.length)
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       `Nenhum apontamento encontrado na aba "${aba.name}". Preencha a partir da linha 2.`,
     );
   if (linhas.length > LIMITE_LINHAS)
-    throw new HttpError(
+    throw new ErroHttp(
       400,
       `A planilha tem ${linhas.length} apontamentos e o limite é ${LIMITE_LINHAS.toLocaleString("pt-BR")} por importação. Divida em mais arquivos.`,
     );
@@ -1172,7 +1172,7 @@ function dadosDoResumo(resultado) {
 // [ERRO] Importação recusada também entra no histórico, com o motivo e as primeiras linhas com
 // erro.
 async function registrarFalha(historico, error) {
-  const conhecida = error instanceof HttpError && error.statusCode < 500;
+  const conhecida = error instanceof ErroHttp && error.statusCode < 500;
   try {
     await repositorio.registrar({
       ...historico,
@@ -1221,7 +1221,7 @@ async function gravarImportacao(buffer, historico) {
     const cadastros = await repositorio.cadastros(db);
     const resultado = await analisar(planilha, cadastros, db);
     if (resultado.resumo.comErro)
-      throw new HttpError(
+      throw new ErroHttp(
         422,
         `Nenhum apontamento foi importado: ${resultado.resumo.comErro} ${resultado.resumo.comErro === 1 ? "linha tem" : "linhas têm"} erro.`,
         resultado,

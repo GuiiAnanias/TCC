@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { novaSenhaSchema } from "../src/schemas/senhaSchemas.js";
 import { senhaService } from "../src/services/senhaService.js";
-import { authRateLimit } from "../src/http/middlewares/authRateLimit.js";
+import { limiteAutenticacao } from "../src/http/middlewares/limiteAutenticacao.js";
 import { limitesAutenticacaoRepository as repository } from "../src/repositories/limitesAutenticacaoRepository.js";
 
 test("novas senhas respeitam bytes UTF-8, inclusive no serviço chamado sem HTTP", async () => {
@@ -46,7 +46,7 @@ test("limites por origem e identificador usam chaves opacas e resposta genérica
     counts.set(key, count);
     return { allowed: count <= limit, retryAfter: 42 };
   };
-  const middleware = authRateLimit(
+  const middleware = limiteAutenticacao(
     "test",
     { originLimit: 4, identifierLimit: 2, windowMs: 900000 },
     "login",

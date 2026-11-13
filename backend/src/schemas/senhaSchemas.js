@@ -1,13 +1,13 @@
 /**
  * [SCHEMA][VALIDACAO][SEGURANCA] Regras de senha forte (mínimo de 8 caracteres, letra maiúscula,
- * número e símbolo). Usadas na redefinição de senha e mostradas na tela pelo PasswordChecklist.
+ * número e símbolo). Usadas na redefinição de senha e mostradas na tela pelo RequisitosSenha.
  */
 
 import { z } from "zod";
 
 // Regras para novas senhas, na ordem em que são conferidas. Senhas já cadastradas
 // continuam entrando normalmente; as regras valem ao definir uma senha nova.
-// O frontend repete as mesmas regras em src/auth/password.js para o checklist da tela.
+// O frontend repete as mesmas regras em src/autenticacao/senha.js para o checklist da tela.
 export const regrasSenha = [
   {
     teste: (value) => value.length >= 8,

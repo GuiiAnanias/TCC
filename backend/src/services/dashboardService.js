@@ -7,9 +7,9 @@
 import { dashboardRepository } from "../repositories/dashboardRepository.js";
 import { bonificacoesPapeisRepository } from "../repositories/bonificacoesPapeisRepository.js";
 
-import { round, operationalIndicators, taskInScope } from "./operationalIndicators.js";
-import { entryCost } from "./dashboardCosts.js";
-import { HttpError } from "../utils/HttpError.js";
+import { round, operationalIndicators, taskInScope } from "./indicadoresOperacionais.js";
+import { entryCost } from "./custosDashboard.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 const sum = (rows, key) => round(rows.reduce((total, row) => total + Number(row[key]), 0));
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 export const SEM_DEPARTAMENTO = "Sem departamento";
@@ -294,9 +294,9 @@ function fecharSeries(series) {
 async function conferirRecorte(filters) {
   if (!filters.sprintId) return;
   const sprint = await dashboardRepository.findSprint(filters.sprintId);
-  if (!sprint) throw new HttpError(400, "Sprint não encontrada.");
+  if (!sprint) throw new ErroHttp(400, "Sprint não encontrada.");
   if (filters.projetoIds?.length && !filters.projetoIds.includes(sprint.projetoId))
-    throw new HttpError(400, "A sprint escolhida não pertence aos projetos selecionados.");
+    throw new ErroHttp(400, "A sprint escolhida não pertence aos projetos selecionados.");
 }
 
 export const dashboardService = {
@@ -312,7 +312,7 @@ export const dashboardService = {
   // [SERVICE] Dashboard de um projeto, com a evolução mensal.
   async project(id, filters = {}) {
     const project = await dashboardRepository.findProject(id);
-    if (!project) throw new HttpError(404, "Projeto não encontrado.");
+    if (!project) throw new ErroHttp(404, "Projeto não encontrado.");
     // O próprio projeto da tela prevalece sobre qualquer outro projeto informado.
     const { projetoId: _projetoId, ...resto } = filters;
     const scoped = { ...resto, projetoIds: [id] };
@@ -334,7 +334,7 @@ export const dashboardService = {
   // [SERVICE] Dashboard de um colaborador.
   async collaborator(id, filters = {}) {
     const collaborator = await dashboardRepository.findCollaborator(id);
-    if (!collaborator) throw new HttpError(404, "Colaborador não encontrado.");
+    if (!collaborator) throw new ErroHttp(404, "Colaborador não encontrado.");
     const scoped = { ...filters, colaboradorId: id };
     await conferirRecorte(scoped);
     const [projects, bonuses] = await Promise.all([

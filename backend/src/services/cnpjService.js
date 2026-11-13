@@ -5,7 +5,7 @@
  */
 
 import { cnpjSchema } from "../schemas/clientesSchemas.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 const cache = new Map();
 const optionalText = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
@@ -23,32 +23,32 @@ export async function consultarCnpj(input) {
       headers: { Accept: "application/json" },
     });
     if (response.status === 429)
-      throw new HttpError(
+      throw new ErroHttp(
         429,
         "Limite de consultas de CNPJ atingido. Aguarde um minuto ou preencha os dados manualmente.",
       );
     if (response.status === 404)
-      throw new HttpError(404, "CNPJ não encontrado. Você pode preencher os dados manualmente.");
+      throw new ErroHttp(404, "CNPJ não encontrado. Você pode preencher os dados manualmente.");
     if (!response.ok)
-      throw new HttpError(
+      throw new ErroHttp(
         502,
         "Consulta de CNPJ indisponível. Tente novamente ou preencha os dados manualmente.",
       );
     data = await response.json();
   } catch (error) {
-    if (error instanceof HttpError) throw error;
-    throw new HttpError(
+    if (error instanceof ErroHttp) throw error;
+    throw new ErroHttp(
       503,
       "Não foi possível consultar o CNPJ. Tente novamente ou preencha os dados manualmente.",
     );
   }
   if (data?.status === "ERROR")
-    throw new HttpError(
+    throw new ErroHttp(
       404,
       "CNPJ não encontrado na consulta. Confira o CNPJ ou preencha os dados manualmente.",
     );
   if (data?.status !== "OK" || !optionalText(data.nome))
-    throw new HttpError(
+    throw new ErroHttp(
       502,
       "O serviço de CNPJ retornou dados inválidos. Preencha os dados manualmente.",
     );

@@ -1,4 +1,4 @@
-import { mensagemDeErro } from "./download.js";
+import { mensagemDeErro } from "./baixarArquivos.js";
 
 // Mensagens dos critérios de aceite das exportações do relatório (PDF e XLSX).
 const FORMATOS = { pdf: "PDF", xlsx: "XLSX" };

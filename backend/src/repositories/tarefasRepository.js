@@ -4,7 +4,7 @@
  */
 
 import prisma from "../config/prisma.js";
-import { HttpError } from "../utils/HttpError.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
 
 const includeTask = {
   projeto: { select: { nome: true, status: true } },
@@ -25,7 +25,7 @@ async function transaction(operation) {
     } catch (error) {
       if (error.code !== "P2034") throw error;
       if (attempt === 2)
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "Os dados foram alterados em outra operação. Atualize e tente novamente.",
         );
@@ -68,26 +68,26 @@ export const tarefasRepository = {
       const previous = id
         ? await tx.tarefa.findUnique({ where: { id }, include: { responsaveis: true } })
         : null;
-      if (id && !previous) throw new HttpError(404, "Tarefa não encontrada.");
+      if (id && !previous) throw new ErroHttp(404, "Tarefa não encontrada.");
       const merged = { ...previous, ...data };
       if (previous && merged.projetoId !== previous.projetoId)
-        throw new HttpError(
+        throw new ErroHttp(
           409,
           "O projeto da tarefa não pode ser alterado. Cadastre outra tarefa no projeto desejado.",
         );
       const project = await tx.projeto.findUnique({ where: { id: merged.projetoId } });
       if (!project || project.status !== "ATIVO")
-        throw new HttpError(409, "Selecione um projeto ativo para alterar tarefas.");
+        throw new ErroHttp(409, "Selecione um projeto ativo para alterar tarefas.");
       if (merged.dataInicio && merged.dataConclusao && merged.dataConclusao < merged.dataInicio)
-        throw new HttpError(400, "A conclusão não pode ser anterior ao início.");
+        throw new ErroHttp(400, "A conclusão não pode ser anterior ao início.");
       if (merged.dataConclusao && merged.status !== "CONCLUIDA")
-        throw new HttpError(400, "Remova a data de conclusão ao reabrir ou cancelar a tarefa.");
+        throw new ErroHttp(400, "Remova a data de conclusão ao reabrir ou cancelar a tarefa.");
       if (merged.sprintId) {
         const sprint = await tx.sprint.findUnique({ where: { id: merged.sprintId } });
         if (!sprint || sprint.projetoId !== merged.projetoId)
-          throw new HttpError(400, "A sprint deve pertencer ao mesmo projeto da tarefa.");
+          throw new ErroHttp(400, "A sprint deve pertencer ao mesmo projeto da tarefa.");
         if (sprint.statusRegistro !== "ATIVO" && previous?.sprintId !== merged.sprintId)
-          throw new HttpError(409, "Selecione uma sprint ativa.");
+          throw new ErroHttp(409, "Selecione uma sprint ativa.");
       }
       const { responsavelIds, ...fields } = data;
       if (responsavelIds) {
@@ -102,7 +102,7 @@ export const tarefasRepository = {
             },
           });
           if (eligible !== added.length)
-            throw new HttpError(
+            throw new ErroHttp(
               400,
               "Novos responsáveis devem ser colaboradores ativos vinculados à equipe do projeto.",
             );
@@ -136,15 +136,15 @@ export const tarefasRepository = {
   saveSprint(id, data) {
     return transaction(async (tx) => {
       const previous = id ? await tx.sprint.findUnique({ where: { id } }) : null;
-      if (id && !previous) throw new HttpError(404, "Sprint não encontrada.");
+      if (id && !previous) throw new ErroHttp(404, "Sprint não encontrada.");
       const merged = { ...previous, ...data };
       if (previous && merged.projetoId !== previous.projetoId)
-        throw new HttpError(409, "O projeto da sprint não pode ser alterado.");
+        throw new ErroHttp(409, "O projeto da sprint não pode ser alterado.");
       const project = await tx.projeto.findUnique({ where: { id: merged.projetoId } });
       if (!project || project.status !== "ATIVO")
-        throw new HttpError(409, "Selecione um projeto ativo para alterar sprints.");
+        throw new ErroHttp(409, "Selecione um projeto ativo para alterar sprints.");
       if (merged.dataInicio && merged.dataFim && merged.dataFim < merged.dataInicio)
-        throw new HttpError(400, "O fim não pode ser anterior ao início.");
+        throw new ErroHttp(400, "O fim não pode ser anterior ao início.");
       return id
         ? tx.sprint.update({ where: { id }, data, include: includeSprint })
         : tx.sprint.create({ data, include: includeSprint });

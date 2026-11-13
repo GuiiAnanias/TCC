@@ -1,24 +1,24 @@
 /**
  * [TELA][SEGURANCA] Tela de login (/login). Envia usuário ou e-mail e senha para POST
- * /api/auth/login (via AuthContext). Mensagens: "Preencha este campo" (navegador) e "Usuário ou
+ * /api/auth/login (via AutenticacaoContext). Mensagens: "Preencha este campo" (navegador) e "Usuário ou
  * senha inválidos" (API).
  */
 
 import React, { useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { ThemeToggle } from "../ThemeContext.jsx";
-import { FontSizeControl } from "../components/FontSizeControl.jsx";
+import { useAutenticacao } from "../autenticacao/AutenticacaoContext.jsx";
+import { BotaoTema } from "../aparencia/TemaContext.jsx";
+import { ControleTamanhoTexto } from "../aparencia/ControleTamanhoTexto.jsx";
 import {
   readRememberedLogin,
   saveRememberedLogin,
   forgetRememberedLogin,
-} from "../auth/rememberedLogin.js";
+} from "../autenticacao/loginLembrado.js";
 
 // [TELA] Formulário de acesso, "Lembrar meu usuário" e link Esqueci minha senha.
 export function LoginPage() {
-  const auth = useAuth();
+  const auth = useAutenticacao();
   const location = useLocation();
   const [initialLogin] = useState(readRememberedLogin);
   const [login, setLogin] = useState(initialLogin);
@@ -35,7 +35,7 @@ export function LoginPage() {
       ? from
       : "/dashboard";
   if (auth.user) return <Navigate to={destination} replace />;
-  // [REQUISICAO] Faz o login pelo AuthContext; quando o usuário fica logado, a tela redireciona.
+  // [REQUISICAO] Faz o login pelo AutenticacaoContext; quando o usuário fica logado, a tela redireciona.
   // [ERRO] Mostra a mensagem da API ("Usuário ou senha inválidos") ou a de servidor fora do ar.
   // [SEGURANCA] Com "lembrar" marcado salva só o usuário, nunca a senha.
   async function submit(event) {
@@ -65,8 +65,8 @@ export function LoginPage() {
             </div>
           </div>
           <div className="login-controls">
-            <FontSizeControl />
-            <ThemeToggle />
+            <ControleTamanhoTexto />
+            <BotaoTema />
           </div>
         </div>
         <h1>Entrar no sistema</h1>

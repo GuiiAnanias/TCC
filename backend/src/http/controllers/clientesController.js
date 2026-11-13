@@ -9,7 +9,7 @@ import {
   clienteUpdateSchema,
 } from "../../schemas/clientesSchemas.js";
 import { clientesService } from "../../services/clientesService.js";
-import { parseId } from "../../utils/parseId.js";
+import { lerId } from "../../utils/lerId.js";
 import { consultarCnpj } from "../../services/cnpjService.js";
 import { consultarCep } from "../../services/cepService.js";
 
@@ -30,16 +30,16 @@ export const clientesController = {
     return response.json(clientes);
   },
 
-  // [CONTROLLER] Busca um registro pelo id da URL. [VALIDACAO] parseId recusa id que não seja
+  // [CONTROLLER] Busca um registro pelo id da URL. [VALIDACAO] lerId recusa id que não seja
   // inteiro positivo (400).
   async show(request, response) {
-    const id = parseId(request.params.id, "cliente");
+    const id = lerId(request.params.id, "cliente");
     const cliente = await clientesService.getById(id);
     return response.json(cliente);
   },
 
   // [CONTROLLER] Cadastra. [VALIDACAO] O corpo passa pelo schema Zod de criação antes de chegar ao
-  // service; dados inválidos viram 400 no errorHandler.
+  // service; dados inválidos viram 400 no tratarErros.
   async store(request, response) {
     const data = clienteCreateSchema.parse(request.body);
     const cliente = await clientesService.create(data);
@@ -49,7 +49,7 @@ export const clientesController = {
   // [CONTROLLER] Edita. [VALIDACAO] Valida o id e o corpo (schema de edição, campos parciais) e
   // chama o service.
   async update(request, response) {
-    const id = parseId(request.params.id, "cliente");
+    const id = lerId(request.params.id, "cliente");
     const data = clienteUpdateSchema.parse(request.body);
     const cliente = await clientesService.update(id, data);
     return response.json(cliente);
@@ -58,7 +58,7 @@ export const clientesController = {
   // [CONTROLLER] "Excluir" na tela: inativa o registro (não apaga do banco), para preservar o
   // histórico.
   async destroy(request, response) {
-    const id = parseId(request.params.id, "cliente");
+    const id = lerId(request.params.id, "cliente");
     const cliente = await clientesService.inactivate(id);
     return response.json(cliente);
   },
