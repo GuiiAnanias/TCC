@@ -1,3 +1,9 @@
+// [BANCO] Modelo do banco de dados (PostgreSQL) usado pelo Prisma. Cada model vira uma tabela (nome
+// em @@map) e cada enum, um tipo do PostgreSQL.
+// Mudanças aqui exigem uma migration nova em prisma/migrations (corepack pnpm exec prisma migrate
+// dev --name descricao). Regras que o banco garante sozinho (gatilhos, travas de histórico) estão
+// nos arquivos migration.sql; ver docs/guia-do-codigo.md.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,6 +13,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// [BANCO] Situação de cadastro: Ativo ou Inativo (inativar em vez de apagar).
 enum Status {
   ATIVO
   INATIVO
@@ -17,6 +24,7 @@ enum TipoPessoa {
   PJ
 }
 
+// [BANCO][REGRA] Tipos de contrato de projeto (migration 20261111010000_tipos_contrato_genericos).
 enum TipoContrato {
   ESCOPO_FECHADO
   POR_HORA
@@ -37,6 +45,7 @@ enum TipoBonificacao {
   PERCENTUAL
 }
 
+// [BANCO][REGRA] Fluxo das horas: Pendente, Aprovado e Faturado (faturado trava a edição).
 enum StatusApontamento {
   PENDENTE
   APROVADO
@@ -50,6 +59,8 @@ enum StatusTarefa {
   CANCELADA
 }
 
+// [BANCO][SEGURANCA] Contas de acesso. senhaHash guarda o bcrypt; resetToken guarda só o hash do
+// token de recuperação; versaoSessao derruba sessões antigas ao trocar a senha.
 model Usuario {
   id                  Int       @id @default(autoincrement())
   nomeUsuario         String    @unique
@@ -75,6 +86,8 @@ model Usuario {
   @@map("usuarios")
 }
 
+// [BANCO][SEGURANCA] Uma linha por login; o JWT carrega o id (jti) desta sessão. Logout preenche
+// revogadaEm.
 model Sessao {
   id            String   @id
   usuarioId     Int
@@ -88,6 +101,7 @@ model Sessao {
   @@map("sessoes")
 }
 
+// [BANCO][SEGURANCA] Contadores de tentativas de login e recuperação de senha (chave em HMAC).
 model LimiteAutenticacao {
   chave       String   @id
   tentativas  Int
@@ -97,6 +111,7 @@ model LimiteAutenticacao {
   @@map("limites_autenticacao")
 }
 
+// [BANCO] Clientes PF e PJ. CNPJ e CPF únicos; campos da Receita só para PJ.
 model Cliente {
   id        Int       @id @default(autoincrement())
   nome      String
@@ -127,6 +142,8 @@ model Cliente {
   @@map("clientes")
 }
 
+// [BANCO] Pessoas da empresa. Cargo e departamento descrevem a atuação; o valor/hora fica em
+// ConfiguracaoFinanceira.
 model Colaborador {
   id                         Int                       @id @default(autoincrement())
   nomeCompleto               String
@@ -145,6 +162,7 @@ model Colaborador {
   @@map("colaboradores")
 }
 
+// [BANCO] Tabela de remuneração: um nível (ex.: Pleno II) e seu valor/hora.
 model ItemTabelaRemuneracao {
   id                         Int                       @id @default(autoincrement())
   nivel                      String                    @unique
@@ -159,6 +177,7 @@ model ItemTabelaRemuneracao {
   @@map("itens_tabela_remuneracao")
 }
 
+// [BANCO][REGRA] Percentual de bonificação por papel no projeto, com vigência (dataInicio/dataFim).
 model BonificacaoPapel {
   id          Int       @id @default(autoincrement())
   papel       String
@@ -171,6 +190,8 @@ model BonificacaoPapel {
   @@map("bonificacoes_papeis")
 }
 
+// [BANCO][REGRA] Vigências de valor/hora de cada colaborador. Histórico imutável (gatilho no
+// banco); uma nova vigência fecha a anterior.
 model ConfiguracaoFinanceira {
   id              Int                     @id @default(autoincrement())
   colaboradorId   Int
@@ -198,6 +219,7 @@ model ConfiguracaoFinanceira {
   @@map("configuracoes_financeiras")
 }
 
+// [BANCO] Projetos de um cliente: tipo de contrato, horas contratadas, valor (orçamento) e status.
 model Projeto {
   id                Int                    @id @default(autoincrement())
   clienteId         Int
@@ -222,6 +244,8 @@ model Projeto {
   @@map("projetos")
 }
 
+// [BANCO][REGRA] Participação de um colaborador na equipe do projeto, com papel e período (sem
+// sobreposição).
 model ProjetoColaborador {
   id             Int           @id @default(autoincrement())
   projetoId      Int
@@ -239,6 +263,8 @@ model ProjetoColaborador {
   @@map("projetos_colaboradores")
 }
 
+// [BANCO][REGRA] Horas trabalhadas. custoConsolidado guarda a composição do custo no faturamento e
+// historicoCustos, todas as versões.
 model ApontamentoHora {
   id             Int                @id @default(autoincrement())
   colaboradorId  Int
@@ -267,6 +293,7 @@ model ApontamentoHora {
 }
 
 
+// [BANCO] Sprints de um projeto (arquivadas por statusRegistro, sem exclusão).
 model Sprint {
   id            Int       @id @default(autoincrement())
   projetoId     Int
@@ -287,6 +314,7 @@ model Sprint {
   @@map("sprints")
 }
 
+// [BANCO] Tarefas de um projeto: status, estimativa em minutos, marca de correção e responsáveis.
 model Tarefa {
   id               Int          @id @default(autoincrement())
   projetoId        Int
@@ -316,6 +344,7 @@ model Tarefa {
   @@map("tarefas")
 }
 
+// [BANCO] Responsáveis de cada tarefa (ligação tarefa x colaborador).
 model TarefaResponsavel {
   tarefaId      Int
   colaboradorId Int
@@ -328,6 +357,7 @@ model TarefaResponsavel {
 }
 
 
+// [BANCO][REGRA] Versões publicadas das regras de premiação (imutáveis).
 model RegraPremiacao {
   id Int @id @default(autoincrement())
   nome String
@@ -340,6 +370,7 @@ model RegraPremiacao {
   @@map("regras_premiacao")
 }
 
+// [BANCO][REGRA] Avaliações de premiação: rascunho, conclusão e versões de reavaliação.
 model AvaliacaoPremiacao {
   id Int @id @default(autoincrement())
   colaboradorId Int
@@ -367,6 +398,7 @@ model AvaliacaoPremiacao {
   @@map("avaliacoes_premiacao")
 }
 
+// [BANCO] Projetos usados em cada avaliação (impede a exclusão definitiva desses projetos).
 model ProjetoAvaliacao {
   projetoId Int
   avaliacaoId Int
@@ -397,6 +429,7 @@ model RelatorioGerado {
   @@map("relatorios_gerados")
 }
 
+// [BANCO] Projetos de cada relatório gerado, para filtrar o histórico por projeto.
 model ProjetoRelatorio {
   projetoId   Int
   relatorioId Int

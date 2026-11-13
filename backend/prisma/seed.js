@@ -1,3 +1,9 @@
+/**
+ * [BANCO] Seed: popula o banco com os dados de demonstração e a conta admin/admin123. Rodar na
+ * pasta backend com `corepack pnpm run seed`. Rodar de novo não duplica nem redefine a senha da
+ * conta.
+ */
+
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { seedDemo } from "./seed-demo.js";

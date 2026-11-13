@@ -1,3 +1,9 @@
+/**
+ * [BANCO] Dados de demonstração: tabela de remuneração, bonificações, clientes, colaboradores,
+ * projetos, equipes, sprints, tarefas e apontamentos com datas fixas. Os resultados esperados no
+ * dashboard estão no README.
+ */
+
 import bcrypt from "bcrypt";
 import { seedCompanies } from "./seed-companies.js";
 import { seedAwards } from "./seed-awards.js";
