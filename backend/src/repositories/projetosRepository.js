@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações de projetos e da equipe do projeto (participações com
+ * papel e período).
+ */
+
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 import { previousFinanceDay, todayFinanceDate } from "../utils/financeDates.js";
@@ -21,6 +26,8 @@ const projectListInclude = () => ({
 });
 
 export const projetosRepository = {
+  // [TRANSACAO] Transação Serializable com novas tentativas em conflito, para regras de equipe que
+  // olham outros registros.
   async transaction(operation) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -64,6 +71,7 @@ export const projetosRepository = {
       },
     });
   },
+  // [BANCO] Lista com busca, status e cliente, com a contagem da equipe vigente hoje.
   findAll({ busca, status, clienteId } = {}) {
     return prisma.projeto.findMany({
       where: {
@@ -98,6 +106,7 @@ export const projetosRepository = {
     });
   },
 
+  // [REGRA] O projeto tem ao menos um colaborador ativo com participação vigente na data?
   async hasOperationalTeam(projetoId, date, db = prisma) {
     const member = await db.projetoColaborador.findFirst({
       where: {
@@ -166,6 +175,8 @@ export const projetosRepository = {
     });
   },
 
+  // [REGRA][TRANSACAO] Troca de papel: encerra a participação atual no dia anterior e abre outra
+  // com o novo papel.
   async changeTeamRole(member, papel, dataVigencia, tx) {
     const closed = await tx.projetoColaborador.updateMany({
       where: { id: member.id, dataSaida: null, papel: member.papel },

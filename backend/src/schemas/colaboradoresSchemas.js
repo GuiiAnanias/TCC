@@ -1,3 +1,9 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação dos dados de colaborador: nome (ao menos 3 letras, sem números),
+ * e-mail, cargo, departamento e status. Valores do cargo e do departamento vêm das listas de
+ * schemas/cadastroOptions.js.
+ */
+
 import { z } from "zod";
 import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
 import { departamentosTi, cargosTi } from "./cadastroOptions.js";

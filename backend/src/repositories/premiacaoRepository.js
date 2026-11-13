@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO][TRANSACAO] Regras e avaliações de premiação. Monta a base de conferência
+ * (projetos, tarefas e indicadores) e grava rascunho, conclusão e reavaliação.
+ */
+
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 import { calculateAward, premiacaoTemplates } from "../services/premiacaoRules.js";
@@ -10,6 +15,7 @@ const relations = {
   proxima: { select: { id: true, versao: true, status: true } },
 };
 const json = (value) => JSON.parse(JSON.stringify(value));
+// [TRANSACAO] Transação Serializable com novas tentativas em conflito.
 async function transaction(operation) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -25,6 +31,7 @@ async function transaction(operation) {
   }
 }
 
+// [REGRA] Monta a cópia da base de conferência da avaliação no momento do salvamento.
 export async function buildAwardContent(tx, identity, rule, dados, actor) {
   const known = new Set(rule.definicao.criterios.map((row) => row.chave));
   if (dados.respostas.some((row) => !known.has(row.chave)))
@@ -116,6 +123,7 @@ export const premiacaoRepository = {
   rules() {
     return prisma.regraPremiacao.findMany({ orderBy: { id: "desc" } });
   },
+  // [BANCO] Publica uma versão de regras (imutável depois de publicada).
   createRule(data, actor) {
     const { nome, categoria, ...definicao } = data;
     return prisma.regraPremiacao.create({
@@ -140,6 +148,7 @@ export const premiacaoRepository = {
     if (!row) throw new HttpError(404, "Avaliação não encontrada.");
     return row;
   },
+  // [BANCO] Cria a avaliação em rascunho (ou a reavaliação de uma concluída).
   create(data, actor) {
     return transaction(async (tx) => {
       const rule = await tx.regraPremiacao.findUnique({ where: { id: data.regraId } });
@@ -182,6 +191,8 @@ export const premiacaoRepository = {
       });
     });
   },
+  // [REGRA] Atualiza o rascunho conferindo a revisão: duas sessões não sobrescrevem o mesmo
+  // rascunho.
   update(id, data, actor) {
     return transaction(async (tx) => {
       const previous = await tx.avaliacaoPremiacao.findUnique({
@@ -202,6 +213,7 @@ export const premiacaoRepository = {
       });
     });
   },
+  // [REGRA] Conclui a avaliação: exige todos os critérios conferidos e trava as respostas.
   close(id, data, actor) {
     return transaction(async (tx) => {
       const previous = await tx.avaliacaoPremiacao.findUnique({ where: { id } });

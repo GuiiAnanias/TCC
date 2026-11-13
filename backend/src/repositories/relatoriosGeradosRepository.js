@@ -1,3 +1,7 @@
+/**
+ * [REPOSITORY][BANCO] Relatórios gerados (a cópia dos dados gravada) e o registro de cada download.
+ */
+
 import prisma from "../config/prisma.js";
 
 const include = { criadoPor: { select: { id: true, nomeUsuario: true } } };
@@ -55,6 +59,7 @@ export const relatoriosGeradosRepository = {
       : [];
     return { total, registros, exportacoes };
   },
+  // [BANCO] Registra quem baixou, quando e em qual formato (PDF ou XLSX).
   registrarExportacao({ relatorioId, formato, usuarioId }) {
     return prisma.relatorioExportacao.create({ data: { relatorioId, formato, usuarioId } });
   },

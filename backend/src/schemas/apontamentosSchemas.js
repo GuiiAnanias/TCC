@@ -1,5 +1,12 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação dos apontamentos de horas: horas maiores que zero com até duas
+ * casas, descrição com ao menos 3 caracteres, status e filtros da listagem. As regras que dependem
+ * do banco (24 h por dia, equipe, faturamento) ficam em services/apontamentosService.js.
+ */
+
 import { z } from "zod";
 import { paginationQuerySchema } from "./commonSchemas.js";
+// [REGRA] Pendente, Aprovado ou Faturado.
 const statusApontamentoSchema = z.enum(["PENDENTE", "APROVADO", "FATURADO"]);
 export const apontamentoQuerySchema = paginationQuerySchema.extend({
   status: statusApontamentoSchema.optional(),

@@ -1,8 +1,14 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação dos dados de projeto: cliente, tipo de contrato, horas contratadas,
+ * valor e datas.
+ */
+
 import { z } from "zod";
 import { paginationQuerySchema } from "./commonSchemas.js";
 import { statusProjetoSchema } from "./statusProjetoSchema.js";
 import { equipeInicialSchema } from "./equipeProjetoSchemas.js";
 
+// [REGRA] Tipos de contrato aceitos (o mesmo enum do banco, em prisma/schema.prisma).
 export const tipoContratoSchema = z.enum(["ESCOPO_FECHADO", "POR_HORA", "FEE_MENSAL", "SQUAD"], {
   message: "Tipo de contrato invalido.",
 });

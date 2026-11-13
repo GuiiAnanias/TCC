@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação da bonificação por papel: papel do catálogo, percentual e data de
+ * início.
+ */
+
 import { z } from "zod";
 import { papeisProjeto } from "./equipeProjetoSchemas.js";
 

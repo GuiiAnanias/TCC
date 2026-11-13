@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação da tabela de remuneração: nível do catálogo e valor/hora (mínimo R$
+ * 0,01, até duas casas decimais).
+ */
+
 import { z } from "zod";
 import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
 import { niveisRemuneracao } from "./cadastroOptions.js";

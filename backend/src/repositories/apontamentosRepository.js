@@ -1,8 +1,13 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações de apontamentos de horas.
+ */
+
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 import { custoConflict } from "../utils/custoConflict.js";
 
 export const apontamentosRepository = {
+  // [TRANSACAO] Trava colaborador e projeto do apontamento até o fim da transação.
   async lockReferences({ colaboradorId, projetoId }, db = prisma) {
     // A inativação precisa esperar o lançamento terminar (ou vice-versa).
     // Sempre bloquear pessoa antes de projeto para manter a ordem consistente.
@@ -10,6 +15,8 @@ export const apontamentosRepository = {
       await db.$queryRaw`SELECT id FROM colaboradores WHERE id = ${colaboradorId} FOR SHARE`;
     if (projetoId) await db.$queryRaw`SELECT id FROM projetos WHERE id = ${projetoId} FOR SHARE`;
   },
+  // [TRANSACAO] Transação Serializable: dois lançamentos simultâneos não conseguem, juntos, passar
+  // de 24 h no dia.
   async transaction(operation) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -33,6 +40,7 @@ export const apontamentosRepository = {
     }
   },
 
+  // [BANCO] Lista com busca na descrição e filtros de colaborador, projeto, status e período.
   findAll({ busca, colaboradorId, projetoId, dataInicio, dataFim, status } = {}) {
     return prisma.apontamentoHora.findMany({
       where: {
@@ -69,6 +77,8 @@ export const apontamentosRepository = {
     });
   },
 
+  // [REGRA] Soma as horas do colaborador no dia (sem o próprio apontamento, na edição) para a regra
+  // das 24 h.
   async sumHorasNoDia(colaboradorId, data, excetoId, db = prisma) {
     const result = await db.apontamentoHora.aggregate({
       _sum: { horas: true },

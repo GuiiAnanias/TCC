@@ -1,3 +1,7 @@
+/**
+ * [SCHEMA][VALIDACAO] Schemas Zod reaproveitados: status Ativo/Inativo, id da URL e paginação.
+ */
+
 import { z } from "zod";
 
 export const statusSchema = z.enum(["ATIVO", "INATIVO"], {

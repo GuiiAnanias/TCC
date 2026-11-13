@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação das vigências financeiras do colaborador: item da tabela,
+ * benefícios (informativos), data de início e motivo.
+ */
+
 import { z } from "zod";
 
 export const configuracaoFinanceiraCreateSchema = z.object({

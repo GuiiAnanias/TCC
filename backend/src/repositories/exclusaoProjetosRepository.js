@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO] Exclusão definitiva de projeto: só acontece se não houver nenhum vínculo
+ * (horas, tarefas, sprints, equipe, avaliações).
+ */
+
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 
@@ -5,6 +10,7 @@ const blockedMessage =
   "Este projeto possui vínculos ou histórico e não pode ser excluído. Use a alteração de estado para preservá-lo.";
 
 export const exclusaoProjetosRepository = {
+  // [REGRA] Conta os vínculos que impedem a exclusão.
   async inspect(id, db = prisma) {
     const project = await db.projeto.findUnique({
       where: { id },
@@ -31,6 +37,7 @@ export const exclusaoProjetosRepository = {
       vinculos: project._count,
     };
   },
+  // [TRANSACAO] Confere de novo e apaga dentro de uma transação Serializable.
   async remove(id) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {

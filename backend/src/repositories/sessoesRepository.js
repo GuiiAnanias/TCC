@@ -1,6 +1,13 @@
+/**
+ * [REPOSITORY][BANCO][SEGURANCA] Sessões de login. Cada token JWT aponta para uma sessão; revogar a
+ * sessão (Sair) invalida o token.
+ */
+
 import prisma from "../config/prisma.js";
 
 export const sessoesRepository = {
+  // [SEGURANCA][TRANSACAO] Cria a sessão só se a conta continua ativa e com a mesma senha (evita
+  // sessão criada no meio de uma troca de senha).
   async create(user, data) {
     return prisma.$transaction(async (db) => {
       // Serializa a emissão com troca de senha/inativação da mesma conta.
@@ -18,6 +25,7 @@ export const sessoesRepository = {
       });
     });
   },
+  // [SEGURANCA] Usado pelo middleware authenticate em toda requisição protegida.
   findById(id) {
     return prisma.sessao.findUnique({
       where: { id },
@@ -28,6 +36,7 @@ export const sessoesRepository = {
       },
     });
   },
+  // [SEGURANCA] Logout: marca a sessão como revogada.
   revoke(id, usuarioId) {
     return prisma.sessao.updateMany({
       where: { id, usuarioId, revogadaEm: null },

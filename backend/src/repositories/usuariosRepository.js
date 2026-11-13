@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO][SEGURANCA] Usuários do sistema e o token de redefinição de senha (guardado só
+ * como hash SHA-256).
+ */
+
 import prisma from "../config/prisma.js";
 
 export const usuariosRepository = {
@@ -10,10 +15,12 @@ export const usuariosRepository = {
     return prisma.usuario.findFirst({ where: { email: { equals: email, mode: "insensitive" } } });
   },
 
+  // [SEGURANCA] Procura pelo hash do token, nunca pelo token em texto.
   findByResetToken(tokenHash) {
     return prisma.usuario.findFirst({ where: { resetToken: tokenHash } });
   },
 
+  // [SEGURANCA] Grava o hash do token e a validade; um novo pedido substitui o anterior.
   saveResetToken(id, tokenHash, expiraEm) {
     return prisma.usuario.update({
       where: { id },

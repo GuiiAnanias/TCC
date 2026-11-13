@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO] Regras de bonificação por papel. Cada regra nova encerra a anterior do mesmo
+ * papel; regras não são editadas nem apagadas.
+ */
+
 import prisma from "../config/prisma.js";
 import { custoConflict } from "../utils/custoConflict.js";
 import { HttpError } from "../utils/HttpError.js";
@@ -8,6 +13,9 @@ export const bonificacoesPapeisRepository = {
       orderBy: [{ papel: "asc" }, { dataInicio: "desc" }],
     });
   },
+  // [TRANSACAO][REGRA] Grava a nova regra e encerra a vigente do mesmo papel; o início precisa ser
+  // depois da regra aberta. Mudança que alteraria custo já faturado é barrada pelo gatilho do
+  // banco.
   async createVersion(data) {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {

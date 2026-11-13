@@ -1,4 +1,10 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação das regras e avaliações de premiação: critérios, deduções, faixas
+ * sem sobreposição e respostas (ocorrência e não aplicável exigem evidência).
+ */
+
 import { z } from "zod";
+// [REGRA] Categorias de avaliação: Dev e PO/SM.
 export const awardCategory = z.enum(["DEV", "PO_SM"]);
 const id = z.number().int().positive();
 const pct = z.number().finite().min(0).max(100).multipleOf(0.0001);

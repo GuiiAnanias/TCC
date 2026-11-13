@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações de colaboradores, com a configuração financeira vigente
+ * para a listagem.
+ */
+
 import prisma from "../config/prisma.js";
 import { todayFinanceDate } from "../utils/financeDates.js";
 
@@ -16,6 +21,7 @@ const colaboradorInclude = () => ({
 });
 
 export const colaboradoresRepository = {
+  // [BANCO] Lista com busca e filtro de status.
   findAll({ busca, status } = {}) {
     return prisma.colaborador.findMany({
       where: {
@@ -43,6 +49,7 @@ export const colaboradoresRepository = {
     });
   },
 
+  // [BANCO] Usado para impedir e-mail repetido.
   findByEmail(email) {
     return prisma.colaborador.findUnique({ where: { email } });
   },

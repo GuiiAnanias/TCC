@@ -1,3 +1,9 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação para gerar e listar relatórios. Mensagens dos critérios de aceite:
+ * "Selecione ao menos um filtro para gerar o relatório." e "Selecione ao menos um bloco de dados
+ * para o relatório.".
+ */
+
 import { z } from "zod";
 
 // Ordem de exibição dos blocos na prévia e nas exportações.
