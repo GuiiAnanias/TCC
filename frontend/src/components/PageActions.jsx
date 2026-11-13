@@ -1,3 +1,7 @@
+/**
+ * [COMPONENTE] Botão Atualizar de cada tela, levado para a barra superior do layout.
+ */
+
 import React, { createContext, useContext } from "react";
 import { createPortal } from "react-dom";
 import { RefreshCw } from "lucide-react";

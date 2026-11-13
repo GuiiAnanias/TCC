@@ -1,7 +1,14 @@
+/**
+ * [REPOSITORY][BANCO][SEGURANCA] Contador de tentativas de login e de recuperação de senha (usado
+ * pelo middleware authRateLimit).
+ */
+
 import prisma from "../config/prisma.js";
 
 let proximaLimpeza = 0;
 export const limitesAutenticacaoRepository = {
+  // [SEGURANCA][BANCO] Soma uma tentativa com um UPSERT atômico no PostgreSQL e diz se ainda está
+  // dentro do limite.
   async consume(chave, limite, janelaMs, db = prisma) {
     // UPSERT atômico: processos/requisições concorrentes compartilham o limite.
     // Tentativas recusadas não prorrogam o bloqueio.

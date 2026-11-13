@@ -1,3 +1,9 @@
+/**
+ * [SCHEMA][VALIDACAO] Filtros do dashboard e dos relatórios vindos da URL (período, cliente,
+ * projetos, colaborador, sprint, equipe e status). Converte texto da URL em número e recusa datas
+ * invertidas.
+ */
+
 import { z } from "zod";
 import { statusProjetoSchema } from "./statusProjetoSchema.js";
 

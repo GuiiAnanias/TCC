@@ -1,3 +1,8 @@
+/**
+ * [TELA] Premiação (/premiacao): avaliações mensais Dev e PO/SM (rascunho, conclusão, reavaliação)
+ * e a publicação das regras e faixas.
+ */
+
 import React, { useEffect, useRef, useState } from "react";
 import { Plus, Save, Check, X } from "lucide-react";
 import { api } from "../api/client.js";
@@ -103,6 +108,7 @@ function AwardsHelp() {
   );
 }
 
+// [TELA] Componente da tela.
 export function AwardsPage() {
   const [models, setModels] = useState({});
   const [rules, setRules] = useState([]);
@@ -127,6 +133,7 @@ export function AwardsPage() {
   });
   const sequence = useRef(0);
   const region = useRef(null);
+  // [REQUISICAO] Modelos, regras, colaboradores, projetos, sprints e avaliações.
   async function load() {
     const seq = ++sequence.current;
     setLoading(true);
@@ -171,6 +178,7 @@ export function AwardsPage() {
     setDirty(true);
     setMessage("");
   }
+  // [TELA] Nova avaliação (ou reavaliação a partir de uma concluída).
   function newEvaluation(previous = null) {
     const category = previous?.categoria || "DEV";
     const rule = rules.find((row) => row.categoria === category);
@@ -247,6 +255,8 @@ export function AwardsPage() {
     }));
     setDirty(true);
   }
+  // [ESTADO] Resposta de um critério (A conferir, Há ocorrência, Sem ocorrência, Não aplicável) e a
+  // evidência.
   function answer(criterion, key, value) {
     const existing = form.dados.respostas.find((row) => row.chave === criterion.chave) || {
       chave: criterion.chave,
@@ -258,6 +268,8 @@ export function AwardsPage() {
       { ...existing, [key]: value },
     ]);
   }
+  // [REQUISICAO] Salva o rascunho: POST (nova) ou PUT com a revisão (evita sobrescrever outra
+  // sessão).
   async function save(event) {
     event.preventDefault();
     setBusy(true);
@@ -287,6 +299,7 @@ export function AwardsPage() {
       setBusy(false);
     }
   }
+  // [REQUISICAO] Conclui a avaliação (POST /premiacoes/:id/concluir); depois disso ela não muda.
   async function closeEvaluation() {
     setBusy(true);
     setError("");
@@ -776,6 +789,7 @@ export function AwardsPage() {
   );
 }
 
+// [TELA] Nota, elegibilidade e percentual final da avaliação.
 function AwardResult({ evaluation }) {
   const {
     conteudo: { resultado: result, base },
@@ -865,6 +879,7 @@ function AwardResult({ evaluation }) {
   );
 }
 
+// [TELA] Publicação de uma versão das regras (critérios, deduções e faixas).
 function AwardRules({ models, rules, onSaved }) {
   const [draft, setDraft] = useState(null);
   const [busy, setBusy] = useState(false);

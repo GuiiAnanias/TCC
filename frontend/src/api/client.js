@@ -1,3 +1,8 @@
+/**
+ * [REQUISICAO] Cliente HTTP (axios) usado por todas as telas para falar com a API (VITE_API_URL ou
+ * http://localhost:3333/api).
+ */
+
 import axios from "axios";
 import { clearSession } from "../auth/session.js";
 
@@ -5,12 +10,15 @@ export const api = axios.create({
   baseURL: import.meta.env?.VITE_API_URL || "http://localhost:3333/api",
 });
 
+// [SEGURANCA] Antes de cada requisição: envia o token da sessão no cabeçalho Authorization: Bearer.
 api.interceptors.request.use((config) => {
   const token = sessionStorage.getItem("authToken");
   if (token && config.url !== "/auth/login" && !config.headers.Authorization)
     config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+// [SEGURANCA][ERRO] Resposta 401 com o token atual: limpa a sessão e avisa o AuthContext (evento
+// auth-expired), que volta para o login.
 api.interceptors.response.use(
   (response) => response,
   (error) => {

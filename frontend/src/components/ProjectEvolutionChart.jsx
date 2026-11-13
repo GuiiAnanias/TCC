@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Gráfico da aba Evolução do projeto: custo mensal, custo acumulado e linha do
+ * orçamento.
+ */
+
 import React from "react";
 import {
   Bar,

@@ -1,3 +1,9 @@
+/**
+ * [TELA] Dashboard Geral (/dashboard): filtros, indicadores, aviso de custo incompleto, gráficos e
+ * as seções de detalhe (comparativo, auditoria, ranking, resumo por cliente e por equipe). Dados de
+ * GET /api/dashboard.
+ */
+
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
@@ -28,6 +34,7 @@ import {
   sprintsDisponiveis,
 } from "../utils/dashboardFilters.js";
 
+// Gráficos carregados só quando aparecem, para a tela abrir mais rápido.
 const DashboardProjectChart = lazy(() => import("../components/DashboardProjectChart.jsx"));
 const DashboardCharts = lazy(() => import("../components/DashboardCharts.jsx"));
 
@@ -79,6 +86,7 @@ function Bonus({ row }) {
   return <>{money(row.bonificacao)}</>;
 }
 
+// [TELA] Componente da tela.
 export function DashboardPage() {
   const [filters, setFilters] = useState(emptyFilters);
   const [applied, setApplied] = useState(emptyFilters);
@@ -98,6 +106,8 @@ export function DashboardPage() {
   const requestId = useRef(0);
   const appliedRef = useRef(emptyFilters);
 
+  // [REQUISICAO] GET /dashboard com os filtros aplicados; ignora respostas atrasadas de filtros
+  // antigos.
   const loadSummary = useCallback(async (nextFilters = appliedRef.current) => {
     const id = ++requestId.current;
     setLoading(true);
@@ -120,6 +130,7 @@ export function DashboardPage() {
     }
   }, []);
 
+  // [REQUISICAO] GET /dashboard/opcoes: listas dos filtros.
   const loadOptions = useCallback(async () => {
     try {
       const response = await api.get("/dashboard/opcoes");
@@ -141,6 +152,7 @@ export function DashboardPage() {
   }, [loadSummary, loadOptions]);
 
   // Exporta exatamente o recorte aplicado na tela, com uma linha por apontamento.
+  // [REQUISICAO] Baixa o Excel com o mesmo recorte da tela (GET /relatorios/indicadores.xlsx).
   async function exportExcel() {
     setExporting(true);
     setError("");
@@ -157,6 +169,7 @@ export function DashboardPage() {
     }
   }
 
+  // [ESTADO] Atualiza um filtro (só vale depois de Aplicar filtros).
   function updateFilter(event) {
     const { name, value } = event.target;
     // Cliente, estado e projetos se combinam: o que deixa de valer sai do recorte.

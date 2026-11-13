@@ -1,3 +1,8 @@
+/**
+ * Blocos que podem ser escolhidos no relatório (mesma ordem de
+ * backend/src/schemas/relatoriosSchemas.js).
+ */
+
 export const BLOCOS = [
   {
     key: "PROJETOS",

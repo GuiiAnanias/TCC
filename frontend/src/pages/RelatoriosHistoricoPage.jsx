@@ -1,3 +1,8 @@
+/**
+ * [TELA] Histórico de relatórios (/relatorios/historico): lista paginada dos relatórios gerados,
+ * com filtros (projeto, período de geração, só os meus) e downloads.
+ */
+
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Search } from "lucide-react";
@@ -51,6 +56,7 @@ export function textoDownloads({ PDF, XLSX }) {
   return partes.length ? partes.join(", ") : "Nenhum";
 }
 
+// [REQUISICAO] Só manda à API os filtros preenchidos; "só os meus" usa o id do usuário logado.
 export function parametrosDoHistorico(filtros, pagina, usuarioId) {
   return {
     pagina,
@@ -62,6 +68,7 @@ export function parametrosDoHistorico(filtros, pagina, usuarioId) {
   };
 }
 
+// [TELA] Componente da tela.
 export function RelatoriosHistoricoPage() {
   const { user } = useAuth() ?? {};
   const [filtros, setFiltros] = useState(filtrosVazios);
@@ -75,6 +82,7 @@ export function RelatoriosHistoricoPage() {
   const [retorno, setRetorno] = useState(null);
   const pedido = useRef(0);
 
+  // [REQUISICAO] GET /relatorios com página e filtros.
   const carregar = useCallback(async () => {
     const atual = ++pedido.current;
     setCarregando(true);
@@ -124,6 +132,7 @@ export function RelatoriosHistoricoPage() {
     setAplicados(filtrosVazios);
   }
 
+  // [REQUISICAO] Download de um relatório da lista; a contagem de downloads é recarregada.
   async function baixar(item, formato) {
     setBaixando(`${item.id}:${formato}`);
     setRetorno(null);

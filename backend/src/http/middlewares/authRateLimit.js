@@ -1,13 +1,21 @@
+/**
+ * [SEGURANCA] Limite de tentativas nas rotas públicas de autenticação (login, esqueci a senha,
+ * redefinição). Conta tentativas por origem (IP) e por identificador (login ou e-mail) numa janela
+ * de tempo e responde 429 quando passa do limite.
+ */
+
 import { createHmac, randomBytes } from "node:crypto";
 import { env } from "../../config/env.js";
 import { limitesAutenticacaoRepository } from "../../repositories/limitesAutenticacaoRepository.js";
 
 const secret = env.jwtSecret || randomBytes(32);
+// [SEGURANCA] A chave gravada no banco é um HMAC: o banco não guarda IP nem e-mail em texto puro.
 const key = (scope, value) =>
   createHmac("sha256", secret)
     .update(JSON.stringify([scope, value]))
     .digest("hex");
 
+// Cria o middleware para um escopo (ex.: "login") com os limites do env.js.
 export function authRateLimit(scope, { originLimit, identifierLimit, windowMs }, identifierField) {
   return async (request, response, next) => {
     try {
@@ -23,6 +31,7 @@ export function authRateLimit(scope, { originLimit, identifierLimit, windowMs },
           limit,
           windowMs,
         );
+        // [ERRO] Passou do limite: 429 com Retry-After (segundos para tentar de novo).
         if (!result.allowed) {
           response.set("Retry-After", String(result.retryAfter));
           return response

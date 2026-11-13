@@ -1,3 +1,7 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações da tabela de remuneração.
+ */
+
 import prisma from "../config/prisma.js";
 
 export const remuneracoesRepository = {
@@ -15,6 +19,7 @@ export const remuneracoesRepository = {
     return prisma.itemTabelaRemuneracao.findUnique({ where: { id } });
   },
 
+  // [BANCO] Usado para impedir nível repetido na tabela.
   findByNivel(nivel) {
     return prisma.itemTabelaRemuneracao.findUnique({ where: { nivel } });
   },

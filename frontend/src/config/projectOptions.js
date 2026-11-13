@@ -1,3 +1,8 @@
+/**
+ * Rótulos em português dos status de projeto, tipos de contrato e status de apontamento (os valores
+ * são os mesmos enums do banco).
+ */
+
 export const projectStatusOptions = [
   { value: "ATIVO", label: "Ativo" },
   { value: "PAUSADO", label: "Pausado" },

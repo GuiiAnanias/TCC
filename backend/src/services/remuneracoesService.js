@@ -1,3 +1,8 @@
+/**
+ * [SERVICE][REGRA] Regras da tabela de remuneração: nível único e inativação. Mudar o valor/hora de
+ * um item vale só para novas vigências; as já criadas guardam o valor da época.
+ */
+
 import { remuneracoesRepository } from "../repositories/remuneracoesRepository.js";
 import { HttpError } from "../utils/HttpError.js";
 import { niveisRemuneracao } from "../schemas/cadastroOptions.js";

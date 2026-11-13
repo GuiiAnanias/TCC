@@ -1,3 +1,8 @@
+/**
+ * [SERVICE] Planilha Excel de indicadores do Dashboard Geral (botão Exportar Excel): abas Resumo,
+ * Projetos, Clientes, Colaboradores, Apontamentos e Ocorrências, com os mesmos filtros da tela.
+ */
+
 import { dashboardService } from "./dashboardService.js";
 import { round } from "./operationalIndicators.js";
 import {
@@ -239,6 +244,7 @@ const colunasOcorrencias = [
 ];
 
 /** Monta a pasta de trabalho a partir do retorno de `dashboardService.report`. */
+// Monta as seis abas como Tabelas do Excel (o Power BI reconhece direto).
 export async function montarPlanilhaIndicadores(relatorio, { geradoEm }) {
   const pasta = novaPasta();
   abaResumo(pasta, relatorio, geradoEm);
@@ -298,6 +304,7 @@ const formatarAgora = (agora) =>
     timeStyle: "short",
   }).format(agora);
 
+// [SERVICE] Chamado pelo relatoriosController (GET /relatorios/indicadores.xlsx).
 export const relatoriosService = {
   async indicadoresXlsx(filtros, agora = new Date()) {
     const relatorio = await dashboardService.report(filtros);

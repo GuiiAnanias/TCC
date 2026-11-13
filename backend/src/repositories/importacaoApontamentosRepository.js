@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO] Dados da importação de horas: cadastros para reconhecer cada linha,
+ * apontamentos já gravados (duplicidade) e o histórico de importações.
+ */
+
 import prisma from "../config/prisma.js";
 import { projetosRepository } from "./projetosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
@@ -61,6 +66,7 @@ export const importacaoApontamentosRepository = {
     return db.importacaoApontamentos.create({ data: dados, select: { id: true } });
   },
 
+  // [BANCO] Histórico paginado, da importação mais recente para a mais antiga.
   async historico({ pagina, porPagina }, db = prisma) {
     const [total, itens] = await Promise.all([
       db.importacaoApontamentos.count(),
@@ -74,6 +80,7 @@ export const importacaoApontamentosRepository = {
     return { total, itens };
   },
 
+  // [BANCO] Grava todos os apontamentos da planilha (chamado dentro da transação da importação).
   async criar(registros, db = prisma) {
     const pessoas = [...new Set(registros.map((item) => item.colaboradorId))].sort((a, b) => a - b);
     const projetos = [...new Set(registros.map((item) => item.projetoId))].sort((a, b) => a - b);

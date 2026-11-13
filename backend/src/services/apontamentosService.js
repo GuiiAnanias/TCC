@@ -1,3 +1,9 @@
+/**
+ * [SERVICE][REGRA] Regras dos apontamentos de horas: colaborador e projeto ativos, tarefa do mesmo
+ * projeto, equipe vigente na data, data até hoje, limite de 24 h por colaborador no dia e bloqueio
+ * de edição de horas faturadas.
+ */
+
 import { apontamentosRepository } from "../repositories/apontamentosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
@@ -10,6 +16,7 @@ async function ensureApontamentoExists(id, db) {
   if (!record) throw new HttpError(404, "Apontamento não encontrado.");
   return record;
 }
+// [REGRA] Confere colaborador, projeto e tarefa do apontamento (novo ou editado).
 async function validate(data, previous = {}, db) {
   const merged = { ...previous, ...data };
   const colaboradorId =
@@ -64,6 +71,7 @@ async function validate(data, previous = {}, db) {
 const STATUS_TRAVADO = "FATURADO";
 const mesmoDia = (a, b) =>
   new Date(a).toISOString().slice(0, 10) === new Date(b).toISOString().slice(0, 10);
+// [REGRA] Campos que não podem mudar num apontamento Faturado (só o status pode).
 const camposTravados = {
   colaboradorId: (valor, anterior) => valor === anterior.colaboradorId,
   projetoId: (valor, anterior) => valor === anterior.projetoId,
@@ -73,6 +81,8 @@ const camposTravados = {
   descricao: (valor, anterior) => String(valor).trim() === String(anterior.descricao ?? "").trim(),
 };
 
+// [REGRA][ERRO] Apontamento faturado: recusa mudar horas, data, projeto etc. e orienta voltar para
+// Aprovado.
 function ensureEditavel(anterior, data) {
   if (anterior.status !== STATUS_TRAVADO) return;
   const alterados = Object.keys(camposTravados).filter(
@@ -86,6 +96,7 @@ function ensureEditavel(anterior, data) {
   }
 }
 
+// [REGRA][ERRO] Apontamento faturado não pode ser excluído.
 function ensureExcluivel(registro) {
   if (registro.status === STATUS_TRAVADO) {
     throw new HttpError(
@@ -101,6 +112,8 @@ const LIMITE_HORAS_DIA = 24;
 const dataBr = (value) => financeDay(value).split("-").reverse().join("/");
 const centesimos = (value) => Math.round(Number(value) * 100);
 
+// [REGRA] Data não pode ser futura e a soma das horas do colaborador no dia não pode passar de 24
+// h.
 async function validateDiaEHoras(data, previous = {}, db) {
   const merged = { ...previous, ...data };
   const dataMudou =
@@ -135,6 +148,7 @@ export const apontamentosService = {
     return apontamentosRepository.findAll(filters);
   },
   getById: ensureApontamentoExists,
+  // [TRANSACAO] Valida e grava dentro de uma transação Serializable (ver apontamentosRepository).
   async create(data) {
     return apontamentosRepository.transaction(async (db) => {
       await validate(data, {}, db);

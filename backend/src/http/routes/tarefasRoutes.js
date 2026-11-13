@@ -1,3 +1,8 @@
+/**
+ * [ROTA] /api/tarefas e /api/sprints: tarefas e sprints de cada projeto. Não há DELETE: tarefas e
+ * sprints são arquivadas pela edição (statusRegistro).
+ */
+
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { parseId } from "../../utils/parseId.js";

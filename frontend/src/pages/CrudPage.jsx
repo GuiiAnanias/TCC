@@ -1,3 +1,9 @@
+/**
+ * [TELA] Tela genérica de cadastro, usada por Clientes, Colaboradores, Remuneração, Projetos e
+ * Apontamento de Horas. O que muda entre elas (endpoint, campos, colunas) vem de
+ * config/resources.jsx. Formulário de cadastro/edição no topo e tabela com busca e filtro embaixo.
+ */
+
 import { ProjectDeletionDialog } from "../components/ProjectDeletionDialog.jsx";
 import { HelpDialog } from "../components/HelpDialog.jsx";
 import { Link, useSearchParams } from "react-router-dom";
@@ -28,6 +34,7 @@ import { RoleBonusManager } from "../components/RoleBonusManager.jsx";
 import { useLatestValue, useRequestScope } from "../hooks/useRequestScope.js";
 import { InitialProjectTeam } from "../components/InitialProjectTeam.jsx";
 
+// Formulário vazio a partir da lista de campos do cadastro.
 function getInitialForm(fields, isEditing = false) {
   return fields.reduce((accumulator, field) => {
     if (field.hiddenOnCreate && !isEditing) {
@@ -55,6 +62,8 @@ function readValue(item, column) {
   return item[column.key] ?? "-";
 }
 
+// [REQUISICAO] Monta o corpo enviado à API: converte números e datas e, na edição, manda só os
+// campos alterados.
 function buildPayload(fields, formData, isEditing, originalRecord) {
   return fields.reduce((payload, field) => {
     if (field.hiddenOnCreate && !isEditing) {
@@ -88,6 +97,7 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
   }, {});
 }
 
+// [TELA] Componente da tela; config = item de resources.jsx do cadastro aberto.
 export function CrudPage({ config }) {
   const requestScope = useRequestScope(config);
   const [deletingProject, setDeletingProject] = useState(null);
@@ -176,6 +186,7 @@ export function CrudPage({ config }) {
     [formFields, isEditing],
   );
 
+  // [REQUISICAO] GET da listagem (config.endpoint) com a busca e o filtro de status.
   const loadRecords = useCallback(async () => {
     const request = requestScope.begin("records");
     setLoading(true);
@@ -207,6 +218,8 @@ export function CrudPage({ config }) {
     }
   }, [config.endpoint, config.teamManager, config.financeManager, currentFilters, requestScope]);
 
+  // [REQUISICAO] Listas para os campos de seleção (clientes, projetos, colaboradores e opções de
+  // cadastro).
   const loadClientes = useCallback(async () => {
     if (!config.loadClientes) {
       return;
@@ -354,6 +367,8 @@ export function CrudPage({ config }) {
     setCepFeedback("");
   }
 
+  // [API-EXTERNA] Ao completar o CEP, busca o endereço (GET /clientes/cep/:cep) e preenche o
+  // formulário.
   async function handleCepChange(value) {
     cancelCepLookup();
     const cep = value.replace(/\D/g, "");
@@ -422,6 +437,7 @@ export function CrudPage({ config }) {
     setError("");
   }
 
+  // [TELA] Abre o registro no formulário para edição.
   function handleEdit(record) {
     requestScope.cancel("mutation");
     setSaving(false);
@@ -459,6 +475,8 @@ export function CrudPage({ config }) {
     setError("");
   }
 
+  // [VALIDACAO][REQUISICAO] Confere os campos obrigatórios, monta o payload e envia POST (novo) ou
+  // PUT (edição). Erros de validação da API aparecem campo a campo; os demais, no topo.
   async function handleSubmit(event) {
     event.preventDefault();
     if (
@@ -521,6 +539,7 @@ export function CrudPage({ config }) {
     }
   }
 
+  // [API-EXTERNA] Consultar CNPJ (GET /clientes/cnpj/:cnpj) e preencher os dados da empresa.
   async function handleCnpjLookup() {
     const cnpj = (formData.cnpj || "").toUpperCase().replace(/[./\-\s]/g, "");
     if (!/^[A-Z0-9]{12}\d{2}$/.test(cnpj)) {
@@ -562,6 +581,7 @@ export function CrudPage({ config }) {
     }
   }
 
+  // [REQUISICAO] Excluir/Inativar com confirmação (DELETE na API, que inativa).
   async function handleInactivate(record) {
     const deleting = config.deleteMode === "delete";
     const confirmMessage = `${deleting ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
@@ -589,6 +609,7 @@ export function CrudPage({ config }) {
     }
   }
 
+  // [TELA] Desenha cada tipo de campo (texto, número, data, seleção, CEP, CNPJ...).
   function renderField(field) {
     const commonProps = {
       id: field.name,

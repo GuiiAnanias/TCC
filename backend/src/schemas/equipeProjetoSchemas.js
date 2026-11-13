@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação da equipe do projeto: colaborador, papel do catálogo e datas de
+ * entrada e saída.
+ */
+
 import { z } from "zod";
 import { papeisProjeto } from "./cadastroOptions.js";
 export { papeisProjeto } from "./cadastroOptions.js";

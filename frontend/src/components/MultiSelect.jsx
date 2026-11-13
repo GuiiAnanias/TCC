@@ -1,3 +1,7 @@
+/**
+ * [COMPONENTE] Seleção múltipla com busca (ex.: filtro de projetos do dashboard).
+ */
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 

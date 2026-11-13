@@ -1,3 +1,9 @@
+/**
+ * [REPOSITORY][BANCO][TRANSACAO] Vigências financeiras do colaborador. Criar uma vigência fecha a
+ * anterior no dia anterior, tudo numa transação serializável; o histórico é imutável (gatilho no
+ * banco).
+ */
+
 import prisma from "../config/prisma.js";
 import { custoConflict } from "../utils/custoConflict.js";
 import { HttpError } from "../utils/HttpError.js";
@@ -10,6 +16,8 @@ import {
 
 const include = { colaborador: true, itemTabela: true };
 
+// [TRANSACAO] Transação Serializable com até 3 tentativas quando o PostgreSQL acusa conflito de
+// concorrência.
 async function financialTransaction(operation) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -27,6 +35,8 @@ async function financialTransaction(operation) {
   }
 }
 
+// [TRANSACAO] Trava a linha do colaborador (FOR UPDATE) para duas vigências não serem criadas ao
+// mesmo tempo. [ERRO] Colaborador inativo: 400; inexistente: 404.
 async function lockActiveCollaborator(tx, colaboradorId) {
   await tx.$queryRaw`SELECT id FROM colaboradores WHERE id = ${colaboradorId} FOR UPDATE`;
   const collaborator = await tx.colaborador.findUnique({ where: { id: colaboradorId } });
@@ -39,6 +49,7 @@ async function lockActiveCollaborator(tx, colaboradorId) {
 }
 
 export const configuracoesFinanceirasRepository = {
+  // [BANCO] Histórico de vigências do colaborador, da mais recente para a mais antiga.
   findByColaborador(colaboradorId) {
     return prisma.configuracaoFinanceira.findMany({
       where: { colaboradorId },
@@ -49,6 +60,9 @@ export const configuracoesFinanceirasRepository = {
   findById(id) {
     return prisma.configuracaoFinanceira.findUnique({ where: { id }, include });
   },
+  // [REGRA][TRANSACAO] Cria a nova vigência e encerra a anterior no dia anterior ao início. Recusa
+  // início antes de vigências anteriores ou antes do último apontamento (para não mudar custo de
+  // horas já lançadas).
   replaceActive({
     colaboradorId,
     itemTabelaId,
@@ -125,6 +139,7 @@ export const configuracoesFinanceirasRepository = {
       });
     });
   },
+  // [REGRA] Encerra a vigência aberta com a data de hoje.
   close(colaboradorId, configuracaoId, usuarioId) {
     return financialTransaction(async (tx) => {
       await lockActiveCollaborator(tx, colaboradorId);

@@ -1,3 +1,9 @@
+/**
+ * [SERVICE][REGRA] Indicadores do Dashboard Geral e dos dashboards por projeto e colaborador:
+ * horas, custos, assertividade do orçamento, ocorrências de auditoria, resumos por cliente e equipe
+ * e as séries dos gráficos.
+ */
+
 import { dashboardRepository } from "../repositories/dashboardRepository.js";
 import { bonificacoesPapeisRepository } from "../repositories/bonificacoesPapeisRepository.js";
 
@@ -7,6 +13,8 @@ import { HttpError } from "../utils/HttpError.js";
 const sum = (rows, key) => round(rows.reduce((total, row) => total + Number(row[key]), 0));
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 export const SEM_DEPARTAMENTO = "Sem departamento";
+// [REGRA] Tipos de ocorrência da auditoria (sem remuneração, sem equipe, sem tarefa, sem
+// estimativa, concluída sem horas).
 export const TIPOS_OCORRENCIA = [
   "SEM_REMUNERACAO",
   "SEM_VINCULO",
@@ -77,6 +85,8 @@ function rankingDeInconsistencias(rows, occurrences) {
   );
 }
 
+// [REGRA] Monta o resumo do recorte. Assertividade do orçamento = orçamento / custo realizado x
+// 100.
 export function summarizeDashboard(projects, filters = {}, bonuses = []) {
   const period = Boolean(filters.dataInicio || filters.dataFim);
   const visible = projects.filter(
@@ -289,6 +299,7 @@ async function conferirRecorte(filters) {
 }
 
 export const dashboardService = {
+  // [SERVICE] Dashboard Geral com os filtros da tela.
   async get(filters) {
     await conferirRecorte(filters);
     const [projects, bonuses] = await Promise.all([
@@ -297,6 +308,7 @@ export const dashboardService = {
     ]);
     return summarizeDashboard(projects, filters, bonuses);
   },
+  // [SERVICE] Dashboard de um projeto, com a evolução mensal.
   async project(id, filters = {}) {
     const project = await dashboardRepository.findProject(id);
     if (!project) throw new HttpError(404, "Projeto não encontrado.");
@@ -318,6 +330,7 @@ export const dashboardService = {
       evolucao: evolucaoMensal(detalhes.apontamentos, project.valorProjeto),
     };
   },
+  // [SERVICE] Dashboard de um colaborador.
   async collaborator(id, filters = {}) {
     const collaborator = await dashboardRepository.findCollaborator(id);
     if (!collaborator) throw new HttpError(404, "Colaborador não encontrado.");
@@ -388,6 +401,7 @@ export function reportEntries(projects, bonuses) {
  * Horas e custo por mês dos apontamentos do recorte, com o custo acumulado e quanto ele
  * representa do orçamento integral. Com período, o acumulado começa no início do período.
  */
+// [REGRA] Custo por mês, custo acumulado e percentual do orçamento (gráfico Evolução).
 export function evolucaoMensal(apontamentos, valorProjeto) {
   const meses = new Map();
   for (const entry of apontamentos) {

@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE][ACESSIBILIDADE] Botão Aa: escolhe o tamanho do texto (100%, 112,5% ou 125%) e salva
+ * no navegador.
+ */
+
 import React, { useEffect, useId, useRef, useState } from "react";
 import { Check } from "lucide-react";
 
@@ -10,6 +15,7 @@ export const FONT_SIZES = [
   { value: "maior", label: "Muito grande", percent: 125 },
 ];
 
+// [ESTADO] Tamanho salvo no navegador; valor desconhecido volta ao padrão.
 export function readFontSize() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -19,6 +25,7 @@ export function readFontSize() {
   }
 }
 
+// [ESTADO] Aplica em html[data-font-size] (o styles.css aumenta o rem) e salva a escolha.
 export function applyFontSize(value) {
   const size = FONT_SIZES.some((option) => option.value === value) ? value : "padrao";
   if (size === "padrao") delete document.documentElement.dataset.fontSize;
@@ -61,6 +68,7 @@ export function FontSizeControl() {
     trigger.current?.focus();
   }
 
+  // [ACESSIBILIDADE] Teclado: setas navegam, Home/End vão às pontas e Esc fecha.
   function onKeyDown(event) {
     if (event.key === "Escape") {
       event.preventDefault();

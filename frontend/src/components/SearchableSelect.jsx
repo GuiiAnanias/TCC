@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Seleção com busca (colaborador, projeto, cliente): lista filtrada pelo texto
+ * digitado, navegável pelo teclado.
+ */
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
 

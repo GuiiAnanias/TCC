@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Ajuda do dashboard: explica como cada indicador é calculado (fórmulas de custo e
+ * assertividade).
+ */
+
 import React from "react";
 import { HelpDialog } from "./HelpDialog.jsx";
 

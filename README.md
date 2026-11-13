@@ -175,6 +175,7 @@ As regras de cada módulo ficam na pasta `docs/`:
 | [docs/seguranca.md](docs/seguranca.md) | Login, sessões, limites e proteção dos dados |
 | [docs/login.md](docs/login.md) | Lembrar usuário e recuperação de senha |
 | [docs/interface.md](docs/interface.md) | Menu, telas e elementos comuns |
+| [docs/guia-do-codigo.md](docs/guia-do-codigo.md) | Mapa do código: etiquetas dos comentários para busca (Ctrl+F), caminho de uma requisição, migrations e onde mostrar cada parte |
 
 ---
 

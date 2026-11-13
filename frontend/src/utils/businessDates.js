@@ -1,3 +1,8 @@
+/**
+ * Data de hoje no fuso de São Paulo (AAAA-MM-DD), para limites como "data não pode ser futura"
+ * baterem com o backend.
+ */
+
 const calendar = new Intl.DateTimeFormat("en-CA", {
   timeZone: "America/Sao_Paulo",
   year: "numeric",

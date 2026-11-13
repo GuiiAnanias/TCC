@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação dos dados de cliente (PF e PJ) com Zod. Usado no clientesController
+ * antes de qualquer gravação; erro aqui vira 400 com a lista de campos.
+ */
+
 import { z } from "zod";
 import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
 import { isValidCnpj, normalizeCnpj } from "../utils/cnpj.js";
@@ -7,10 +12,13 @@ export const cnpjSchema = z
   .string()
   .transform(normalizeCnpj)
   .refine(isValidCnpj, "CNPJ inválido. Confira os caracteres e os dígitos verificadores.");
+// Texto opcional: tira espaços das pontas e limita o tamanho.
 const text = (max = 255) => z.string().trim().max(max).nullable().optional();
 
 export const clienteQuerySchema = paginationQuerySchema;
 
+// [VALIDACAO] Campos comuns e formatos: CNPJ com dígitos verificadores, CPF, e-mail, telefone (DDD
+// + 10 ou 11 dígitos), CEP (8 dígitos) e UF.
 const clienteBaseSchema = z.object({
   tipoPessoa: z.enum(["PF", "PJ"]).optional(),
   nome: z.string().trim().min(2, "Nome deve ter ao menos 2 caracteres.").max(255),
@@ -60,6 +68,7 @@ const clienteBaseSchema = z.object({
   status: optionalStatusSchema,
 });
 
+// Campos que só existem para pessoa jurídica (dados da Receita).
 const companyFields = [
   "cnpj",
   "nomeFantasia",
@@ -71,6 +80,8 @@ const companyFields = [
   "atividadePrincipal",
 ];
 
+// [VALIDACAO][REGRA] PF exige CPF e não aceita CNPJ nem campos de empresa; PJ exige CNPJ e não
+// aceita CPF.
 function validatePersonFields(data, ctx) {
   if (data.tipoPessoa === "PF") {
     for (const field of companyFields) {

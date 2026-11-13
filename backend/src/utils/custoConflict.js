@@ -1,3 +1,8 @@
+/**
+ * [ERRO][BANCO] Traduz os erros lançados pelos gatilhos do PostgreSQL que protegem o custo de
+ * apontamentos faturados em respostas 409 com orientação ao usuário.
+ */
+
 import { HttpError } from "./HttpError.js";
 
 class CustoConflict extends HttpError {}

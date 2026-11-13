@@ -1,6 +1,13 @@
+/**
+ * [REPOSITORY][BANCO] Carrega do banco tudo o que o dashboard precisa (projetos, equipes,
+ * vigências, apontamentos, tarefas) e as opções dos filtros. Os cálculos ficam em
+ * services/dashboardService.js.
+ */
+
 import prisma from "../config/prisma.js";
 
 export const dashboardRepository = {
+  // [BANCO] Uma consulta com os projetos do recorte e seus relacionamentos.
   async load({
     clienteId,
     equipe,
@@ -137,6 +144,7 @@ export const dashboardRepository = {
     });
   },
   // Nomes dos filtros por id, para identificar o recorte no relatório exportado.
+  // Nomes dos filtros escolhidos, para as etiquetas do recorte na tela e no Excel.
   async filterNames({ clienteId, projetoId, projetoIds, colaboradorId, sprintId } = {}) {
     const ids = projetoIds?.length ? projetoIds : projetoId ? [projetoId] : [];
     const [cliente, projetos, colaborador, sprint] = await Promise.all([
@@ -173,6 +181,7 @@ export const dashboardRepository = {
       select: { id: true, nomeCompleto: true, cargo: true, departamento: true, status: true },
     });
   },
+  // [BANCO] Listas dos filtros: clientes, projetos, colaboradores, sprints e equipes.
   async options() {
     const [clientes, departamentos, projetos, colaboradores, sprints] = await Promise.all([
       prisma.cliente.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),

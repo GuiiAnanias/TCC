@@ -1,3 +1,8 @@
+/**
+ * [ROTA] /api/bonificacoes-papeis: percentual de bonificação por papel no projeto, com data de
+ * início (regras versionadas, sem edição).
+ */
+
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { bonificacaoPapelCreateSchema } from "../../schemas/bonificacoesPapeisSchemas.js";

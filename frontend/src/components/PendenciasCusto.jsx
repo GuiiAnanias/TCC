@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Aviso "apontamentos com custo incompleto" do Dashboard Geral, com os botões que
+ * levam à correção.
+ */
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, TriangleAlert } from "lucide-react";

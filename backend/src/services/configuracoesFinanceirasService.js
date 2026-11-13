@@ -1,3 +1,8 @@
+/**
+ * [SERVICE] Vigências financeiras do colaborador (valor/hora). As regras de datas e a transação
+ * ficam em repositories/configuracoesFinanceirasRepository.js.
+ */
+
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { configuracoesFinanceirasRepository } from "../repositories/configuracoesFinanceirasRepository.js";
 import { HttpError } from "../utils/HttpError.js";
@@ -11,6 +16,8 @@ export const configuracoesFinanceirasService = {
   createForColaborador(colaboradorId, data, usuarioId) {
     return configuracoesFinanceirasRepository.replaceActive({ ...data, colaboradorId, usuarioId });
   },
+  // [REGRA] "Editar" não altera a vigência: cria outra a partir da data informada, preservando o
+  // histórico.
   async updateForColaborador(colaboradorId, configuracaoId, data, usuarioId) {
     const config = await configuracoesFinanceirasRepository.findById(configuracaoId);
     if (!config || config.colaboradorId !== colaboradorId)

@@ -1,3 +1,10 @@
+/**
+ * [SERVICE][REGRA] Importação de horas por planilha Excel: lê o arquivo, reconhece
+ * colaborador/projeto/tarefa de cada linha, aplica as mesmas regras do apontamento manual, avisa
+ * custo incompleto, grava tudo ou nada e registra no histórico. Também monta o modelo .xlsx para
+ * download.
+ */
+
 import { apontamentosRepository } from "../repositories/apontamentosRepository.js";
 import { importacaoApontamentosRepository as repositorio } from "../repositories/importacaoApontamentosRepository.js";
 import { HttpError } from "../utils/HttpError.js";
@@ -23,6 +30,7 @@ const TAMANHO_MAXIMO_DESCOMPACTADO = 100 * 1024 * 1024;
 const LIMITE_HORAS_DIA = 24;
 const DATA_MINIMA = "2000-01-01";
 
+// Colunas esperadas na aba Apontamentos (a ordem do modelo).
 export const COLUNAS = [
   { chave: "data", titulo: "Data", obrigatoria: true, apelidos: ["data", "dia"] },
   {
@@ -64,6 +72,8 @@ const arquivoInvalido = () =>
     "O arquivo não é uma planilha .xlsx. No Excel, use Salvar como > Pasta de Trabalho do Excel (.xlsx) e envie de novo.",
   );
 
+// [VALIDACAO][SEGURANCA] Abre o .xlsx com limite de tamanho e de linhas e acha a aba e o cabeçalho;
+// arquivo inválido vira 400.
 export async function lerPlanilha(buffer) {
   if (!buffer?.length) throw new HttpError(400, "Envie um arquivo .xlsx com os apontamentos.");
   if (buffer.length > TAMANHO_MAXIMO)
@@ -134,6 +144,7 @@ export async function lerPlanilha(buffer) {
 
 const epocaExcel = Date.UTC(1899, 11, 30);
 
+// [VALIDACAO] Data em dd/mm/aaaa ou data do Excel; não pode ser futura.
 function lerData(valor, hoje) {
   if (vazio(valor)) return { erro: "Informe a data." };
   let dia = null;
@@ -159,6 +170,7 @@ function lerData(valor, hoje) {
   return { valor: dia };
 }
 
+// [VALIDACAO] Horas como 7,5 ou 07:30, maiores que zero, até duas casas.
 function lerHoras(valor) {
   if (vazio(valor)) return { erro: "Informe as horas." };
   let horas = null;
@@ -299,6 +311,7 @@ function lerTarefa(valor, projeto, indice) {
 // ---------------------------------------------------------------- validação
 
 /** Confere cada linha sozinha: formato dos campos e cadastros existentes. */
+// [VALIDACAO] Converte cada linha e junta os erros com o número da linha do Excel.
 export function interpretarLinhas(linhas, cadastros, hoje) {
   const indice = indexar(cadastros);
   return linhas.map(({ linha, valores }) => {
@@ -340,6 +353,8 @@ const chaveIgualdade = ({ colaboradorId, projetoId, tarefaId, data, horas, descr
  * Confere as linhas em conjunto e contra o que já está gravado: linhas repetidas,
  * importação repetida e o limite de 24 h por colaborador no dia.
  */
+// [REGRA] Duplicidade (linha igual a apontamento já gravado) e limite de 24 h por colaborador no
+// dia, somando o que já existe.
 export function conferirConflitos(linhas, existentes) {
   const completas = linhas.filter(
     (item) => item.data && item.colaborador && item.projeto && item.horas && item.descricao,
@@ -395,6 +410,7 @@ export function conferirConflitos(linhas, existentes) {
  * Avisos que não impedem a importação, mas deixam o custo incompleto no dashboard:
  * colaborador fora da equipe do projeto na data ou sem valor/hora vigente.
  */
+// [REGRA] Avisos que não bloqueiam: colaborador fora da equipe na data ou sem valor/hora vigente.
 export function conferirCustos(linhas, { equipes = [], vigencias = [], colaboradores = [] }) {
   const naData = (inicio, fim, dia) =>
     financeDay(inicio) <= dia && (!fim || financeDay(fim) >= dia);
@@ -1041,6 +1057,8 @@ function abaApontamentos(pasta, listas) {
   resumoLateral(aba);
 }
 
+// Monta o modelo .xlsx: aba Como usar, aba Apontamentos com validação e cores, aba Listas com os
+// cadastros ativos.
 export async function montarModelo(cadastros, { hoje = financeDay(todayFinanceDate()) } = {}) {
   const pasta = novaPasta();
   pasta.title = "CODE BI — Modelo de importação de horas";
@@ -1056,6 +1074,7 @@ export async function montarModelo(cadastros, { hoje = financeDay(todayFinanceDa
 
 // ---------------------------------------------------------------- casos de uso
 
+// [SERVICE] Funções chamadas pelo importacoesController.
 export const importacaoApontamentosService = {
   async modelo() {
     const arquivo = await montarModelo(await repositorio.cadastros());
@@ -1063,6 +1082,7 @@ export const importacaoApontamentosService = {
   },
 
   /** Lê e confere a planilha sem gravar nada. */
+  // [SERVICE] Confere sem gravar e devolve o resumo e os erros por linha.
   async validar(buffer) {
     const planilha = await lerPlanilha(buffer);
     return analisar(planilha, await repositorio.cadastros());
@@ -1073,6 +1093,8 @@ export const importacaoApontamentosService = {
    * transação serializável, como no cadastro manual, para que gravações simultâneas
    * não passem do limite de horas do dia.
    */
+  // [SERVICE][TRANSACAO] Importação tudo ou nada em transação Serializable; sucesso ou falha ficam
+  // no histórico.
   async importar(buffer, { usuarioId, arquivo } = {}) {
     // Sem usuário (chamadas internas e testes antigos) não há a quem atribuir o histórico.
     const historico = usuarioId ? { usuarioId, arquivo: nomeDoArquivo(arquivo) } : null;
@@ -1111,6 +1133,7 @@ function decodificar(valor) {
   }
 }
 
+// [VALIDACAO] Nome do arquivo vindo do cabeçalho X-Nome-Arquivo, decodificado e limitado.
 export function nomeDoArquivo(valor) {
   const nome = decodificar(String(valor ?? ""))
     .replace(/[\p{Cc}]/gu, "")
@@ -1146,6 +1169,8 @@ function dadosDoResumo(resultado) {
 
 // A falha é gravada depois do rollback. Se nem isso for possível, a importação
 // continua respondendo o erro original; o problema do histórico fica no log.
+// [ERRO] Importação recusada também entra no histórico, com o motivo e as primeiras linhas com
+// erro.
 async function registrarFalha(historico, error) {
   const conhecida = error instanceof HttpError && error.statusCode < 500;
   try {

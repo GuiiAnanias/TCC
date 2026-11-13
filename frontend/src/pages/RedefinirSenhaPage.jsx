@@ -1,3 +1,8 @@
+/**
+ * [TELA][SEGURANCA] Redefinição de senha pelo link do e-mail (/redefinir-senha?token=...). Mostra
+ * "Senha atualizada com sucesso" e volta ao login.
+ */
+
 import React, { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
@@ -42,6 +47,8 @@ export function RedefinirSenhaPage() {
     return () => clearTimeout(espera);
   }, [done, navigate]);
 
+  // [REQUISICAO] Ao abrir: confere o link (POST /auth/redefinir-senha/validar); vencido ou usado
+  // mostra o aviso sem o formulário.
   const verificar = useCallback(
     async (isCurrent = () => true) => {
       if (!token) return setLink("invalido");
@@ -64,6 +71,8 @@ export function RedefinirSenhaPage() {
     };
   }, [verificar]);
 
+  // [VALIDACAO][REQUISICAO] Confere as regras da senha e se as duas senhas são iguais; envia para
+  // POST /auth/redefinir-senha.
   async function submit(event) {
     event.preventDefault();
     setError("");

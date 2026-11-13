@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA] Listas fixas dos formulários: cargos, papéis no projeto, níveis de remuneração e
+ * departamentos. A API devolve em GET /api/opcoes-cadastro e os schemas usam para validar.
+ */
+
 // Cargo descreve a atuação profissional, sem definir remuneração ou papel no projeto.
 export const cargosTi = [
   "Product Owner",

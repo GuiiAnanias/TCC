@@ -1,3 +1,8 @@
+/**
+ * [BANCO] Exemplos de premiação do seed: publica as regras de exemplo e cria duas avaliações (uma
+ * concluída e um rascunho).
+ */
+
 import { premiacaoTemplates } from "../src/services/premiacaoRules.js";
 import { buildAwardContent } from "../src/repositories/premiacaoRepository.js";
 

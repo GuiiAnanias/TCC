@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO] Validação de tarefas e sprints: títulos, status, estimativa em minutos,
+ * responsáveis e datas coerentes (fim não pode ser antes do início).
+ */
+
 import { z } from "zod";
 
 const id = z.coerce.number().int().positive();
@@ -5,7 +10,9 @@ const day = z
   .string()
   .date("Data inválida.")
   .transform((value) => new Date(`${value}T00:00:00Z`));
+// [VALIDACAO] Data final vazia ou igual/posterior à inicial.
 const dates = (start, end) => !start || !end || start <= end;
+// [REGRA] Planejada, Em andamento, Concluída ou Cancelada.
 export const statusTarefa = z.enum(["PLANEJADA", "EM_ANDAMENTO", "CONCLUIDA", "CANCELADA"]);
 const statusRegistro = z.enum(["ATIVO", "INATIVO"]);
 const sprintFields = z.object({

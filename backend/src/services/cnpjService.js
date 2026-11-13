@@ -1,9 +1,16 @@
+/**
+ * [SERVICE][API-EXTERNA] Consulta de CNPJ na ReceitaWS para preencher o cadastro. Tempo limite de
+ * 12 s, cache de 10 minutos e uma mensagem para cada falha (limite de consultas, não encontrado,
+ * indisponível); nada é gravado.
+ */
+
 import { cnpjSchema } from "../schemas/clientesSchemas.js";
 import { HttpError } from "../utils/HttpError.js";
 
 const cache = new Map();
 const optionalText = (value) => (typeof value === "string" && value.trim() ? value.trim() : null);
 
+// [VALIDACAO][ERRO] Confere o CNPJ antes de consultar e trata cada resposta da ReceitaWS.
 export async function consultarCnpj(input) {
   const cnpj = cnpjSchema.parse(input);
   const cached = cache.get(cnpj);

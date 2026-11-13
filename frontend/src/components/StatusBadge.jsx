@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Selo de status (Ativo, Pendente, Faturado...) com ponto de cor e nome escrito; a cor
+ * não é a única pista.
+ */
+
 import React from "react";
 import { entryStatusLabel, projectStatusLabel } from "../config/projectOptions.js";
 

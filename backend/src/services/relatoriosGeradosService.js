@@ -1,3 +1,8 @@
+/**
+ * [SERVICE][REGRA] Relatórios gerados: grava uma cópia (fotografia) dos dados no momento da
+ * geração, para o relatório nunca mudar depois; lista o histórico e devolve a prévia.
+ */
+
 import { dashboardService } from "./dashboardService.js";
 import { round } from "./operationalIndicators.js";
 import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
@@ -106,6 +111,8 @@ const montarBloco = {
  * Monta o conteúdo gravado a partir do recorte calculado pelo dashboard. Só os blocos
  * escolhidos entram; `projetos` lista todo o recorte, para registrar as referências.
  */
+// [REGRA] Monta a cópia dos dados com os blocos escolhidos (Projetos, Clientes, Horas, Custo,
+// Inconsistências).
 export function montarFotografia(relatorio, { filtros, blocos, geradoEm }) {
   return {
     versao: VERSAO_RELATORIO,
@@ -170,6 +177,7 @@ export function resumoDoHistorico(registro, exportacoes = []) {
 }
 
 export const relatoriosGeradosService = {
+  // [SERVICE] Histórico paginado com filtros (projeto, período de geração, só os meus).
   async listar(filtros) {
     const { total, registros, exportacoes } = await relatoriosGeradosRepository.list(filtros);
     return {
@@ -180,6 +188,7 @@ export const relatoriosGeradosService = {
       itens: registros.map((registro) => resumoDoHistorico(registro, exportacoes)),
     };
   },
+  // [SERVICE] Calcula o recorte, grava a fotografia e devolve o número do relatório.
   async gerar(dados, usuario, agora = new Date()) {
     const { projetoIds: escolhidos, clienteIds = [], blocos } = dados;
     if (
@@ -244,6 +253,7 @@ export const relatoriosGeradosService = {
       throw error;
     }
   },
+  // [SERVICE][ERRO] Abre um relatório pelo número; inexistente: 404.
   async buscar(id) {
     const registro = await relatoriosGeradosRepository.findById(id);
     if (!registro) throw new HttpError(404, "Relatório não encontrado.");

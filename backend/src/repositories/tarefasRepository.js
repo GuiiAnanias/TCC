@@ -1,3 +1,8 @@
+/**
+ * [REPOSITORY][BANCO][TRANSACAO] Tarefas e sprints, com os responsáveis e as horas registradas de
+ * cada tarefa.
+ */
+
 import prisma from "../config/prisma.js";
 import { HttpError } from "../utils/HttpError.js";
 
@@ -29,6 +34,8 @@ async function transaction(operation) {
 }
 
 export const tarefasRepository = {
+  // [BANCO] Lista as tarefas com sprint, responsáveis e a soma das horas lançadas
+  // (horasRealizadas).
   async findAll({ projetoId, sprintId, busca, status, statusRegistro } = {}) {
     const tasks = await prisma.tarefa.findMany({
       where: {
@@ -55,6 +62,7 @@ export const tarefasRepository = {
   findById(id, db = prisma) {
     return db.tarefa.findUnique({ where: { id }, include: includeTask });
   },
+  // [TRANSACAO] Cria ou edita a tarefa e substitui a lista de responsáveis numa só transação.
   async save(id, data) {
     return transaction(async (tx) => {
       const previous = id
@@ -113,6 +121,7 @@ export const tarefasRepository = {
       return tx.tarefa.findUnique({ where: { id: task.id }, include: includeTask });
     });
   },
+  // [BANCO] Sprints do projeto com a contagem de tarefas.
   listSprints({ projetoId, busca, statusRegistro } = {}) {
     return prisma.sprint.findMany({
       where: {

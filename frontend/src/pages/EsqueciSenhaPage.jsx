@@ -1,3 +1,8 @@
+/**
+ * [TELA][SEGURANCA] Esqueci minha senha (/esqueci-senha): pede o e-mail e envia o link de
+ * redefinição.
+ */
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
@@ -15,6 +20,8 @@ export function EsqueciSenhaPage() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // [REQUISICAO] POST /auth/esqueci-senha. A resposta é a mesma para e-mail cadastrado ou não (não
+  // revela quem tem conta).
   async function submit(event) {
     event.preventDefault();
     setError("");

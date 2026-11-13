@@ -1,3 +1,8 @@
+/**
+ * [SEGURANCA][ESTADO] Sessão do usuário no front: login, restauração ao recarregar a página (GET
+ * /auth/me) e logout. O token fica no sessionStorage (só na aba atual).
+ */
+
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "../api/client.js";
 import { revokeSession } from "./session.js";
@@ -8,6 +13,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sessionMessage, setSessionMessage] = useState("");
+  // [SEGURANCA] Sair: revoga a sessão na API e limpa o token.
   function logout() {
     return revokeSession(
       api,
@@ -19,6 +25,8 @@ export function AuthProvider({ children }) {
       () => setError("Não foi possível encerrar a sessão no servidor. Tente novamente."),
     );
   }
+  // [SEGURANCA] Ao abrir ou recarregar: confere o token salvo na API; inválido ou vencido volta
+  // para o login.
   async function restore(signal) {
     setLoading(true);
     setError("");
@@ -49,6 +57,7 @@ export function AuthProvider({ children }) {
       window.removeEventListener("auth-expired", expired);
     };
   }, []);
+  // [REQUISICAO] POST /auth/login; guarda o token e o usuário.
   async function login(login, senha) {
     const { data } = await api.post("/auth/login", { login, senha });
     sessionStorage.setItem("authToken", data.token);
@@ -62,4 +71,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+// Atalho para as telas usarem o login (useAuth().user, .login, .logout).
 export const useAuth = () => useContext(AuthContext);

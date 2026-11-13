@@ -1,3 +1,8 @@
+/**
+ * [COMPONENTE] Personalizar relatório: refaz o relatório com outros blocos ou projetos. [VALIDACAO]
+ * Exige ao menos um bloco e um projeto ou cliente.
+ */
+
 import React, { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BLOCOS } from "../config/reportBlocks.js";

@@ -1,8 +1,15 @@
+/**
+ * [SERVICE][API-EXTERNA] Consulta de CEP na ViaCEP para preencher o endereço. Tempo limite de 8 s,
+ * cache de 10 minutos e mensagens de erro próprias; nada é gravado.
+ */
+
 import { HttpError } from "../utils/HttpError.js";
 
 const cache = new Map();
 const clean = (value) => (typeof value === "string" ? value.trim() : "");
 
+// [VALIDACAO][ERRO] CEP precisa ter 8 dígitos; serviço fora do ar ou CEP inexistente viram
+// mensagens que permitem preencher à mão.
 export async function consultarCep(input) {
   const cep = String(input).replace(/[\s.-]/g, "");
   if (!/^\d{8}$/.test(cep)) throw new HttpError(400, "Informe um CEP com 8 dígitos.");

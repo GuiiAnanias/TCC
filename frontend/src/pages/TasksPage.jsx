@@ -1,3 +1,8 @@
+/**
+ * [TELA] Tarefas e sprints (/tarefas): escolhe o projeto, cadastra e edita tarefas (responsáveis,
+ * estimativa, correção) e sprints, e arquiva/restaura. Não há exclusão.
+ */
+
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Archive, Check, Edit3, RotateCcw, Save, Search, X } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -35,6 +40,7 @@ const failure = (error) =>
   error.response?.data?.message ||
   "Não foi possível concluir a operação.";
 
+// [TELA] Componente da tela.
 export function TasksPage() {
   const [query] = useSearchParams();
   const handledTask = useRef("");
@@ -77,6 +83,8 @@ export function TasksPage() {
     return () => controller.abort();
   }, []);
 
+  // [REQUISICAO] Tarefas, sprints e equipe do projeto escolhido (GET /tarefas, /sprints,
+  // /projetos/:id/equipe).
   const load = useCallback(async () => {
     const sequence = ++request.current;
     if (!projectId) {
@@ -177,6 +185,7 @@ export function TasksPage() {
       ...(name === "status" && value !== "CONCLUIDA" ? { dataConclusao: "" } : {}),
     }));
   }
+  // [TELA] Abre a tarefa no formulário.
   function editTask(task) {
     setEditing(task);
     setMessage("");
@@ -207,6 +216,8 @@ export function TasksPage() {
     formRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  // [VALIDACAO][REQUISICAO] Converte a estimativa (horas e minutos) e envia POST (nova) ou PUT
+  // (edição) de tarefa ou sprint.
   async function submit(event) {
     event.preventDefault();
     if (readOnly || saving) return;
@@ -252,6 +263,7 @@ export function TasksPage() {
       setSaving(false);
     }
   }
+  // [REQUISICAO] Arquivar ou restaurar (PUT com statusRegistro INATIVO/ATIVO).
   async function archive(row) {
     const restoring = row.statusRegistro === "INATIVO";
     const label = tab === "tarefas" ? row.titulo : row.nome;

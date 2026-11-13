@@ -1,6 +1,12 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações de clientes no PostgreSQL via Prisma. Só os services
+ * chamam este arquivo.
+ */
+
 import prisma from "../config/prisma.js";
 
 export const clientesRepository = {
+  // [BANCO] Lista com busca por nome, nome fantasia, CNPJ, CPF, cidade e e-mail e filtro de status.
   findAll({ busca, status } = {}) {
     return prisma.cliente.findMany({
       where: {
@@ -31,6 +37,8 @@ export const clientesRepository = {
     return db.cliente.findUnique({ where: { id } });
   },
 
+  // [BANCO] Buscas usadas pelo service para impedir duplicidade (nome de PJ, CPF, CNPJ, e-mail e
+  // telefone de PF).
   findByNome(nome) {
     return prisma.cliente.findFirst({ where: { nome, tipoPessoa: "PJ" } });
   },
@@ -59,6 +67,7 @@ export const clientesRepository = {
     return rows[0] || null;
   },
 
+  // [BANCO] Grava o cliente já validado.
   create(data) {
     return prisma.cliente.create({ data });
   },

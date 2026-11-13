@@ -1,3 +1,9 @@
+/**
+ * Funções comuns das planilhas Excel (exceljs), usadas na importação de horas e nos relatórios:
+ * criar e ler a pasta de trabalho, estilos de título e tabela, conversão de valores e datas.
+ * [SEGURANCA] tamanhoDescompactado barra arquivos .xlsx que crescem demais ao descompactar.
+ */
+
 import ExcelJS from "exceljs";
 
 export const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -27,6 +33,8 @@ export function novaPasta() {
  * descompactar nada. Serve para recusar "bombas de ZIP": arquivos pequenos que viram
  * centenas de megabytes na memória. Devolve null se o índice não puder ser lido.
  */
+// [SEGURANCA] Soma o tamanho real dos arquivos dentro do .xlsx (que é um zip) antes de abrir,
+// contra arquivo pequeno que explode ao descompactar.
 export function tamanhoDescompactado(buffer) {
   const minimo = 22;
   if (buffer.length < minimo) return null;

@@ -1,3 +1,8 @@
+/**
+ * [SCHEMA][VALIDACAO][SEGURANCA] Regras de senha forte (mínimo de 8 caracteres, letra maiúscula,
+ * número e símbolo). Usadas na redefinição de senha e mostradas na tela pelo PasswordChecklist.
+ */
+
 import { z } from "zod";
 
 // Regras para novas senhas, na ordem em que são conferidas. Senhas já cadastradas
