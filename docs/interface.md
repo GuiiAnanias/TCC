@@ -6,7 +6,7 @@ O front é uma aplicação React em português, com tema claro (padrão) e escur
 
 - **Menu lateral**, em três grupos: Análise (Dashboard Geral, Visão por projeto, Visão por colaborador e Relatórios), Cadastros (Clientes, Colaboradores, Remuneração e Projetos) e Operação (Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas). No rodapé ficam o usuário logado e o botão Sair.
 - O menu pode ser recolhido para mostrar só os ícones; o nome de cada tela aparece ao passar o mouse e os grupos viram linhas finas. A escolha fica salva no navegador; em telas de até 860 px ele começa recolhido.
-- **Barra superior**, fixa ao rolar: o botão **Atualizar** (recarrega os dados da tela), o botão **Aa** (tamanho do texto) e o de tema. Tema e tamanho do texto ficam salvos no navegador.
+- **Barra superior**, fixa ao rolar: o botão **Atualizar** (recarrega os dados da tela), o botão **Aa** (tamanho do texto) e o de tema. Tema e tamanho do texto ficam salvos no navegador. Na troca de tema, o novo tema se espalha em círculo a partir do botão; com a opção do sistema de reduzir animações, ele troca direto.
 - **Ajuda**: o botão "?" ao lado do título abre a explicação da tela, com as regras e fórmulas usadas. Fecha com Esc ou pelo botão de fechar.
 - Mensagens de sucesso, erro e aviso aparecem abaixo do título. Os erros de validação da API são mostrados com o texto recebido.
 - **Visual**: fundo neutro, uma cor de ação (azul) para botões principais, item ativo do menu e foco, e cores de status só onde têm significado (ativo, pendente, faturado, avisos). Os indicadores do dashboard ficam num único quadro dividido por linhas finas; abas são um controle segmentado; status aparecem com um ponto colorido e o nome escrito.
@@ -35,7 +35,7 @@ Inativar e excluir pedem confirmação. Cada tela tem a própria ajuda; as regra
 
 ## Dashboards
 
-- **Dashboard Geral**: filtros aplicados pelo botão Aplicar filtros e mostrados em etiquetas, cartões de resumo (projetos ativos, clientes, custo, horas, assertividade média do orçamento e ocorrências), indicadores operacionais de tarefas e as seções Comparativo por projeto, Auditoria operacional, Ranking de inconsistências, Resumo por cliente e Resumo por equipe. **Exportar Excel** gera a planilha do recorte aplicado.
+- **Dashboard Geral**: barra com data inicial, data final, atalhos de período (Mês atual, Últimos 30 dias, Mês anterior e Este ano, aplicados com um clique) e o botão **Filtros**, que abre os demais filtros no mesmo quadro (aplicados por Aplicar filtros e mostrados em etiquetas); em seguida os gráficos, os cartões de resumo (projetos ativos, clientes, custo, horas, assertividade média do orçamento e ocorrências), indicadores operacionais de tarefas e as seções Comparativo por projeto, Auditoria operacional, Ranking de inconsistências, Resumo por cliente e Resumo por equipe. **Exportar Excel** gera a planilha do recorte aplicado.
 - **Visão por projeto** e **Visão por colaborador**: pelo menu, abrem numa tela de escolha; também podem ser abertas pela ação Dashboard das listas ou pelos nomes nas tabelas do Dashboard Geral. Mostram o resumo da entidade e as abas Tarefas, Apontamentos, Participação e custos e Auditoria; a do projeto começa pela aba Evolução.
 
 As fórmulas estão em [indicadores.md](indicadores.md), os filtros em [filtros.md](filtros.md) e as visões em [dashboards.md](dashboards.md).
