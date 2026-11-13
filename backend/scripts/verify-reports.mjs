@@ -67,7 +67,7 @@ try {
   ({ default: client } = await import("../src/config/prisma.js"));
   const { seedDemo } = await import("../prisma/seed-demo.js");
   await seedDemo(client);
-  const { relatoriosGeradosService: service } =
+  const { relatoriosGeradosService: service, VERSAO_RELATORIO } =
     await import("../src/services/relatoriosGeradosService.js");
   const { relatorioCreateSchema } = await import("../src/schemas/relatoriosSchemas.js");
   const { dashboardService } = await import("../src/services/dashboardService.js");
@@ -105,7 +105,7 @@ try {
   const doPortal = await gerar({ projetoIds: [portal.id], blocos: todos });
   const painel = await dashboardService.get({ projetoIds: [portal.id] });
   assert.equal(doPortal.autor, "admin");
-  assert.equal(doPortal.versao, 2);
+  assert.equal(doPortal.versao, VERSAO_RELATORIO);
   assert.deepEqual(doPortal.blocos, todos);
   assert.equal(doPortal.conteudo.dados.CUSTO.total, 1212);
   assert.equal(doPortal.conteudo.dados.CUSTO.total, painel.resumo.custo);
