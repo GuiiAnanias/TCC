@@ -1,22 +1,41 @@
 # Relatórios com prévia
 
-A tela **Relatórios** gera um relatório de um recorte escolhido e grava uma cópia dos dados desse momento, a fotografia. A prévia mostra sempre essa cópia: mudanças posteriores em horas, equipes, vigências ou valores não alteram um relatório já gerado. Para ver os números atuais, gere outro.
+A tela **Relatórios** monta um relatório de um recorte escolhido em duas etapas. **Ver prévia** calcula o relatório com os dados atuais e o mostra na tela, sem gravar nada. Depois de conferir, **Salvar no histórico** grava uma cópia dos dados desse momento, a fotografia, e libera o PDF e o Excel. Assim um relatório montado errado não vai parar no histórico: basta ajustar e ver a prévia de novo, ou **Descartar prévia**.
 
-## Gerar
+Se qualquer escolha mudar depois da prévia, a tela avisa que ela ficou desatualizada e só permite salvar depois de ver a prévia de novo. Salvar envia exatamente o mesmo pedido da prévia conferida; os números são consultados outra vez no momento da gravação, com as mesmas regras.
+
+Um relatório salvo não muda: alterações posteriores em horas, equipes, vigências ou valores não o afetam. Para ver os números atuais, monte outro.
+
+## Montar
 
 | Escolha              | Regra                                                                                                                                                     |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Projetos ou clientes | Uma busca permite combinar vários projetos e clientes. Selecionar um cliente inclui seus projetos. O recorte final aceita até 50 projetos, sem duplicatas |
 | Período              | Data inicial, final ou as duas; considera a data dos apontamentos                                                                                         |
-| Blocos               | Ao menos um entre Projetos, Clientes, Horas totais, Custo total e Inconsistências; todos vêm marcados                                                     |
+| Blocos               | Ao menos um entre os oito blocos; Projetos, Clientes, Horas totais, Custo total e Inconsistências vêm marcados                                            |
 
-É obrigatório informar ao menos um filtro (projetos, clientes ou período) e um bloco. Sem filtro, a tela mostra "Selecione ao menos um filtro para gerar o relatório"; sem bloco, "Selecione ao menos um bloco de dados para o relatório". Projetos de qualquer estado entram: os escolhidos sempre, e os demais quando têm dados no período. As seleções são somadas: escolher um cliente e um projeto dele não duplica horas ou custos. Um cliente sem projetos não amplia a busca para outros clientes. Um recorte vazio não gera relatório; a tela pede para ajustar os filtros.
+Em **Personalizar conteúdo** (recolhido por padrão):
 
-## Personalizar a prévia
+| Opção                         | Regra                                                                                                                            |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| Título                        | Opcional, até 120 caracteres; aparece na tela, no PDF, no Excel e no histórico                                                   |
+| Observações                   | Opcional, até 1000 caracteres; saem no cabeçalho do PDF e do Excel                                                               |
+| Equipe                        | Departamento dos colaboradores; só entram as horas dessa equipe                                                                  |
+| Colaborador                   | Só as horas dessa pessoa                                                                                                         |
+| Status do projeto             | Ativo, Pausado, Encerrado ou Cancelado                                                                                           |
+| Status das horas              | Pendente, Aprovado e Faturado vêm marcados; desmarcar permite, por exemplo, só horas aprovadas e faturadas (ao menos um)         |
+| Ordenar por                   | Nome, maior custo, mais horas ou maior orçamento, nas tabelas de projetos e clientes (cliente usa o custo no lugar do orçamento) |
+| Colunas da tabela de projetos | Quais colunas aparecem na tela, no PDF e no Excel; o nome do projeto sempre aparece                                              |
 
-Depois de gerar, **Personalizar relatório** abre um modal com os clientes e projetos do recorte e os blocos disponíveis. Marcar ou desmarcar um cliente altera a seleção de seus projetos; também é possível escolher cada projeto individualmente. Ao remover um projeto, todos os blocos da nova fotografia usam esse mesmo recorte: projetos, clientes, horas, custos e inconsistências.
+Equipe e colaborador também valem como filtro. Com equipe, colaborador ou só parte dos status das horas, a assertividade do orçamento fica indisponível, como acontece com período.
 
-**Gerar nova prévia** consulta os dados atuais, recalcula os totais no servidor e salva outra fotografia, com um novo número. O período original é preservado. A fotografia anterior permanece imutável; esta ação não edita valores manualmente nem promete reproduzir os números antigos se os dados de origem mudaram. **Cancelar**, **Fechar** ou Escape descartam as escolhas do modal sem gerar outra fotografia. Durante a geração, os controles do modal ficam bloqueados; uma falha mantém a seleção para tentar novamente.
+É obrigatório informar ao menos um filtro (projetos, clientes, período, equipe ou colaborador) e um bloco. Sem filtro, a tela mostra "Selecione ao menos um filtro para gerar o relatório"; sem bloco, "Selecione ao menos um bloco de dados para o relatório". Projetos de qualquer estado entram: os escolhidos sempre, e os demais quando têm dados no período. As seleções são somadas: escolher um cliente e um projeto dele não duplica horas ou custos. Um cliente sem projetos não amplia a busca para outros clientes. Um recorte vazio não gera relatório; a tela pede para ajustar os filtros.
+
+## Personalizar e usar como modelo
+
+Em um relatório salvo, **Usar como modelo** copia todas as escolhas dele (filtros, blocos e opções) para o formulário, para montar outro parecido. **Personalizar relatório** abre um modal com os clientes e projetos do recorte e os blocos disponíveis. Marcar ou desmarcar um cliente altera a seleção de seus projetos; também é possível escolher cada projeto individualmente. Ao remover um projeto, todos os blocos da nova fotografia usam esse mesmo recorte: projetos, clientes, horas, custos e inconsistências.
+
+**Gerar nova prévia** consulta os dados atuais, recalcula os totais no servidor e mostra a nova prévia, que só vira outra fotografia, com um novo número, ao clicar em **Salvar no histórico**. O período, os filtros extras e as opções originais são preservados. A fotografia anterior permanece imutável; esta ação não edita valores manualmente nem promete reproduzir os números antigos se os dados de origem mudaram. **Cancelar**, **Fechar** ou Escape descartam as escolhas do modal sem gerar outra fotografia. Durante a geração, os controles do modal ficam bloqueados; uma falha mantém a seleção para tentar novamente.
 
 As fotografias novas guardam o ID do cliente para agrupar os projetos mesmo quando dois clientes têm o mesmo nome. Fotografias antigas continuam legíveis; no modal, seus projetos ficam independentes quando não há ID de cliente registrado.
 
@@ -28,6 +47,9 @@ As fotografias novas guardam o ID do cliente para agrupar os projetos mesmo quan
 | --------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Projetos        | Cliente, estado, orçamento, horas, custo base, bonificação, custo total, assertividade do orçamento e inconsistências |
 | Clientes        | Projetos, horas, custo base, bonificação e custo total por cliente                                                    |
+| Equipes         | Colaboradores, projetos, horas, custo base, bonificação e custo total por departamento                                |
+| Evolução mensal | Apontamentos, horas, custo base, bonificação e custo total de cada mês                                                |
+| Apontamentos    | Cada lançamento de horas: data, projeto, tarefa, colaborador, horas, status, custo e descrição                        |
 | Horas totais    | Total, quantidade de apontamentos, horas sem custo, horas sem tarefa, horas por status e por colaborador              |
 | Custo total     | Custo total (marcado como parcial quando há horas sem valor/hora), custo base, bonificação e assertividade média      |
 | Inconsistências | Quantidade por tipo e a lista de ocorrências da auditoria                                                             |
@@ -40,7 +62,8 @@ Cada relatório grava, em `relatorios_gerados`:
 
 - autor (a conta logada), data e hora da geração;
 - filtros (`projetoIds`, `clienteIds` quando escolhidos, `dataInicio`, `dataFim`) e blocos escolhidos; `projetoIds` registra a união efetiva dos projetos incluídos;
-- versão do formato (`versao`, hoje 2), para que relatórios antigos continuem legíveis se o formato mudar;
+- filtros extras quando usados (`equipe`, `colaboradorId`, `statusProjeto`, `statusApontamentos`) e as opções (`titulo`, `observacoes`, `ordenacao`, `colunasProjetos`);
+- versão do formato (`versao`, hoje 3), para que relatórios antigos continuem legíveis se o formato mudar;
 - o conteúdo: os projetos do recorte e os dados de cada bloco escolhido.
 
 O banco impede alterar ou excluir uma fotografia, inclusive por fora da API. Os projetos do recorte ficam registrados em `relatorios_projetos`, com chave estrangeira restritiva: um projeto que entrou em algum relatório não pode ser excluído definitivamente ([exclusao-projetos.md](exclusao-projetos.md)).
@@ -60,7 +83,7 @@ O nome do arquivo traz o número do relatório, os clientes ou projetos e o per�
 | PDF     | A4 deitado. Primeira página com número, data, autor, versão, período, clientes, projetos e blocos; depois cada bloco com seus indicadores e tabelas. Linhas não são cortadas entre páginas, o cabeçalho das tabelas se repete e o rodapé numera as páginas. |
 | Excel   | Aba Relatório com o cabeçalho e os projetos do recorte, e uma aba por bloco escolhido (Horas totais ganha também a aba Horas por colaborador). As listas são Tabelas do Excel, com valores numéricos e formato de moeda, número e percentual.               |
 
-Os dois arquivos trazem o aviso de uso interno, porque contêm custos e valor/hora. Fotografias dos formatos 1 e 2 são exportadas; um formato que esta versão do sistema não conhece responde 409, em vez de gerar um arquivo com números trocados.
+Os dois arquivos trazem o aviso de uso interno, porque contêm custos e valor/hora. Na tela, as listas de apontamentos e de inconsistências mostram as primeiras 200 linhas; o PDF e o Excel trazem todas. Fotografias dos formatos 1, 2 e 3 são exportadas; um formato que esta versão do sistema não conhece responde 409, em vez de gerar um arquivo com números trocados.
 
 ## Histórico
 
@@ -87,7 +110,8 @@ Decisões desta etapa:
 ## API
 
 ```txt
-POST /api/relatorios        projetoIds, clienteIds, dataInicio, dataFim, blocos → 201 com a fotografia
+POST /api/relatorios/previa mesmo corpo de gerar → 200 com a prévia (id null, previa true); não grava nada
+POST /api/relatorios        projetoIds, clienteIds, dataInicio, dataFim, blocos e opções → 201 com a fotografia
 GET  /api/relatorios         histórico paginado (pagina, porPagina, autorId, projetoId, geradoDe, geradoAte)
 GET  /api/relatorios/:id     a mesma fotografia, sem recalcular
 GET  /api/relatorios/:id/pdf    arquivo PDF da fotografia; registra o download
@@ -101,13 +125,19 @@ Exemplo:
   "projetoIds": [1, 3],
   "dataInicio": "2026-10-01",
   "dataFim": "2026-10-31",
-  "blocos": ["PROJETOS", "HORAS", "CUSTO"]
+  "blocos": ["PROJETOS", "HORAS", "CUSTO"],
+  "titulo": "Fechamento de outubro",
+  "statusApontamentos": ["APROVADO", "FATURADO"],
+  "ordenacao": "CUSTO",
+  "colunasProjetos": ["cliente", "horas", "custo"]
 }
 ```
 
+As opções são todas opcionais: `titulo`, `observacoes`, `equipe`, `colaboradorId`, `statusProjeto`, `statusApontamentos`, `ordenacao` (`NOME`, `CUSTO`, `HORAS` ou `ORCAMENTO`; padrão `NOME`) e `colunasProjetos`. Os blocos aceitos são `PROJETOS`, `CLIENTES`, `EQUIPES`, `HORAS`, `EVOLUCAO`, `CUSTO`, `INCONSISTENCIAS` e `APONTAMENTOS`.
+
 Respostas de erro: 400 para pedido inválido (sem filtro, sem bloco, período invertido, projeto inexistente, campo desconhecido), 422 para recorte sem dados, 404 para relatório inexistente e 401 sem login. A resposta traz `id`, `versao`, `filtros`, `blocos`, `autor`, `criadoEm` e `conteudo`.
 
-O histórico responde `{ pagina, porPagina, total, paginas, itens }`. `porPagina` vai de 1 a 50 (padrão 20); `geradoDe` e `geradoAte` são datas `AAAA-MM-DD` em dias de Brasília, com `geradoAte` inclusivo. Cada item traz `id`, `versao`, `criadoEm`, `autor`, `autorId`, `blocos`, `periodo`, `clientes`, `projetosSelecionados`, `projetosNoRecorte` e `exportacoes` (`PDF`, `XLSX` e `ultima`), sem o conteúdo dos blocos. Parâmetro desconhecido ou fora do limite responde 400.
+O histórico responde `{ pagina, porPagina, total, paginas, itens }`. `porPagina` vai de 1 a 50 (padrão 20); `geradoDe` e `geradoAte` são datas `AAAA-MM-DD` em dias de Brasília, com `geradoAte` inclusivo. Cada item traz `id`, `versao`, `criadoEm`, `autor`, `autorId`, `blocos`, `periodo`, `clientes`, `projetosSelecionados`, `projetosNoRecorte`, `titulo` e `exportacoes` (`PDF`, `XLSX` e `ultima`), sem o conteúdo dos blocos. Parâmetro desconhecido ou fora do limite responde 400.
 
 ## Migração e validação
 

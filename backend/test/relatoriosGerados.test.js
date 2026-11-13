@@ -34,12 +34,11 @@ test("o pedido de relatório exige filtro e bloco, e normaliza projetos e blocos
     ["A data final não pode ser anterior à inicial."],
   );
   assert.equal(
-    relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: ["APONTAMENTOS"] }).success,
+    relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: ["GRAFICOS"] }).success,
     false,
   );
   assert.equal(
-    relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: ["HORAS"], statusProjeto: "ATIVO" })
-      .success,
+    relatorioCreateSchema.safeParse({ projetoIds: [1], blocos: ["HORAS"], cor: "azul" }).success,
     false,
     "Campos desconhecidos são recusados.",
   );
@@ -48,6 +47,52 @@ test("o pedido de relatório exige filtro e bloco, e normaliza projetos e blocos
       projetoIds: Array.from({ length: 51 }, (_, i) => i + 1),
       blocos: ["HORAS"],
     }).success,
+    false,
+  );
+});
+
+test("as opções de personalização são validadas e normalizadas", () => {
+  const dados = relatorioCreateSchema.parse({
+    equipe: "Tecnologia",
+    titulo: "  Fechamento de outubro  ",
+    observacoes: "   ",
+    statusApontamentos: ["FATURADO", "APROVADO"],
+    colunasProjetos: ["custo", "cliente"],
+    ordenacao: "CUSTO",
+    blocos: ["APONTAMENTOS", "EQUIPES", "EVOLUCAO"],
+  });
+  assert.equal(dados.titulo, "Fechamento de outubro");
+  assert.equal(dados.observacoes, null, "Texto vazio não é gravado.");
+  assert.deepEqual(dados.statusApontamentos, ["APROVADO", "FATURADO"]);
+  assert.deepEqual(dados.colunasProjetos, ["cliente", "custo"]);
+  assert.deepEqual(dados.blocos, ["EQUIPES", "EVOLUCAO", "APONTAMENTOS"]);
+  assert.equal(
+    relatorioCreateSchema.parse({ colaboradorId: 4, blocos: ["HORAS"] }).ordenacao,
+    "NOME",
+  );
+  assert.deepEqual(
+    mensagens(
+      relatorioCreateSchema.safeParse({
+        projetoIds: [1],
+        statusApontamentos: [],
+        blocos: ["HORAS"],
+      }),
+    ),
+    ["Selecione ao menos um status das horas."],
+  );
+  assert.deepEqual(
+    mensagens(
+      relatorioCreateSchema.safeParse({
+        projetoIds: [1],
+        titulo: "x".repeat(121),
+        blocos: ["HORAS"],
+      }),
+    ),
+    ["O título pode ter até 120 caracteres."],
+  );
+  assert.equal(
+    relatorioCreateSchema.safeParse({ projetoIds: [1], ordenacao: "DATA", blocos: ["HORAS"] })
+      .success,
     false,
   );
 });
@@ -254,6 +299,122 @@ test("clientes e projetos compõem uma união sem duplicatas, com limite e recor
     ];
     await assert.rejects(gerar({ clienteIds: [9], blocos: ["HORAS"] }), { statusCode: 400 });
     assert.equal(consultas.length, 1);
+  } finally {
+    Object.assign(relatoriosGeradosRepository, originalRepo);
+    dashboardService.report = originalReport;
+  }
+});
+
+test("as opções ficam na fotografia: ordenação, colunas, título e os blocos novos", () => {
+  const completo = {
+    ...relatorio,
+    equipes: [
+      {
+        equipe: "Tecnologia",
+        colaboradores: 1,
+        projetos: 2,
+        horas: 8,
+        custoBase: 600,
+        bonificacao: 50,
+        custo: 650,
+        horasSemCusto: 2,
+        pendencias: 1,
+      },
+    ],
+    evolucao: [
+      { mes: "2026-10", apontamentos: 3, horas: 10, custoBase: 650, bonificacao: 50, custo: 700 },
+    ],
+    apontamentos: relatorio.apontamentos.map((row, indice) => ({
+      ...row,
+      id: indice + 1,
+      data: "2026-10-0" + (indice + 1),
+      projeto: row.projetoId === 1 ? "Portal" : "Mobile",
+      tarefa: null,
+      custo: 10,
+      semCusto: false,
+      descricao: "Trabalho",
+    })),
+    nomesFiltros: { colaborador: "Ana" },
+  };
+  const conteudo = montarFotografia(completo, {
+    filtros: { ...filtros, colaboradorId: 5 },
+    blocos: ["PROJETOS", "EQUIPES", "EVOLUCAO", "APONTAMENTOS"],
+    geradoEm,
+    opcoes: { titulo: "Fechamento", ordenacao: "HORAS", colunasProjetos: ["custo"] },
+  });
+  assert.deepEqual(conteudo.opcoes, {
+    titulo: "Fechamento",
+    observacoes: null,
+    ordenacao: "HORAS",
+    colunasProjetos: ["custo"],
+  });
+  assert.equal(conteudo.nomesFiltros.colaborador, "Ana");
+  assert.deepEqual(
+    conteudo.dados.PROJETOS.linhas.map((row) => row.nome),
+    ["Portal", "Mobile"],
+    "Mais horas primeiro.",
+  );
+  assert.equal(conteudo.dados.EQUIPES.linhas[0].nome, "Tecnologia");
+  assert.equal("pendencias" in conteudo.dados.EQUIPES.linhas[0], false);
+  assert.equal(conteudo.dados.EVOLUCAO.linhas[0].custo, 700);
+  assert.equal(conteudo.dados.APONTAMENTOS.linhas.length, 3);
+  assert.equal(conteudo.dados.APONTAMENTOS.linhas[0].descricao, "Trabalho");
+  const porNome = montarFotografia(completo, { filtros, blocos: ["PROJETOS"], geradoEm });
+  assert.deepEqual(
+    porNome.dados.PROJETOS.linhas.map((row) => row.nome),
+    ["Mobile", "Portal"],
+  );
+});
+
+test("a prévia usa o mesmo cálculo de gerar e não grava nada no histórico", async () => {
+  const originalRepo = { ...relatoriosGeradosRepository };
+  const originalReport = dashboardService.report;
+  const consultas = [];
+  let gravacoes = 0;
+  relatoriosGeradosRepository.countProjects = async (ids) => ids.length;
+  relatoriosGeradosRepository.findClients = async () => [];
+  relatoriosGeradosRepository.create = async () => {
+    gravacoes++;
+    throw new Error("A prévia não pode gravar.");
+  };
+  dashboardService.report = async (filtros) => {
+    consultas.push(filtros);
+    return { ...relatorio, nomesFiltros: { colaborador: filtros.colaboradorId ? "Ana" : null } };
+  };
+  try {
+    const previa = await relatoriosGeradosService.previa(
+      relatorioCreateSchema.parse({
+        projetoIds: [1],
+        colaboradorId: 5,
+        equipe: "Tecnologia",
+        statusApontamentos: ["APROVADO", "FATURADO"],
+        titulo: "Só aprovadas",
+        blocos: ["CUSTO"],
+      }),
+      { id: 3, nomeUsuario: "admin" },
+      geradoEm,
+    );
+    assert.equal(gravacoes, 0);
+    assert.equal(previa.id, null);
+    assert.equal(previa.previa, true);
+    assert.equal(previa.autor, "admin");
+    assert.equal(previa.conteudo.opcoes.titulo, "Só aprovadas");
+    assert.deepEqual(consultas[0], {
+      projetoIds: [1],
+      equipe: "Tecnologia",
+      colaboradorId: 5,
+      statusApontamentos: ["APROVADO", "FATURADO"],
+    });
+    assert.deepEqual(previa.filtros.statusApontamentos, ["APROVADO", "FATURADO"]);
+    dashboardService.report = async () => ({ ...relatorio, nomesFiltros: { colaborador: null } });
+    await assert.rejects(
+      relatoriosGeradosService.previa(
+        relatorioCreateSchema.parse({ colaboradorId: 99, blocos: ["CUSTO"] }),
+        { id: 3 },
+        geradoEm,
+      ),
+      { statusCode: 400 },
+    );
   } finally {
     Object.assign(relatoriosGeradosRepository, originalRepo);
     dashboardService.report = originalReport;

@@ -178,6 +178,7 @@ export function summarizeDashboard(projects, filters = {}, bonuses = []) {
       !filters.equipe &&
       !filters.colaboradorId &&
       !filters.sprintId &&
+      !filters.statusApontamentos?.length &&
       horas > 0 &&
       !registrosSemCusto &&
       orcamento > 0 &&

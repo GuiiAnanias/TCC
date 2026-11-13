@@ -21,15 +21,25 @@ import {
 // Formatos de fotografia que estes arquivos sabem ler (o 2 acrescenta os clientes).
 // [REGRA] Versões da fotografia que esta versão do sistema sabe exportar; outra versão responde
 // 409.
-export const VERSOES_EXPORTAVEIS = [1, 2];
+export const VERSOES_EXPORTAVEIS = [1, 2, 3];
 
 const BLOCOS = {
   PROJETOS: "Projetos",
   CLIENTES: "Clientes",
+  EQUIPES: "Equipes",
   HORAS: "Horas totais",
+  EVOLUCAO: "Evolução mensal",
   CUSTO: "Custo total",
   INCONSISTENCIAS: "Inconsistências",
+  APONTAMENTOS: "Apontamentos",
 };
+const ORDENACOES = {
+  NOME: "Nome",
+  CUSTO: "Maior custo",
+  HORAS: "Mais horas",
+  ORCAMENTO: "Maior orçamento",
+};
+const mesBr = (mes) => `${mes.slice(5, 7)}/${mes.slice(0, 4)}`;
 const STATUS_PROJETO = {
   ATIVO: "Ativo",
   PAUSADO: "Pausado",
@@ -182,6 +192,60 @@ const tabelas = {
       linhas: dados.linhas,
     },
   ],
+  EQUIPES: (dados) => [
+    {
+      titulo: "Equipes (departamentos) do recorte",
+      nome: "Equipes",
+      colunas: [
+        { titulo: "Equipe", chave: "nome", largura: 30, peso: 1.8 },
+        { titulo: "Colaboradores", chave: "colaboradores", formato: FORMATOS.inteiro, peso: 0.9 },
+        { titulo: "Projetos", chave: "projetos", formato: FORMATOS.inteiro, peso: 0.7 },
+        { titulo: "Horas", chave: "horas", formato: FORMATOS.numero, texto: horas },
+        { titulo: "Custo base", chave: "custoBase", formato: FORMATOS.moeda, texto: moeda },
+        { titulo: "Bonificação", chave: "bonificacao", formato: FORMATOS.moeda, texto: moeda },
+        { titulo: "Custo total", chave: "custo", formato: FORMATOS.moeda, texto: moeda },
+      ],
+      linhas: dados.linhas,
+    },
+  ],
+  EVOLUCAO: (dados) => [
+    {
+      titulo: "Horas e custo por mês",
+      nome: "EvolucaoMensal",
+      colunas: [
+        { titulo: "Mês", chave: "mes", largura: 12, peso: 0.8 },
+        { titulo: "Apontamentos", chave: "apontamentos", formato: FORMATOS.inteiro, peso: 0.9 },
+        { titulo: "Horas", chave: "horas", formato: FORMATOS.numero, texto: horas },
+        { titulo: "Custo base", chave: "custoBase", formato: FORMATOS.moeda, texto: moeda },
+        { titulo: "Bonificação", chave: "bonificacao", formato: FORMATOS.moeda, texto: moeda },
+        { titulo: "Custo total", chave: "custo", formato: FORMATOS.moeda, texto: moeda },
+      ],
+      linhas: dados.linhas.map((row) => ({ ...row, mes: mesBr(row.mes) })),
+    },
+  ],
+  APONTAMENTOS: (dados) => [
+    {
+      titulo: `${dados.linhas.length} apontamento(s) no recorte`,
+      nome: "Apontamentos",
+      colunas: [
+        { titulo: "Data", chave: "data", largura: 12, peso: 0.75 },
+        { titulo: "Projeto", chave: "projeto", largura: 28, peso: 1.3 },
+        { titulo: "Tarefa", chave: "tarefa", largura: 28, peso: 1.3 },
+        { titulo: "Colaborador", chave: "colaborador", largura: 26, peso: 1.2 },
+        { titulo: "Horas", chave: "horas", formato: FORMATOS.numero, texto: horas, peso: 0.6 },
+        { titulo: "Status", chave: "status", largura: 11, peso: 0.75 },
+        { titulo: "Custo", chave: "custo", formato: FORMATOS.moeda, texto: moeda, peso: 0.9 },
+        { titulo: "Descrição", chave: "descricao", largura: 40, peso: 2 },
+      ],
+      linhas: dados.linhas.map((row) => ({
+        ...row,
+        data: dataBr(row.data),
+        tarefa: row.tarefa || "Sem tarefa",
+        status: STATUS_HORAS[row.status] ?? row.status,
+        descricao: row.descricao || "—",
+      })),
+    },
+  ],
   HORAS: (dados) => [
     {
       titulo: "Horas por status do apontamento",
@@ -237,6 +301,9 @@ const tabelas = {
 const indicadores = {
   PROJETOS: () => [],
   CLIENTES: () => [],
+  EQUIPES: () => [],
+  EVOLUCAO: () => [],
+  APONTAMENTOS: () => [],
   HORAS: (dados) => [
     ["Horas totais", horas(dados.total), dados.total, `${dados.apontamentos} apontamentos`],
     ["Horas sem custo", horas(dados.horasSemCusto), dados.horasSemCusto, "Sem valor/hora vigente"],
@@ -282,10 +349,51 @@ const formatoIndicador = (bloco, rotulo) =>
       ? FORMATOS.numero
       : FORMATOS.inteiro;
 
+// Tabelas do bloco; na de projetos, só as colunas escolhidas (o nome sempre aparece).
+function tabelasDoBloco(bloco, conteudo) {
+  const listas = tabelas[bloco](conteudo.dados[bloco]);
+  const colunas = conteudo.opcoes?.colunasProjetos;
+  if (bloco !== "PROJETOS" || !colunas) return listas;
+  return listas.map((tabela) => ({
+    ...tabela,
+    colunas: tabela.colunas.filter(
+      (coluna) => coluna.chave === "nome" || colunas.includes(coluna.chave),
+    ),
+  }));
+}
+
+// Filtros extras e opções da versão 3, só quando foram usados.
+function filtrosExtras(conteudo) {
+  const filtros = conteudo.filtros ?? {};
+  const opcoes = conteudo.opcoes ?? {};
+  return [
+    ...(filtros.equipe ? [["Equipe", filtros.equipe]] : []),
+    ...(filtros.colaboradorId
+      ? [["Colaborador", conteudo.nomesFiltros?.colaborador ?? `Nº ${filtros.colaboradorId}`]]
+      : []),
+    ...(filtros.statusProjeto
+      ? [["Status do projeto", STATUS_PROJETO[filtros.statusProjeto] ?? filtros.statusProjeto]]
+      : []),
+    ...(filtros.statusApontamentos?.length
+      ? [
+          [
+            "Status das horas",
+            filtros.statusApontamentos.map((status) => STATUS_HORAS[status] ?? status).join(", "),
+          ],
+        ]
+      : []),
+    ...(opcoes.ordenacao && opcoes.ordenacao !== "NOME"
+      ? [["Ordenação", ORDENACOES[opcoes.ordenacao] ?? opcoes.ordenacao]]
+      : []),
+  ];
+}
+
 function cabecalho(relatorio) {
   const { conteudo } = relatorio;
+  const opcoes = conteudo.opcoes ?? {};
   return [
     ["Relatório nº", String(relatorio.id)],
+    ...(opcoes.titulo ? [["Título", opcoes.titulo]] : []),
     ["Gerado em", `${dataHora(relatorio.criadoEm)} (horário de Brasília)`],
     ["Gerado por", relatorio.autor ?? "Usuário removido"],
     ["Versão do formato", String(relatorio.versao)],
@@ -295,7 +403,9 @@ function cabecalho(relatorio) {
       : []),
     ["Projetos selecionados", projetosEscolhidos(conteudo)],
     ["Projetos no recorte", String(conteudo.projetos.length)],
+    ...filtrosExtras(conteudo),
     ["Blocos", conteudo.blocos.map((bloco) => BLOCOS[bloco] ?? bloco).join(", ")],
+    ...(opcoes.observacoes ? [["Observações", opcoes.observacoes]] : []),
   ];
 }
 
@@ -359,7 +469,7 @@ export async function montarExcelRelatorio(relatorio) {
   for (const bloco of conteudo.blocos) {
     const dados = conteudo.dados[bloco];
     const pares = indicadores[bloco](dados);
-    const listas = tabelas[bloco](dados);
+    const listas = tabelasDoBloco(bloco, conteudo);
     // Com indicadores e uma tabela, a tabela vai logo abaixo; outras tabelas ganham aba própria.
     const [primeira, ...demais] = listas;
     const aba = pasta.addWorksheet(BLOCOS[bloco]);
@@ -518,7 +628,13 @@ export async function montarPdfRelatorio(relatorio, { compress = true } = {}) {
     .font("Helvetica-Bold")
     .fontSize(18)
     .fillColor(CORES.cabecalho)
-    .text(`Relatório nº ${relatorio.id}`);
+    .text(conteudo.opcoes?.titulo || `Relatório nº ${relatorio.id}`);
+  if (conteudo.opcoes?.titulo)
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(10)
+      .fillColor(CORES.texto)
+      .text(`Relatório nº ${relatorio.id}`);
   doc
     .font("Helvetica")
     .fontSize(9)
@@ -539,7 +655,7 @@ export async function montarPdfRelatorio(relatorio, { compress = true } = {}) {
   for (const bloco of conteudo.blocos) {
     const dados = conteudo.dados[bloco];
     const pares = indicadores[bloco](dados);
-    const listas = tabelas[bloco](dados);
+    const listas = tabelasDoBloco(bloco, conteudo);
     // Título junto do começo do conteúdo: nunca sozinho no fim da página.
     garantirEspaco(doc, 90);
     doc

@@ -69,6 +69,12 @@ const gerado = {
   },
 };
 
+// Prévia: o mesmo conteúdo, ainda sem número.
+const previaDe = (relatorio) => ({ ...relatorio, id: null, previa: true });
+const responder =
+  (relatorio = gerado) =>
+  async (url) => ({ data: url === "/relatorios/previa" ? previaDe(relatorio) : relatorio });
+
 function simularApi({ post, get } = {}) {
   const originais = { get: api.get, post: api.post };
   const chamadas = [];
@@ -127,12 +133,12 @@ test("o formulário exige um filtro e um bloco, e o período é descrito por ext
 
 test("gerar envia os filtros e mostra só os blocos gravados na fotografia", async () => {
   const cleanup = installDom();
-  const api = simularApi({ post: async () => ({ data: gerado }) });
+  const api = simularApi({ post: responder() });
   const view = await mount(rotas());
   try {
     await esperar();
     const raiz = view.container;
-    await click(botao(raiz, "Gerar"));
+    await click(botao(raiz, "Ver prévia"));
     assert.match(raiz.querySelector('[role="alert"]').textContent, /ao menos um filtro/);
     assert.equal(api.chamadas.filter(([metodo]) => metodo === "POST").length, 0);
 
@@ -141,16 +147,25 @@ test("gerar envia os filtros e mostra só os blocos gravados na fotografia", asy
     await change(raiz.querySelector('input[name="dataInicio"]'), "2026-10-01");
     for (const rotulo of ["Projetos", "Clientes", "Inconsistências"])
       await click(caixa(raiz, rotulo));
-    await click(botao(raiz, "Gerar"));
+    await click(botao(raiz, "Ver prévia"));
     await esperar();
     const [, url, corpo] = api.chamadas.find(([metodo]) => metodo === "POST");
-    assert.equal(url, "/relatorios");
+    assert.equal(url, "/relatorios/previa", "Primeiro só a prévia, sem gravar.");
     assert.deepEqual(corpo, {
       projetoIds: [10],
       dataInicio: "2026-10-01",
       dataFim: null,
       blocos: ["HORAS", "CUSTO"],
     });
+
+    assert.match(raiz.querySelector(".report-preview h2").textContent, /Prévia do relatório/);
+    assert.match(raiz.textContent, /ainda não está no histórico/);
+    assert.equal(botao(raiz, "Baixar PDF"), undefined, "Sem download antes de salvar.");
+    await click(botao(raiz, "Salvar no histórico"));
+    await esperar();
+    const gravacao = api.chamadas.filter(([metodo]) => metodo === "POST")[1];
+    assert.deepEqual(gravacao.slice(1), ["/relatorios", corpo], "Salva o mesmo pedido da prévia.");
+    assert.match(raiz.textContent, /Relatório nº 7 salvo no histórico/);
 
     const previa = raiz.querySelector(".report-preview");
     assert.match(previa.querySelector("h2").textContent, /Relatório nº 7/);
@@ -196,13 +211,13 @@ test("cancelar durante a geração para de esperar e não mostra prévia", async
     await esperar();
     const raiz = view.container;
     await change(raiz.querySelector('input[name="dataFim"]'), "2026-10-31");
-    await click(botao(raiz, "Gerar"));
-    assert.equal(botao(raiz, "Gerando…").disabled, true);
+    await click(botao(raiz, "Ver prévia"));
+    assert.equal(botao(raiz, "Montando prévia…").disabled, true);
     await click(botao(raiz, "Cancelar"));
     await esperar();
     assert.match(raiz.textContent, /Geração cancelada/);
     assert.equal(raiz.querySelector(".report-preview"), null);
-    assert.equal(botao(raiz, "Gerar").disabled, false);
+    assert.equal(botao(raiz, "Ver prévia").disabled, false);
   } finally {
     api.restaurar();
     await view.unmount();
@@ -241,7 +256,7 @@ test("o endereço com o número abre a fotografia gravada", async () => {
 
 test("a busca unificada distingue clientes de projetos e combina as escolhas", async () => {
   const cleanup = installDom();
-  const api = simularApi({ post: async () => ({ data: gerado }) });
+  const api = simularApi({ post: responder() });
   const view = await mount(rotas());
   try {
     await esperar();
@@ -257,7 +272,7 @@ test("a busca unificada distingue clientes de projetos e combina as escolhas", a
     await click(opcao(raiz, "Cliente: Cliente A"));
     await change(busca, "Portal");
     await click(opcao(raiz, "Projeto: Portal"));
-    await click(botao(raiz, "Gerar"));
+    await click(botao(raiz, "Ver prévia"));
     await esperar();
     const chamada = api.chamadas.find(([metodo]) => metodo === "POST");
     assert.deepEqual(chamada[2].clienteIds, [1]);
@@ -286,10 +301,10 @@ test("personalizar cancela sem gravar, valida seleção, mantém erros no modal 
   let tentativas = 0;
   const api = simularApi({
     get: () => ({ data: original }),
-    post: async () => {
+    post: async (url) => {
       tentativas++;
       if (tentativas === 1) throw { response: { data: { message: "Conflito. Tente novamente." } } };
-      return { data: { ...gerado, id: 8 } };
+      return responder({ ...gerado, id: 8 })(url);
     },
   });
   const view = await mount(rotas("/relatorios/7"));
@@ -323,8 +338,12 @@ test("personalizar cancela sem gravar, valida seleção, mantém erros no modal 
     await click(botao(modal, "Gerar nova prévia"));
     await esperar();
     assert.equal(document.querySelector("dialog.report-customization"), null);
+    assert.match(raiz.querySelector(".report-preview h2").textContent, /Prévia do relatório/);
+    await click(botao(raiz, "Salvar no histórico"));
+    await esperar();
     assert.match(raiz.querySelector(".report-preview h2").textContent, /nº 8/);
-    const corpo = api.chamadas.filter(([m]) => m === "POST")[1][2];
+    const [, urlPrevia, corpo] = api.chamadas.filter(([m]) => m === "POST")[1];
+    assert.equal(urlPrevia, "/relatorios/previa");
     assert.deepEqual(corpo, {
       projetoIds: [10],
       dataInicio: "2026-10-01",
@@ -395,6 +414,91 @@ test("os arquivos são baixados da fotografia, com aviso de sucesso ou do erro d
       ["/relatorios/7/xlsx", "blob"],
     ]);
   } finally {
+    api.restaurar();
+    await view.unmount();
+    cleanup();
+  }
+});
+
+test("as opções de personalização vão no pedido, e mudar depois da prévia impede salvar", async () => {
+  const cleanup = installDom();
+  const comOpcoes = {
+    ...gerado,
+    conteudo: {
+      ...gerado.conteudo,
+      filtros: {
+        ...gerado.conteudo.filtros,
+        equipe: "Tecnologia",
+        statusApontamentos: ["FATURADO"],
+      },
+      opcoes: { titulo: "Fechamento", observacoes: "Só faturadas.", ordenacao: "CUSTO" },
+    },
+  };
+  const api = simularApi({ post: responder(comOpcoes) });
+  const valoresOriginais = structuredClone(opcoes);
+  opcoes.equipes = ["Tecnologia", "Design"];
+  opcoes.colaboradores = [{ id: 5, nomeCompleto: "Ana" }];
+  const view = await mount(rotas());
+  try {
+    await esperar();
+    const raiz = view.container;
+    await change(raiz.querySelector('select[name="equipe"]'), "Tecnologia");
+    await change(raiz.querySelector('input[name="titulo"]'), "  Fechamento  ");
+    await change(raiz.querySelector('textarea[name="observacoes"]'), "Só faturadas.");
+    await change(raiz.querySelector('select[name="ordenacao"]'), "CUSTO");
+    for (const status of ["Pendente", "Aprovado"])
+      await click(raiz.querySelector(`input[aria-label="Horas: ${status}"]`));
+    await click(raiz.querySelector('input[aria-label="Coluna: Orçamento"]'));
+    await click(caixa(raiz, "Apontamentos"));
+    await click(botao(raiz, "Ver prévia"));
+    await esperar();
+    const [, , corpo] = api.chamadas.find(([metodo]) => metodo === "POST");
+    assert.deepEqual(corpo, {
+      projetoIds: [],
+      dataInicio: null,
+      dataFim: null,
+      blocos: ["PROJETOS", "CLIENTES", "HORAS", "CUSTO", "INCONSISTENCIAS", "APONTAMENTOS"],
+      titulo: "Fechamento",
+      observacoes: "Só faturadas.",
+      equipe: "Tecnologia",
+      statusApontamentos: ["FATURADO"],
+      ordenacao: "CUSTO",
+      colunasProjetos: [
+        "cliente",
+        "status",
+        "horas",
+        "custoBase",
+        "bonificacao",
+        "custo",
+        "horasSemCusto",
+        "assertividade",
+        "inconsistencias",
+      ],
+    });
+    const previa = raiz.querySelector(".report-preview");
+    assert.match(previa.querySelector("h2").textContent, /Prévia do relatório — Fechamento/);
+    assert.match(previa.textContent, /Equipe: Tecnologia/);
+    assert.match(previa.textContent, /Horas: Faturado/);
+    assert.match(previa.textContent, /Ordem: Maior custo/);
+    assert.match(previa.querySelector(".report-notes").textContent, /Só faturadas/);
+
+    await change(raiz.querySelector('input[name="titulo"]'), "Outro título");
+    assert.equal(botao(raiz, "Salvar no histórico").disabled, true);
+    assert.match(raiz.textContent, /mudou as escolhas depois desta prévia/);
+    await click(botao(raiz, "Descartar prévia"));
+    assert.equal(raiz.querySelector(".report-preview"), null);
+    assert.match(raiz.textContent, /Nada foi salvo no histórico/);
+    assert.equal(
+      api.chamadas.filter(([metodo, url]) => metodo === "POST" && url === "/relatorios").length,
+      0,
+    );
+
+    await click(raiz.querySelector('input[aria-label="Horas: Faturado"]'));
+    await click(botao(raiz, "Ver prévia"));
+    assert.match(raiz.querySelector('[role="alert"]').textContent, /ao menos um status das horas/);
+  } finally {
+    Object.keys(opcoes).forEach((chave) => delete opcoes[chave]);
+    Object.assign(opcoes, valoresOriginais);
     api.restaurar();
     await view.unmount();
     cleanup();

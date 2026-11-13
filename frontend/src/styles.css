@@ -3149,6 +3149,95 @@ td .icon-button {
   font-size: 0.75rem;
   line-height: 1.4;
 }
+/* Personalizar conteúdo: recolhido por padrão, para o formulário simples continuar curto. */
+.report-options {
+  grid-column: 1 / -1;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.report-options > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 0.75rem 0.875rem;
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+.report-options > summary::-webkit-details-marker {
+  display: none;
+}
+.report-options > summary::after {
+  content: "▾";
+  margin-left: auto;
+  color: var(--muted);
+  transition: transform 0.15s ease;
+}
+.report-options[open] > summary::after {
+  transform: rotate(180deg);
+}
+.report-options > summary small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+.report-options-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.875rem;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0.875rem 0.875rem;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding-top: 0.875rem;
+}
+.report-option-wide {
+  grid-column: 1 / -1;
+}
+.report-options-grid textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+.report-option-checks {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.report-option-checks legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.report-option-checks > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.report-option-checks:disabled {
+  opacity: 0.6;
+}
+.report-draft-notice {
+  margin-top: 18px;
+}
+.report-preview--draft {
+  border-style: dashed;
+}
+.report-notes {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  border-left: 3px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  white-space: pre-line;
+  line-height: 1.5;
+}
 .report-preview {
   display: grid;
   gap: 18px;

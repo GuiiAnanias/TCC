@@ -176,7 +176,97 @@ test("o PDF pagina tabelas longas e numera as páginas", async () => {
 });
 
 test("formato que o sistema não conhece não é exportado com números trocados", async () => {
-  const antigo = { ...relatorio({ blocos: ["CUSTO"], dados }), versao: 3 };
+  const antigo = { ...relatorio({ blocos: ["CUSTO"], dados }), versao: 4 };
   await assert.rejects(montarPdfRelatorio(antigo), { statusCode: 409 });
   await assert.rejects(montarExcelRelatorio(antigo), { statusCode: 409 });
+});
+
+test("a versão 3 exporta título, filtros extras, colunas escolhidas e os blocos novos", async () => {
+  const base = relatorio({ blocos: ["PROJETOS"], dados });
+  const v3 = {
+    ...base,
+    versao: 3,
+    conteudo: {
+      ...base.conteudo,
+      versao: 3,
+      blocos: ["PROJETOS", "EQUIPES", "EVOLUCAO", "APONTAMENTOS"],
+      filtros: { ...base.conteudo.filtros, equipe: "Tecnologia", statusApontamentos: ["FATURADO"] },
+      opcoes: {
+        titulo: "Fechamento de outubro",
+        observacoes: "Somente horas faturadas.",
+        ordenacao: "CUSTO",
+        colunasProjetos: ["custo"],
+      },
+      dados: {
+        ...base.conteudo.dados,
+        EQUIPES: {
+          linhas: [
+            {
+              nome: "Tecnologia",
+              colaboradores: 2,
+              projetos: 1,
+              horas: 8,
+              custoBase: 600,
+              bonificacao: 50,
+              custo: 650,
+              horasSemCusto: 0,
+            },
+          ],
+        },
+        EVOLUCAO: {
+          linhas: [
+            {
+              mes: "2026-10",
+              apontamentos: 2,
+              horas: 8,
+              custoBase: 600,
+              bonificacao: 50,
+              custo: 650,
+            },
+          ],
+        },
+        APONTAMENTOS: {
+          linhas: [
+            {
+              id: 1,
+              data: "2026-10-05",
+              projeto: "Portal",
+              tarefa: null,
+              colaborador: "Ana",
+              horas: 8,
+              status: "FATURADO",
+              custo: 650,
+              semCusto: false,
+              descricao: "Login",
+            },
+          ],
+        },
+      },
+    },
+  };
+  const pasta = await lerPasta(await montarExcelRelatorio(v3));
+  assert.deepEqual(
+    pasta.worksheets.map((aba) => aba.name),
+    ["Relatório", "Projetos", "Equipes", "Evolução mensal", "Apontamentos"],
+  );
+  const resumo = pasta.getWorksheet("Relatório");
+  const pares = new Map();
+  resumo.eachRow((linha) =>
+    pares.set(valorDaCelula(linha.getCell(1).value), valorDaCelula(linha.getCell(2).value)),
+  );
+  assert.equal(pares.get("Título"), "Fechamento de outubro");
+  assert.equal(pares.get("Equipe"), "Tecnologia");
+  assert.equal(pares.get("Status das horas"), "Faturado");
+  assert.equal(pares.get("Ordenação"), "Maior custo");
+  assert.equal(pares.get("Observações"), "Somente horas faturadas.");
+  const projetos = pasta.getWorksheet("Projetos");
+  assert.deepEqual(
+    projetos.getRow(1).values.filter(Boolean),
+    ["Projeto", "Custo total"],
+    "Só o nome e as colunas escolhidas.",
+  );
+  assert.equal(pasta.getWorksheet("Evolução mensal").getRow(2).getCell(1).value, "10/2026");
+  assert.equal(pasta.getWorksheet("Apontamentos").getRow(2).getCell(3).value, "Sem tarefa");
+  const pdf = await montarPdfRelatorio(v3, { compress: false });
+  assert.equal(pdf.subarray(0, 5).toString(), "%PDF-", "Os blocos novos também vão para o PDF.");
 });

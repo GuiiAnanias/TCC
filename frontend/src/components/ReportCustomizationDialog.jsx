@@ -1,5 +1,6 @@
 /**
- * [COMPONENTE] Personalizar relatório: refaz o relatório com outros blocos ou projetos. [VALIDACAO]
+ * [COMPONENTE] Personalizar relatório: monta uma nova prévia com outros blocos ou projetos (só é
+ * gravada ao salvar). [VALIDACAO]
  * Exige ao menos um bloco e um projeto ou cliente.
  */
 
@@ -91,8 +92,8 @@ export function ReportCustomizationDialog({ relatorio, onClose, onApply }) {
       <form className="dashboard-help-content" onSubmit={aplicar}>
         <p>
           Escolha os projetos e os blocos da nova prévia. Ao aplicar, os dados atuais serão
-          consultados e uma nova fotografia será salva. O relatório nº {relatorio.id} permanece
-          preservado.
+          consultados e a prévia aparece para conferência; ela só entra no histórico quando você
+          clicar em Salvar no histórico. O relatório nº {relatorio.id} permanece preservado.
         </p>
         <fieldset disabled={salvando} className="report-customization-fields">
           <legend>Clientes e projetos do recorte</legend>
