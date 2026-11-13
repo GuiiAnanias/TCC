@@ -37,13 +37,13 @@ Logo abaixo da barra de filtros, antes dos indicadores, o Dashboard Geral mostra
 - O custo por mês mostra no máximo os 12 últimos meses com apontamentos, com um aviso para usar o período quando houver meses anteriores. O valor no topo de cada coluna aparece com até 6 meses; com mais, fica na dica.
 - As colunas da grade seguem a largura da área dos gráficos: três, duas ou uma, e menos colunas com o texto maior (Aa).
 - As cores seguem uma paleta categórica testada para daltonismo, com uma versão para o tema claro e outra para o escuro. Cada categoria tem sempre a mesma cor; os rótulos e legendas mostram os valores, então a leitura não depende só da cor.
-- O gráfico do Comparativo por projeto passou a usar um único eixo (custo base e bonificação); as horas aparecem na dica e na tabela, em vez de um segundo eixo no mesmo gráfico.
+- A seção Comparativo por projeto não tem mais gráfico próprio: o custo por projeto já aparece no Orçamento × custo, que mostra os 8 de maior custo e continua legível com muitos projetos. A tabela da seção traz todos os projetos.
 
 ## Seções do Dashboard Geral
 
 | Seção                      | O que mostra                                                                                                                                             |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Comparativo por projeto    | Custo por projeto em gráfico; horas e custos na tabela                                                                                                   |
+| Comparativo por projeto    | Custo base, bonificação, custo total e horas de cada projeto, em tabela                                                                                  |
 | Auditoria operacional      | Ocorrências detalhadas e o ranking pela assertividade do orçamento (menor primeiro)                                                                      |
 | Ranking de inconsistências | Projetos do que tem mais para o que tem menos ocorrências, com a contagem por tipo; empate segue a ordem alfabética                                      |
 | Resumo por cliente         | Projetos, horas e custos por cliente                                                                                                                     |

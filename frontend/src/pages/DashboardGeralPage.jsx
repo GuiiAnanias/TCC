@@ -37,9 +37,6 @@ import {
 } from "../utils/filtrosDashboard.js";
 
 // Gráficos carregados só quando aparecem, para a tela abrir mais rápido.
-const GraficoProjetosDashboard = lazy(
-  () => import("../components/dashboard/GraficoProjetosDashboard.jsx"),
-);
 const GraficosDashboard = lazy(() => import("../components/dashboard/GraficosDashboard.jsx"));
 
 const emptyFilters = {
@@ -619,17 +616,6 @@ export function DashboardGeralPage() {
                 <>
                   {key === "projetos" && (
                     <>
-                      <div
-                        className="dashboard-chart"
-                        role="img"
-                        aria-label="Custo por projeto, separado em custo base e bonificação; horas e valores disponíveis na tabela abaixo."
-                      >
-                        {openSection === key && (
-                          <Suspense fallback={<p role="status">Carregando gráfico…</p>}>
-                            <GraficoProjetosDashboard projects={data.projetos} />
-                          </Suspense>
-                        )}
-                      </div>
                       <div className="dashboard-table">
                         <table>
                           <caption>Custo e horas por projeto</caption>
