@@ -1,3 +1,8 @@
+/**
+ * [ROTA][SEGURANCA] Rotas públicas de autenticação: login, esqueci minha senha, validação do link e
+ * redefinição da senha; e, com login, /me e /logout.
+ */
+
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import bcrypt from "bcrypt";
@@ -11,13 +16,17 @@ import { sessoesRepository } from "../../repositories/sessoesRepository.js";
 import { novaSenhaSchema } from "../../schemas/senhaSchemas.js";
 import { authRateLimit } from "../middlewares/authRateLimit.js";
 
+// [SEGURANCA] Hash fictício: quando o usuário não existe, a senha é comparada mesmo assim, para o
+// tempo de resposta não revelar quais usuários existem.
 const dummyHash = bcrypt.hashSync("credencial-ficticia-para-comparacao", 10);
 
 export const authRoutes = Router();
+// [VALIDACAO] Corpo do login: usuário (ou e-mail) e senha obrigatórios.
 const loginSchema = z.object({
   login: z.string().trim().min(1).max(254),
   senha: z.string().min(1).max(256),
 });
+// [VALIDACAO] Corpo do esqueci minha senha: e-mail.
 const esqueciSenhaSchema = z.object({
   email: z
     .string({ message: "Informe o e-mail." })
@@ -32,11 +41,16 @@ const tokenLinkSchema = z
   .min(20, "Link inválido.")
   .max(200, "Link inválido.");
 const validarLinkSchema = z.object({ token: tokenLinkSchema });
+// [VALIDACAO] Corpo da redefinição: token do link e nova senha, que passa pelas regras de senha
+// forte (schemas/senhaSchemas.js).
 const redefinirSenhaSchema = z.object({
   token: tokenLinkSchema,
   novaSenha: novaSenhaSchema,
 });
 
+// [ROTA] POST /api/auth/login. [SEGURANCA] Limite de tentativas, bcrypt.compare da senha, criação
+// da sessão no banco e JWT com o id da sessão (jti). Erro genérico "Usuário ou senha inválidos"
+// para não revelar qual dos dois errou.
 authRoutes.post(
   "/login",
   authRateLimit("login", env.authLoginLimit, "login"),
@@ -125,10 +139,13 @@ authRoutes.post(
     }
   },
 );
+// [ROTA] Devolve o usuário da sessão atual; o front usa para restaurar o login ao recarregar a
+// página.
 authRoutes.get("/me", authenticate, (request, response) => {
   const { status, ...user } = request.user;
   response.json({ user });
 });
+// [ROTA][SEGURANCA] Revoga a sessão no banco: o token deixa de valer mesmo antes de vencer.
 authRoutes.post("/logout", authenticate, async (request, response, next) => {
   try {
     await sessoesRepository.revoke(request.sessionId, request.user.id);

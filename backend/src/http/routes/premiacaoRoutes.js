@@ -1,3 +1,8 @@
+/**
+ * [ROTA] /api/premiacoes: modelos, regras publicadas e avaliações de premiação (rascunho, conclusão
+ * e reavaliação).
+ */
+
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { parseId } from "../../utils/parseId.js";

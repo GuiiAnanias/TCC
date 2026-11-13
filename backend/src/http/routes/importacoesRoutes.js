@@ -1,8 +1,15 @@
+/**
+ * [ROTA] /api/importacoes/apontamentos: modelo .xlsx, conferência sem gravar, importação (tudo ou
+ * nada) e histórico das importações.
+ */
+
 import express, { Router } from "express";
 import { importacoesController } from "../controllers/importacoesController.js";
 import { TAMANHO_MAXIMO } from "../../services/importacaoApontamentosService.js";
 import { HttpError } from "../../utils/HttpError.js";
 
+// [VALIDACAO] O corpo é o próprio arquivo, lido como bytes, com tamanho máximo; acima disso
+// responde 413.
 const leitorBruto = express.raw({ type: () => true, limit: TAMANHO_MAXIMO });
 
 // Recebe o .xlsx como corpo binário, sem formulário multipart.

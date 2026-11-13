@@ -1,3 +1,8 @@
+/**
+ * [ROTA] /api/dashboard: indicadores do Dashboard Geral, dashboards por projeto e por colaborador e
+ * as opções dos filtros. [VALIDACAO] Os filtros da URL passam pelo dashboardQuerySchema.
+ */
+
 import { Router } from "express";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { dashboardQuerySchema } from "../../schemas/dashboardSchemas.js";

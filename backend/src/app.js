@@ -1,3 +1,10 @@
+/**
+ * [INICIO] Monta a aplicação Express: CORS, leitura de JSON, rotas em /api e, por último, os
+ * tratadores de erro.
+ * Caminho de uma requisição: rota (http/routes) -> controller (http/controllers) -> schema Zod
+ * (schemas) -> service (services) -> repository (repositories) -> Prisma -> PostgreSQL.
+ */
+
 import cors from "cors";
 import express from "express";
 import { errorHandler, notFoundHandler } from "./http/middlewares/errorHandler.js";
@@ -6,7 +13,10 @@ import { routes } from "./http/routes/index.js";
 export const app = express();
 
 // O front lê o nome do arquivo baixado (planilhas) pelo Content-Disposition.
+// [SEGURANCA] CORS liberado para o front em outro endereço (porta 5173); expõe Content-Disposition
+// para o navegador ler o nome dos arquivos baixados.
 app.use(cors({ exposedHeaders: ["Content-Disposition"] }));
+// Lê o corpo JSON das requisições para request.body.
 app.use(express.json());
 
 app.get("/", (request, response) => {
@@ -25,7 +35,10 @@ app.get("/", (request, response) => {
   });
 });
 
+// [ROTA] Todas as rotas da API ficam abaixo de /api (ver http/routes/index.js).
 app.use("/api", routes);
 
+// [ERRO] Depois das rotas: endereço inexistente responde 404 e qualquer erro lançado cai no
+// errorHandler.
 app.use(notFoundHandler);
 app.use(errorHandler);

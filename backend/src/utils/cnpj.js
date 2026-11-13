@@ -1,3 +1,9 @@
+/**
+ * [VALIDACAO] CNPJ: limpa a pontuação e confere os dígitos verificadores. Aceita o formato numérico
+ * e o alfanumérico (letras nos 12 primeiros caracteres).
+ */
+
+// Remove pontos, barra e traço e deixa as letras maiúsculas.
 export function normalizeCnpj(value) {
   return value
     .trim()
@@ -5,6 +11,8 @@ export function normalizeCnpj(value) {
     .replace(/[./\-\s]/g, "");
 }
 
+// [VALIDACAO] Calcula os dois dígitos verificadores com os pesos do CNPJ e compara com os
+// informados.
 export function isValidCnpj(value) {
   if (!/^[A-Z0-9]{12}\d{2}$/.test(value) || /^(\d)\1{13}$/.test(value)) return false;
   const digit = (base) => {

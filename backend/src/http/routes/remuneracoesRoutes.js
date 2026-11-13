@@ -1,3 +1,7 @@
+/**
+ * [ROTA] /api/remuneracoes: tabela de remuneração (nível e valor/hora). DELETE inativa o item.
+ */
+
 import { Router } from "express";
 import { remuneracoesController } from "../controllers/remuneracoesController.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";

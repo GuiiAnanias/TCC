@@ -1,3 +1,8 @@
+/**
+ * [CONTROLLER] Configuração financeira (valor/hora com vigência) de um colaborador:
+ * /api/colaboradores/:id/configuracoes-financeiras.
+ */
+
 import {
   configuracaoFinanceiraCreateSchema,
   configuracaoFinanceiraUpdateSchema,
@@ -6,12 +11,15 @@ import { configuracoesFinanceirasService } from "../../services/configuracoesFin
 import { parseId } from "../../utils/parseId.js";
 
 export const configuracoesFinanceirasController = {
+  // [CONTROLLER] Histórico de vigências do colaborador.
   async index(request, response) {
     const colaboradorId = parseId(request.params.id, "colaborador");
     const configuracoes = await configuracoesFinanceirasService.listByColaborador(colaboradorId);
     return response.json(configuracoes);
   },
 
+  // [CONTROLLER] Cria uma vigência nova. [VALIDACAO] schemas/configuracoesFinanceirasSchemas.js; o
+  // autor vem de request.user.
   async store(request, response) {
     const colaboradorId = parseId(request.params.id, "colaborador");
     const data = configuracaoFinanceiraCreateSchema.parse(request.body);
@@ -23,6 +31,7 @@ export const configuracoesFinanceirasController = {
     return response.status(201).json(configuracao);
   },
 
+  // [CONTROLLER] "Editar" cria outra vigência a partir de uma data: o histórico nunca é alterado.
   async update(request, response) {
     const colaboradorId = parseId(request.params.id, "colaborador");
     const configuracaoId = parseId(request.params.configuracaoId, "configuração financeira");
@@ -36,6 +45,7 @@ export const configuracoesFinanceirasController = {
     return response.json(configuracao);
   },
 
+  // [CONTROLLER] Encerra a vigência aberta com a data de hoje.
   async destroy(request, response) {
     const colaboradorId = parseId(request.params.id, "colaborador");
     const configuracaoId = parseId(request.params.configuracaoId, "configuração financeira");
