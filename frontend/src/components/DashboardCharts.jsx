@@ -97,25 +97,36 @@ function Cartao({ titulo, subtitulo, vazio, children, nota, className = "" }) {
   );
 }
 
+// No cartão pequeno cabem até 12 barras legíveis; o valor em cima de cada barra só até 6.
+const MESES_NO_GRAFICO = 12;
+const MESES_COM_ROTULO = 6;
+
 // [TELA] Colunas empilhadas: custo base e bonificação de cada mês.
 function CustoPorMes({ evolucao }) {
-  const dados = evolucao.map((row) => ({ ...row, rotulo: mesCurto(row.mes) }));
+  const ocultos = Math.max(0, evolucao.length - MESES_NO_GRAFICO);
+  const dados = evolucao
+    .slice(-MESES_NO_GRAFICO)
+    .map((row) => ({ ...row, rotulo: mesCurto(row.mes) }));
   return (
     <Cartao
       titulo="Custo por mês"
       subtitulo="Custo base e bonificação dos apontamentos de cada mês"
       vazio={!dados.length}
-      className="chart-card-wide"
+      nota={
+        ocultos > 0
+          ? `Últimos ${MESES_NO_GRAFICO} meses com apontamentos. Use o período para ver meses anteriores.`
+          : ""
+      }
     >
       <div
         className="chart-area"
         role="img"
         aria-label={`Custo por mês: ${dados.map((row) => `${mesLongo(row.mes)}, ${money(row.custo)}`).join("; ")}.`}
       >
-        <ResponsiveContainer width="100%" height={280}>
+        <ResponsiveContainer width="100%" height={240}>
           <BarChart
             data={dados}
-            margin={{ top: 24, right: 8, bottom: 4, left: 8 }}
+            margin={{ top: 24, right: 4, bottom: 0, left: 0 }}
             accessibilityLayer
           >
             {grade}
@@ -124,12 +135,14 @@ function CustoPorMes({ evolucao }) {
               tick={eixo}
               tickLine={false}
               axisLine={{ stroke: "var(--line)" }}
+              interval="preserveStartEnd"
+              minTickGap={4}
             />
             <YAxis
               tick={eixo}
               tickLine={false}
               axisLine={false}
-              width={72}
+              width={64}
               tickFormatter={(value) => reaisCurto(value)}
             />
             <Tooltip
@@ -172,12 +185,14 @@ function CustoPorMes({ evolucao }) {
               radius={[4, 4, 0, 0]}
               maxBarSize={48}
             >
-              <LabelList
-                dataKey="custo"
-                position="top"
-                formatter={(value) => reaisCurto(value)}
-                style={{ fill: "var(--text-secondary)", fontSize: 12 }}
-              />
+              {dados.length <= MESES_COM_ROTULO && (
+                <LabelList
+                  dataKey="custo"
+                  position="top"
+                  formatter={(value) => reaisCurto(value)}
+                  style={{ fill: "var(--text-secondary)", fontSize: 12 }}
+                />
+              )}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -435,7 +450,6 @@ export default function DashboardCharts({ data, recortado = false }) {
   return (
     <div className="dashboard-charts">
       <CustoPorMes evolucao={data.evolucao ?? []} />
-      <OrcamentoXCusto projetos={data.projetos} recortado={recortado} />
       <Rosca
         titulo="Horas por status do apontamento"
         subtitulo="Quanto das horas já foi aprovado e faturado"
@@ -479,6 +493,7 @@ export default function DashboardCharts({ data, recortado = false }) {
         margem={36}
         nota="Detalhes de cada ocorrência na seção Auditoria operacional."
       />
+      <OrcamentoXCusto projetos={data.projetos} recortado={recortado} />
     </div>
   );
 }

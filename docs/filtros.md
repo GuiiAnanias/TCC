@@ -22,6 +22,7 @@ O período considera a data dos apontamentos. Com período, equipe, colaborador 
 - Vários projetos são alternativas (OU): o recorte traz cada projeto escolhido, e os totais somam os mesmos valores dos dashboards individuais.
 - A lista de projetos acompanha o cliente e o status escolhidos. Ao trocar um deles, os projetos que deixaram de valer saem da seleção.
 - Cada sprint pertence a um único projeto. No Dashboard Geral, a sprint fica disponível com exatamente um projeto escolhido e sai da seleção quando os projetos mudam. A API recusa uma sprint que não pertence aos projetos informados, em vez de devolver um recorte vazio sem explicação.
+- No Dashboard Geral, as datas e os atalhos de período ficam sempre visíveis; os demais filtros abrem pelo botão Filtros, que mostra quantos estão aplicados. Os atalhos (Mês atual, Últimos 30 dias, Mês anterior e Este ano) aplicam na hora, pelo calendário de São Paulo, e clicar de novo no atalho ativo volta a todos os períodos. Datas digitadas valem depois de Aplicar.
 - O Dashboard Geral abre com projetos ativos. Limpar volta a esse recorte inicial. Nos dashboards individuais, Limpar volta a todos os períodos.
 - Depois de aplicados, os filtros aparecem em etiquetas acima dos indicadores. O botão Exportar Excel só fica disponível com os filtros aplicados, para a planilha não sair com um recorte diferente da tela.
 
