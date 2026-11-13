@@ -1,3 +1,7 @@
+/**
+ * [SERVICE][API-EXTERNA] Envio de e-mail por SMTP (nodemailer), usado na recuperação de senha.
+ */
+
 import nodemailer from "nodemailer";
 import { env } from "../config/env.js";
 
@@ -17,6 +21,7 @@ function transport() {
   return transporter;
 }
 
+// [API-EXTERNA] Envia o e-mail pelo SMTP configurado no .env (Mailpit em desenvolvimento).
 export const emailService = {
   async enviar({ para, assunto, texto, html }) {
     await transport().sendMail({

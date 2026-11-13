@@ -1,3 +1,7 @@
+/**
+ * [SERVICE][REGRA] Regras de colaboradores: e-mail único e inativação sem apagar histórico.
+ */
+
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { HttpError } from "../utils/HttpError.js";
 
@@ -20,6 +24,7 @@ export const colaboradoresService = {
     return ensureColaboradorExists(id);
   },
 
+  // [REGRA][ERRO] E-mail já usado por outro colaborador: 409.
   async create(data) {
     const colaborador = await colaboradoresRepository.findByEmail(data.email);
 
@@ -44,6 +49,7 @@ export const colaboradoresService = {
     return colaboradoresRepository.update(id, data);
   },
 
+  // [REGRA] Marca como Inativo; horas, equipes e vigências ficam no histórico.
   async inactivate(id) {
     await ensureColaboradorExists(id);
     return colaboradoresRepository.update(id, { status: "INATIVO" });

@@ -1,3 +1,9 @@
+/**
+ * [SERVICE][SEGURANCA] Recuperação de senha por e-mail: gera o link com token aleatório, guarda só
+ * o hash do token, valida o link e grava a nova senha com bcrypt. O link vale 30 minutos e uma vez
+ * só.
+ */
+
 import crypto from "node:crypto";
 import bcrypt from "bcrypt";
 import { usuariosRepository } from "../repositories/usuariosRepository.js";
@@ -12,9 +18,12 @@ import { emailService } from "./emailService.js";
 export const VALIDADE_LINK_MINUTOS = 30;
 export const MENSAGEM_SOLICITACAO =
   "Caso o e-mail informado esteja cadastrado, será enviado um link de redefinição de senha.";
+// [SEGURANCA] O banco guarda o SHA-256 do token; quem ler o banco não consegue usar o link.
 export const hashToken = (token) => crypto.createHash("sha256").update(String(token)).digest("hex");
 const LINK_INVALIDO = 'Link inválido ou expirado. Solicite um novo link em "Esqueci minha senha".';
 
+// [SEGURANCA] Token de 32 bytes aleatórios (crypto.randomBytes) e validade gravada junto com o
+// hash.
 async function criarLink(usuario, frontendUrl, agora) {
   const token = crypto.randomBytes(32).toString("base64url");
   const expiraEm = new Date(agora.getTime() + VALIDADE_LINK_MINUTOS * 60 * 1000);
@@ -51,6 +60,7 @@ function mensagemEmail(usuario, link) {
   return { assunto: "Redefinição de senha — CODE BI", texto, html };
 }
 
+// [SEGURANCA] Escapa o nome do usuário antes de colocá-lo no HTML do e-mail.
 function escapeHtml(value) {
   return String(value).replace(
     /[&<>"']/g,
@@ -59,6 +69,7 @@ function escapeHtml(value) {
 }
 
 export const senhaService = {
+  // Gera o link para um usuário pelo login (uso administrativo, sem e-mail).
   async gerarLink(login, { frontendUrl, agora = new Date() }) {
     const usuario = await usuariosRepository.findByLogin(login);
     if (!usuario) throw new HttpError(404, `Usuário "${login}" não encontrado.`);
@@ -86,6 +97,8 @@ export const senhaService = {
     await usuarioDoLink(token, agora);
   },
 
+  // [SEGURANCA][VALIDACAO] Confere a senha forte, o link (existe, não venceu, não foi usado) e
+  // grava o novo hash; o link é consumido na mesma gravação.
   async redefinir(token, novaSenha, agora = new Date()) {
     novaSenhaSchema.parse(novaSenha);
     const { usuario, tokenHash } = await usuarioDoLink(token, agora);

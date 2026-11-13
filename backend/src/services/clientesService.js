@@ -1,6 +1,13 @@
+/**
+ * [SERVICE][REGRA] Regras de negócio de clientes: duplicidade de CNPJ/CPF/nome/contatos, tipo de
+ * pessoa fixo e inativação. Recebe dados já validados pelo schema e usa o clientesRepository para o
+ * banco.
+ */
+
 import { clientesRepository } from "../repositories/clientesRepository.js";
 import { HttpError } from "../utils/HttpError.js";
 
+// [ERRO] Cliente inexistente: 404 "Cliente não encontrado."
 async function ensureClienteExists(id) {
   const cliente = await clientesRepository.findById(id);
 
@@ -11,6 +18,7 @@ async function ensureClienteExists(id) {
   return cliente;
 }
 
+// [REGRA] Pessoa física: e-mail e telefone não podem repetir entre clientes PF.
 async function ensureUniqueIndividualContacts(data, excludeId) {
   if (data.email && (await clientesRepository.findIndividualByEmail(data.email, excludeId))) {
     throw new HttpError(409, "Já existe uma pessoa física com este e-mail.");
@@ -32,6 +40,8 @@ export const clientesService = {
     return ensureClienteExists(id);
   },
 
+  // [REGRA][ERRO] Recusa CNPJ, CPF ou nome de empresa já cadastrados com 409 (ex.: "Já existe um
+  // cliente com este CNPJ.").
   async create(data) {
     if (data.cpf && (await clientesRepository.findByCpf(data.cpf)))
       throw new HttpError(409, "Já existe um cliente com este CPF.");
@@ -48,6 +58,8 @@ export const clientesService = {
     return clientesRepository.create(data);
   },
 
+  // [REGRA] Na edição o tipo (PF/PJ) não muda e as mesmas regras de duplicidade valem, ignorando o
+  // próprio registro.
   async update(id, data) {
     const current = await ensureClienteExists(id);
     const tipoPessoa = current.tipoPessoa || "PJ";
@@ -97,6 +109,7 @@ export const clientesService = {
     return clientesRepository.update(id, data);
   },
 
+  // [REGRA] "Excluir" marca como Inativo; projetos e histórico continuam.
   async inactivate(id) {
     await ensureClienteExists(id);
     return clientesRepository.update(id, { status: "INATIVO" });

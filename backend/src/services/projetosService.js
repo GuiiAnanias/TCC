@@ -1,3 +1,8 @@
+/**
+ * [SERVICE][REGRA] Regras de projetos e da equipe: cliente ativo, projeto ativo para mexer na
+ * equipe, colaborador ativo, períodos sem sobreposição e troca de papel com data.
+ */
+
 import { clientesRepository } from "../repositories/clientesRepository.js";
 import { colaboradoresRepository } from "../repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../repositories/projetosRepository.js";
@@ -14,6 +19,7 @@ async function ensureProjetoExists(id, db) {
   return projeto;
 }
 
+// [REGRA] Projeto novo (ou troca de cliente) só com cliente ativo.
 async function ensureClienteAtivo(clienteId, db) {
   const cliente = await clientesRepository.findById(clienteId, db);
 
@@ -28,6 +34,7 @@ async function ensureClienteAtivo(clienteId, db) {
   return cliente;
 }
 
+// [REGRA] Alterações de equipe exigem projeto Ativo.
 function ensureProjetoAtivo(projeto) {
   if (projeto.status !== "ATIVO") {
     throw new HttpError(400, "Reative o projeto para alterar a equipe.");
@@ -58,12 +65,14 @@ async function ensureVinculoDoProjeto(projetoId, vinculoId, db) {
   return vinculo;
 }
 
+// [VALIDACAO] Saída não pode ser antes da entrada.
 function ensurePeriodoValido(dataEntrada, dataSaida) {
   if (dataSaida && dataEntrada && dataSaida < dataEntrada) {
     throw new HttpError(400, "Data de saída não pode ser anterior à data de entrada.");
   }
 }
 
+// [REGRA] A mesma pessoa não pode ter duas participações com períodos sobrepostos no mesmo projeto.
 async function ensureSemSobreposicao(projetoId, colaboradorId, entrada, saida, exceptId, db) {
   if (
     await projetosRepository.findOverlappingTeamMember(
@@ -90,6 +99,7 @@ export const projetosService = {
     return ensureProjetoExists(id);
   },
 
+  // [REGRA][TRANSACAO] Cria o projeto e, se informada, a equipe inicial, na mesma transação.
   async create(data) {
     const { equipeInicial = [], ...project } = data;
     return projetosRepository.transaction(async (db) => {
@@ -120,6 +130,7 @@ export const projetosService = {
     return projetosRepository.update(id, data);
   },
 
+  // [REGRA] "Excluir" encerra o projeto (status Encerrado).
   async close(id) {
     await ensureProjetoExists(id);
     return projetosRepository.update(id, { status: "ENCERRADO" });
@@ -130,6 +141,7 @@ export const projetosService = {
     return projetosRepository.findTeamByProject(projetoId);
   },
 
+  // [REGRA] Vincula colaborador ativo a projeto ativo, conferindo sobreposição de período.
   async addTeamMember(projetoId, data) {
     return projetosRepository.transaction(async (db) => {
       const projeto = await ensureProjetoExists(projetoId, db);
@@ -152,6 +164,7 @@ export const projetosService = {
     });
   },
 
+  // [REGRA] Troca de papel a partir de uma data ou correção das datas da participação.
   async updateTeamMember(projetoId, vinculoId, data) {
     return projetosRepository.transaction(async (db) => {
       const projeto = await ensureProjetoExists(projetoId, db);
@@ -202,6 +215,7 @@ export const projetosService = {
     });
   },
 
+  // [REGRA] Encerra a participação hoje; o histórico continua.
   async removeTeamMember(projetoId, vinculoId) {
     return projetosRepository.transaction(async (db) => {
       const projeto = await ensureProjetoExists(projetoId, db);

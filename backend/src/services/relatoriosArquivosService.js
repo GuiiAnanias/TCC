@@ -1,3 +1,9 @@
+/**
+ * [SERVICE] Arquivos PDF (pdfkit) e Excel (exceljs) de um relatório gerado. São montados a cada
+ * download a partir da fotografia gravada, então os números são sempre os mesmos; nenhum arquivo
+ * fica guardado.
+ */
+
 import PDFDocument from "pdfkit";
 import { relatoriosGeradosService } from "./relatoriosGeradosService.js";
 import { relatoriosGeradosRepository } from "../repositories/relatoriosGeradosRepository.js";
@@ -13,6 +19,8 @@ import {
 
 // Arquivos de um relatório gerado: leem só a fotografia gravada, nunca recalculam.
 // Formatos de fotografia que estes arquivos sabem ler (o 2 acrescenta os clientes).
+// [REGRA] Versões da fotografia que esta versão do sistema sabe exportar; outra versão responde
+// 409.
 export const VERSOES_EXPORTAVEIS = [1, 2];
 
 const BLOCOS = {
@@ -91,6 +99,7 @@ const slug = (texto) =>
     .replace(/-+$/g, "");
 
 /** Nome do arquivo com o número do relatório, o recorte e a extensão. */
+// Nome do arquivo baixado: número do relatório e cliente/projeto, sem acentos.
 export function nomeArquivo(relatorio, extensao) {
   const { filtros = {}, projetos = [] } = relatorio.conteudo;
   const escolhidos = filtros.projetoIds ?? [];
@@ -312,6 +321,7 @@ function escreverPares(aba, inicio, pares, formatos = []) {
   return inicio + pares.length;
 }
 
+// Excel do relatório: aba de resumo e uma aba por bloco escolhido.
 export async function montarExcelRelatorio(relatorio) {
   conferirVersao(relatorio);
   const { conteudo } = relatorio;
@@ -481,6 +491,7 @@ function garantirEspaco(doc, altura) {
   if (doc.y + altura > doc.page.height - doc.page.margins.bottom) doc.addPage();
 }
 
+// PDF do relatório: cabeçalho, filtros e uma tabela por bloco, com quebra de página.
 export async function montarPdfRelatorio(relatorio, { compress = true } = {}) {
   conferirVersao(relatorio);
   const { conteudo } = relatorio;
@@ -598,6 +609,7 @@ async function registrar(relatorioId, formato, usuario) {
 }
 
 export const relatoriosArquivosService = {
+  // [SERVICE] Busca o relatório, confere a versão, monta o PDF e registra o download.
   async pdf(id, usuario) {
     const relatorio = await relatoriosGeradosService.buscar(id);
     const arquivo = await montarPdfRelatorio(relatorio);

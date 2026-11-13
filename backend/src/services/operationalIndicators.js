@@ -1,3 +1,8 @@
+/**
+ * [REGRA] Indicadores operacionais: percentual de correções, assertividade das estimativas, tarefas
+ * concluídas sem horas e tarefas sem estimativa, com o motivo quando não há base de cálculo.
+ */
+
 export const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 const ratio = (numerator, denominator) =>
   denominator > 0 ? round((numerator / denominator) * 100) : null;
@@ -42,6 +47,7 @@ export function taskInScope(task, filters) {
   );
 }
 
+// [REGRA] Calcula os quatro indicadores para os projetos e filtros do recorte.
 export function operationalIndicators(projects, filters = {}) {
   const tasks = projects.flatMap((project) =>
     (project.tarefas ?? [])

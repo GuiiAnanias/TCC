@@ -1,6 +1,14 @@
+/**
+ * [REGRA] Cálculo do custo de cada apontamento: custo base = horas x valor/hora vigente na data;
+ * bonificação = custo base x percentual do papel / 100; custo = base + bonificação. Apontamento
+ * faturado usa a composição gravada no faturamento.
+ */
+
 import { round } from "./operationalIndicators.js";
 const dayOf = (value) => new Date(value).toISOString().slice(0, 10);
 
+// [REGRA] Custo de um apontamento; marca semCusto (sem valor/hora) e semVinculo (fora da equipe)
+// para os avisos de custo incompleto.
 export function entryCost(entry, project, bonuses) {
   if (entry.status === "FATURADO" && entry.custoConsolidado) {
     const {

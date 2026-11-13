@@ -130,6 +130,8 @@ export const premiacaoTemplates = {
 };
 
 export const round = (value) => Math.round((value + Number.EPSILON) * 10000) / 10000;
+// [REGRA] Nota = pontuação-base - deduções dos critérios com ocorrência; percentual final =
+// percentual-base x elegibilidade / 100. Com critério a conferir, a nota é provisória.
 export function calculateAward(rule, input) {
   const respostas = new Map(input.respostas.map((row) => [row.chave, row]));
   const pendentes = rule.criterios.filter(
