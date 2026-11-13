@@ -1,14 +1,15 @@
 # Interface
 
-O front é uma aplicação React em português, com tema escuro (padrão) e claro. Sem login, qualquer endereço interno leva à tela de acesso.
+O front é uma aplicação React em português, com tema claro (padrão) e escuro. A fonte é a IBM Plex Sans, servida pelo próprio sistema (licença OFL em `frontend/src/assets/fonts`), então a tela fica igual com ou sem internet. Sem login, qualquer endereço interno leva à tela de acesso.
 
 ## Estrutura comum
 
-- **Menu lateral**: Dashboard Geral, Visão por projeto, Visão por colaborador, Relatórios, Clientes, Colaboradores, Remuneração, Projetos, Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas. No rodapé ficam o usuário logado e o botão Sair.
-- O menu pode ser recolhido para mostrar só os ícones. A escolha fica salva no navegador; em telas de até 860 px ele começa recolhido.
-- **Ações da página**: os botões **Atualizar** (recarrega os dados da tela) e de tema ficam no canto superior direito. Ao rolar a página, eles se acomodam no menu lateral, acima do usuário. O tema escolhido fica salvo no navegador.
+- **Menu lateral**, em três grupos: Análise (Dashboard Geral, Visão por projeto, Visão por colaborador e Relatórios), Cadastros (Clientes, Colaboradores, Remuneração e Projetos) e Operação (Apontamento de Horas, Tarefas e sprints, Premiação e Importar horas). No rodapé ficam o usuário logado e o botão Sair.
+- O menu pode ser recolhido para mostrar só os ícones; o nome de cada tela aparece ao passar o mouse e os grupos viram linhas finas. A escolha fica salva no navegador; em telas de até 860 px ele começa recolhido.
+- **Barra superior**, fixa ao rolar: o botão **Atualizar** (recarrega os dados da tela) e o de tema. O tema escolhido fica salvo no navegador.
 - **Ajuda**: o botão "?" ao lado do título abre a explicação da tela, com as regras e fórmulas usadas. Fecha com Esc ou pelo botão de fechar.
 - Mensagens de sucesso, erro e aviso aparecem abaixo do título. Os erros de validação da API são mostrados com o texto recebido.
+- **Visual**: fundo neutro, uma cor de ação (azul) para botões principais, item ativo do menu e foco, e cores de status só onde têm significado (ativo, pendente, faturado, avisos). Os indicadores do dashboard ficam num único quadro dividido por linhas finas; abas são um controle segmentado; status aparecem com um ponto colorido e o nome escrito.
 
 ## Cadastros
 

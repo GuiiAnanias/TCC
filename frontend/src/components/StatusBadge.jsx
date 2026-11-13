@@ -7,7 +7,11 @@ export function StatusBadge({ status }) {
   const statusClass = status.toString().toLowerCase();
 
   // Serve para status de cadastro/projeto e de apontamento; os nomes não se repetem.
-  const label = entryStatusLabel(projectStatusLabel(status));
+  const name = entryStatusLabel(projectStatusLabel(status));
+  // Status sem rótulo próprio (como INATIVO dos cadastros) aparecem como "Inativo".
+  const label = /^[A-Z_]+$/.test(name)
+    ? name.charAt(0) + name.slice(1).toLocaleLowerCase("pt-BR").replaceAll("_", " ")
+    : name;
 
   return <span className={`status status-${statusClass}`}>{label}</span>;
 }

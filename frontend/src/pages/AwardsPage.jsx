@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Plus, Save, Check, X } from "lucide-react";
 import { api } from "../api/client.js";
 import { HelpDialog } from "../components/HelpDialog.jsx";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { projectStatusLabel } from "../config/projectOptions.js";
 import { IndicatorTasksTable, number, date } from "../components/OperationalDashboard.jsx";
 
@@ -325,7 +325,7 @@ export function AwardsPage() {
             <AwardsHelp />
           </div>
         </div>
-        <FloatingActions onRefresh={load} loading={loading || busy} />
+        <PageActions onRefresh={load} loading={loading || busy} />
       </header>
       <div className="feedback-row">
         {error && (

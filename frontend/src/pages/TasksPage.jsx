@@ -3,7 +3,7 @@ import { Archive, Check, Edit3, RotateCcw, Save, Search, X } from "lucide-react"
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/client.js";
 import { HelpDialog } from "../components/HelpDialog.jsx";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { projectStatusLabel } from "../config/projectOptions.js";
 
 const statuses = {
@@ -359,7 +359,7 @@ export function TasksPage() {
             </HelpDialog>
           </div>
         </div>
-        <FloatingActions onRefresh={refresh} loading={loading || saving} />
+        <PageActions onRefresh={refresh} loading={loading || saving} />
       </header>
       <div className="feedback-row">
         {error && (

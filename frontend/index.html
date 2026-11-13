@@ -1,24 +1,25 @@
 <!doctype html>
-<html lang="pt-BR" data-theme="dark">
+<html lang="pt-BR" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script>
+      // Tema escolhido antes, aplicado antes da primeira pintura; sem escolha, o claro.
       try {
         const theme = localStorage.getItem("code-bi-theme");
-        document.documentElement.dataset.theme = theme === "light" ? "light" : "dark";
+        document.documentElement.dataset.theme = theme === "dark" ? "dark" : "light";
       } catch {
-        document.documentElement.dataset.theme = "dark";
+        document.documentElement.dataset.theme = "light";
       }
     </script>
     <style>
       html {
-        background: #12191f;
-        color-scheme: dark;
-      }
-      html[data-theme="light"] {
-        background: #f5f7f8;
+        background: #f4f5f7;
         color-scheme: light;
+      }
+      html[data-theme="dark"] {
+        background: #15181d;
+        color-scheme: dark;
       }
     </style>
     <title>Sistema de Indicadores</title>

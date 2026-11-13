@@ -1,22 +1,17 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import {
-  AlertTriangle,
   BarChart3,
-  BriefcaseBusiness,
   Building2,
   ChevronDown,
-  Clock3,
   FileSpreadsheet,
   Filter,
   ListOrdered,
   RotateCcw,
   ShieldCheck,
-  Target,
   Users,
-  WalletCards,
 } from "lucide-react";
 import { api } from "../api/client.js";
-import { FloatingActions } from "../components/FloatingActions.jsx";
+import { PageActions } from "../components/PageActions.jsx";
 import { AuditTable, OperationalMetrics } from "../components/OperationalDashboard.jsx";
 import { DashboardHelp } from "../components/DashboardHelp.jsx";
 import { Link } from "react-router-dom";
@@ -184,19 +179,16 @@ export function DashboardPage() {
     {
       label: "Projetos ativos",
       value: summary?.projetosAtivos,
-      icon: BriefcaseBusiness,
       hint: summary ? `${summary.projetos} projetos no total` : "",
     },
     {
       label: "Clientes atendidos",
       value: summary?.clientes,
-      icon: Building2,
       hint: "Clientes com projetos no recorte",
     },
     {
       label: "Custo total",
       value: summary ? money(summary.custo) : null,
-      icon: WalletCards,
       hint: summary
         ? `${summary.horasSemCusto > 0 ? "Parcial · " : ""}Base ${money(summary.custoBase)} + bonificação ${money(summary.bonificacao)}`
         : "Custo de mão de obra com bonificação",
@@ -204,13 +196,11 @@ export function DashboardPage() {
     {
       label: "Horas trabalhadas",
       value: summary ? `${number(summary.horas)} h` : null,
-      icon: Clock3,
       hint: "Todos os status de apontamento",
     },
     {
       label: "Assertividade média do orçamento",
       value: summary ? percent(summary.assertividade) : null,
-      icon: Target,
       hint:
         summary?.assertividade != null
           ? `Média de ${summary.projetosComAssertividade} projetos com base de cálculo`
@@ -219,7 +209,6 @@ export function DashboardPage() {
     {
       label: "Ocorrências de auditoria",
       value: summary?.totalOcorrencias,
-      icon: AlertTriangle,
       hint: "Pendências financeiras, de equipe e de tarefas",
     },
   ];
@@ -234,7 +223,7 @@ export function DashboardPage() {
             <DashboardHelp />
           </div>
         </div>
-        <FloatingActions
+        <PageActions
           onRefresh={() => {
             loadSummary();
             loadOptions();
@@ -446,16 +435,11 @@ export function DashboardPage() {
         )}
 
         <div className="summary-grid dashboard-summary" aria-busy={loading}>
-          {cards.map(({ label, value, icon: Icon, hint }) => (
+          {cards.map(({ label, value, hint }) => (
             <article className="summary-card" key={label}>
-              <div className="summary-icon">
-                <Icon size={22} aria-hidden="true" />
-              </div>
-              <div>
-                <span>{label}</span>
-                <strong>{loading ? "…" : (value ?? "—")}</strong>
-                <small>{hint}</small>
-              </div>
+              <span>{label}</span>
+              <strong>{loading ? "…" : (value ?? "—")}</strong>
+              <small>{hint}</small>
             </article>
           ))}
         </div>
