@@ -109,12 +109,12 @@ test("a seção mostra os sete gráficos com legendas legíveis sem passar o mou
     );
     assert.deepEqual(titulos, [
       "Custo por mês",
-      "Orçamento × custo por projeto",
       "Horas por status do apontamento",
       "Tarefas por status",
       "Custo por cliente",
       "Horas por equipe",
       "Ocorrências de auditoria por tipo",
+      "Orçamento × custo por projeto",
     ]);
     const legendas = [...view.container.querySelectorAll(".chart-legend")].map((lista) =>
       [...lista.querySelectorAll("li")].map((li) => li.textContent),
@@ -158,6 +158,31 @@ test("com filtro de período, o gráfico de orçamento explica que o custo é s�
   const view = await mount(React.createElement(DashboardCharts, { data: dados, recortado: true }));
   try {
     assert.match(view.container.textContent, /o custo é só o do recorte/);
+  } finally {
+    await view.unmount();
+    cleanup();
+  }
+});
+
+test("com muitos meses, o custo por mês mostra só os 12 últimos e avisa", async () => {
+  const cleanup = installDom();
+  const { default: DashboardCharts } = await import("../src/components/DashboardCharts.jsx");
+  const evolucao = Array.from({ length: 30 }, (_, indice) => {
+    const data = new Date(Date.UTC(2024, indice, 1));
+    return {
+      mes: data.toISOString().slice(0, 7),
+      horas: 1,
+      custoBase: 100,
+      bonificacao: 0,
+      custo: 100,
+    };
+  });
+  const view = await mount(React.createElement(DashboardCharts, { data: { ...dados, evolucao } }));
+  try {
+    const resumo = view.container.querySelector('[role="img"]').getAttribute("aria-label");
+    assert.equal(resumo.split(";").length, 12);
+    assert.match(resumo, /^Custo por mês: julho de 2025/);
+    assert.match(view.container.textContent, /Últimos 12 meses com apontamentos/);
   } finally {
     await view.unmount();
     cleanup();

@@ -2100,6 +2100,125 @@ td .icon-button {
 .dashboard-scope {
   margin: 16px 0;
 }
+/* Barra do Dashboard Geral: período e atalhos sempre à vista, os demais filtros abrem sob
+   demanda no mesmo quadro e o Excel fica sempre à mão. */
+.dashboard-filter-card {
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.dashboard-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem;
+}
+.dashboard-toolbar .dashboard-export {
+  margin-left: auto;
+}
+.dashboard-quick-dates {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(9.5rem, 10.5rem));
+  gap: 0.625rem;
+}
+.dashboard-quick-dates .field > span {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+/* Atalhos de período: o mesmo controle segmentado das abas. */
+.dashboard-quick-periods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+.dashboard-chip {
+  min-height: 2rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.dashboard-chip:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--hover);
+}
+.dashboard-chip.is-selected,
+.dashboard-chip.is-selected:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.dashboard-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+.dashboard-filter-toggle > svg:last-child {
+  transition: transform 200ms ease;
+}
+.dashboard-filter-toggle[aria-expanded="true"] > svg:last-child {
+  transform: rotate(180deg);
+}
+.dashboard-filter-count {
+  min-width: 1.25rem;
+  padding: 0 0.4375rem;
+  border-radius: 999px;
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  text-align: center;
+}
+/* Os filtros abertos ficam no mesmo quadro da barra, separados por uma linha fina. */
+.dashboard-filter-card .dashboard-filters-general {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
+  padding: 1rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}
+.dashboard-indicators {
+  margin-top: 0.5rem;
+}
+@container conteudo (width < 60rem) {
+  .dashboard-filter-card .dashboard-filters-general {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container conteudo (width < 32rem) {
+  .dashboard-filter-card {
+    padding: 0.875rem;
+  }
+  .dashboard-filter-card .dashboard-filters-general {
+    grid-template-columns: 1fr;
+  }
+  .dashboard-quick-dates {
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .dashboard-toolbar > button {
+    flex: 1;
+  }
+  .dashboard-toolbar .dashboard-export {
+    margin-left: 0;
+  }
+}
 /* Recorte aplicado, em etiquetas: o que os cartões, as tabelas e o Excel estão mostrando. */
 .dashboard-tags {
   display: flex;
@@ -3144,4 +3263,23 @@ td .icon-button {
   overflow: hidden;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
+}
+
+/* Seis gráficos pequenos em duas linhas de três; o comparativo por projeto ocupa a linha toda.
+   As colunas seguem a largura da área dos gráficos e diminuem com o texto maior (Aa). */
+.dashboard-charts-block {
+  container-type: inline-size;
+}
+.dashboard-charts {
+  grid-template-columns: 1fr;
+}
+@container (width >= 44rem) {
+  .dashboard-charts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@container (width >= 66rem) {
+  .dashboard-charts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

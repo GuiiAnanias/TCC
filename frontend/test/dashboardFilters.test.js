@@ -5,6 +5,7 @@ import {
   etiquetasDoRecorte,
   mesmoRecorte,
   parametrosDoRecorte,
+  periodoRapido,
   projetosDisponiveis,
   sprintsDisponiveis,
 } from "../src/utils/dashboardFilters.js";
@@ -121,4 +122,28 @@ test("as etiquetas mostram o recorte aplicado com nomes, na ordem dos controles"
   );
   assert.equal(etiquetasDoRecorte({ projetoIds: ["99"] }, opcoes)[0].valor, "#99");
   assert.equal(etiquetasDoRecorte({ statusProjeto: "ATIVO" })[0].valor, "Ativo");
+});
+
+test("os atalhos de período calculam as datas a partir de hoje", () => {
+  const hoje = "2026-03-15";
+  assert.deepEqual(periodoRapido("mes-atual", hoje), {
+    dataInicio: "2026-03-01",
+    dataFim: "2026-03-31",
+  });
+  assert.deepEqual(periodoRapido("ultimos-30", hoje), {
+    dataInicio: "2026-02-14",
+    dataFim: "2026-03-15",
+  });
+  assert.deepEqual(periodoRapido("mes-anterior", hoje), {
+    dataInicio: "2026-02-01",
+    dataFim: "2026-02-28",
+  });
+  assert.deepEqual(periodoRapido("mes-anterior", "2026-01-10"), {
+    dataInicio: "2025-12-01",
+    dataFim: "2025-12-31",
+  });
+  assert.deepEqual(periodoRapido("ano-atual", hoje), {
+    dataInicio: "2026-01-01",
+    dataFim: "2026-12-31",
+  });
 });

@@ -30,6 +30,8 @@ import {
   etiquetasDoRecorte,
   mesmoRecorte,
   parametrosDoRecorte,
+  PERIODOS_RAPIDOS,
+  periodoRapido,
   projetosDisponiveis,
   sprintsDisponiveis,
 } from "../utils/dashboardFilters.js";
@@ -103,6 +105,7 @@ export function DashboardPage() {
   const [error, setError] = useState("");
   const [openSection, setOpenSection] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const requestId = useRef(0);
   const appliedRef = useRef(emptyFilters);
 
@@ -167,6 +170,13 @@ export function DashboardPage() {
     } finally {
       setExporting(false);
     }
+  }
+
+  // [ESTADO] Atalho de período: aplica na hora, junto com o que já estiver escolhido nos filtros.
+  function applyPeriod(datas) {
+    const next = { ...filters, ...datas };
+    setFilters(next);
+    loadSummary(next);
   }
 
   // [ESTADO] Atualiza um filtro (só vale depois de Aplicar filtros).
@@ -245,17 +255,16 @@ export function DashboardPage() {
         />
       </header>
 
-      <div className="dashboard-overview">
-        <form
-          className="dashboard-filters"
-          onSubmit={(event) => {
-            event.preventDefault();
-            loadSummary({ ...filters });
-          }}
-        >
-          <fieldset className="dashboard-period" disabled={loading}>
-            <legend>Período</legend>
-            <div>
+      <form
+        className="dashboard-overview"
+        onSubmit={(event) => {
+          event.preventDefault();
+          loadSummary({ ...filters });
+        }}
+      >
+        <div className="dashboard-filter-card">
+          <div className="dashboard-toolbar">
+            <div className="dashboard-quick-dates">
               <label className="field">
                 <span>Data inicial</span>
                 <input
@@ -264,6 +273,7 @@ export function DashboardPage() {
                   value={filters.dataInicio}
                   max={filters.dataFim || "9999-12-31"}
                   onChange={updateFilter}
+                  disabled={loading}
                 />
               </label>
               <label className="field">
@@ -275,131 +285,53 @@ export function DashboardPage() {
                   min={filters.dataInicio || undefined}
                   max="9999-12-31"
                   onChange={updateFilter}
+                  disabled={loading}
                 />
               </label>
             </div>
-          </fieldset>
-          <label className="field">
-            <span>Cliente</span>
-            <select
-              name="clienteId"
-              value={filters.clienteId}
-              onChange={updateFilter}
-              disabled={loading || Boolean(optionsError)}
-            >
-              <option value="">Todos os clientes</option>
-              {options.clientes.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.nome}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="field">
-            <span id="filtro-projetos-rotulo">Projetos</span>
-            <MultiSelect
-              id="filtro-projetos"
-              name="projetoIds"
-              options={projectOptions}
-              value={filters.projetoIds}
-              onChange={updateFilter}
-              placeholder="Todos os projetos"
-              plural="projetos"
-              labelledBy="filtro-projetos-rotulo"
-              disabled={loading || Boolean(optionsError)}
-            />
-          </div>
-          <label className="field">
-            <span>Colaborador</span>
-            <select
-              name="colaboradorId"
-              value={filters.colaboradorId}
-              onChange={updateFilter}
-              disabled={loading || Boolean(optionsError)}
-            >
-              <option value="">Todos os colaboradores</option>
-              {options.colaboradores.map((person) => (
-                <option key={person.id} value={person.id}>
-                  {person.nomeCompleto}
-                  {person.status === "INATIVO" ? " (inativo)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Sprint</span>
-            <select
-              name="sprintId"
-              value={filters.sprintId}
-              onChange={updateFilter}
-              disabled={loading || filters.projetoIds.length !== 1}
-              title={
-                filters.projetoIds.length === 1
-                  ? undefined
-                  : "Escolha um único projeto para filtrar por sprint."
-              }
-            >
-              <option value="">
-                {filters.projetoIds.length === 1 ? "Todas as sprints" : "Escolha um projeto"}
-              </option>
-              {sprintOptions.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.nome}
-                  {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>
-              Equipe <small>(departamento)</small>
-            </span>
-            <select
-              name="equipe"
-              value={filters.equipe}
-              onChange={updateFilter}
-              disabled={loading || Boolean(optionsError)}
-            >
-              <option value="">Todas as equipes</option>
-              {options.equipes.map((team) => (
-                <option key={team} value={team}>
-                  {team}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>Status do projeto</span>
-            <select
-              name="statusProjeto"
-              value={filters.statusProjeto}
-              onChange={updateFilter}
-              disabled={loading}
-            >
-              <option value="">Todos os estados</option>
-              {projectStatusOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="dashboard-filter-actions">
-            <button type="submit" className="primary-button" disabled={loading}>
-              <Filter size={16} />
-              Aplicar filtros
-            </button>
+            <div className="dashboard-quick-periods" role="group" aria-label="Períodos rápidos">
+              {PERIODOS_RAPIDOS.map(({ chave, rotulo }) => {
+                const datas = periodoRapido(chave);
+                const ativo =
+                  applied.dataInicio === datas.dataInicio && applied.dataFim === datas.dataFim;
+                return (
+                  <button
+                    key={chave}
+                    type="button"
+                    className={`dashboard-chip${ativo ? " is-selected" : ""}`}
+                    aria-pressed={ativo}
+                    disabled={loading}
+                    title={ativo ? "Clique de novo para ver todos os períodos" : undefined}
+                    onClick={() => applyPeriod(ativo ? { dataInicio: "", dataFim: "" } : datas)}
+                  >
+                    {rotulo}
+                  </button>
+                );
+              })}
+            </div>
+            {changed && (
+              <button type="submit" className="primary-button" disabled={loading}>
+                Aplicar
+              </button>
+            )}
             <button
               type="button"
-              className="secondary-button"
-              disabled={loading || (!changed && !filtered)}
-              onClick={() => {
-                setFilters(emptyFilters);
-                loadSummary(emptyFilters);
-              }}
+              className="secondary-button dashboard-filter-toggle"
+              aria-expanded={filtersOpen}
+              aria-controls="dashboard-filtros"
+              onClick={() => setFiltersOpen((current) => !current)}
             >
-              <RotateCcw size={16} />
-              Limpar
+              <Filter size={16} aria-hidden="true" />
+              <span>Filtros</span>
+              {filtered && (
+                <span
+                  className="dashboard-filter-count"
+                  aria-label={`${appliedTags.length} aplicados`}
+                >
+                  {appliedTags.length}
+                </span>
+              )}
+              <ChevronDown size={16} aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -416,12 +348,146 @@ export function DashboardPage() {
               {exporting ? "Gerando planilha…" : "Exportar Excel"}
             </button>
           </div>
-        </form>
+          <div
+            id="dashboard-filtros"
+            className={`client-form-reveal dashboard-filter-reveal${filtersOpen ? " is-open" : ""}`}
+            inert={!filtersOpen ? true : undefined}
+            aria-hidden={!filtersOpen}
+          >
+            <div className="client-form-inner">
+              <div className="dashboard-filters dashboard-filters-general">
+                <label className="field">
+                  <span>Cliente</span>
+                  <select
+                    name="clienteId"
+                    value={filters.clienteId}
+                    onChange={updateFilter}
+                    disabled={loading || Boolean(optionsError)}
+                  >
+                    <option value="">Todos os clientes</option>
+                    {options.clientes.map((client) => (
+                      <option key={client.id} value={client.id}>
+                        {client.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="field">
+                  <span id="filtro-projetos-rotulo">Projetos</span>
+                  <MultiSelect
+                    id="filtro-projetos"
+                    name="projetoIds"
+                    options={projectOptions}
+                    value={filters.projetoIds}
+                    onChange={updateFilter}
+                    placeholder="Todos os projetos"
+                    plural="projetos"
+                    labelledBy="filtro-projetos-rotulo"
+                    disabled={loading || Boolean(optionsError)}
+                  />
+                </div>
+                <label className="field">
+                  <span>Colaborador</span>
+                  <select
+                    name="colaboradorId"
+                    value={filters.colaboradorId}
+                    onChange={updateFilter}
+                    disabled={loading || Boolean(optionsError)}
+                  >
+                    <option value="">Todos os colaboradores</option>
+                    {options.colaboradores.map((person) => (
+                      <option key={person.id} value={person.id}>
+                        {person.nomeCompleto}
+                        {person.status === "INATIVO" ? " (inativo)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Sprint</span>
+                  <select
+                    name="sprintId"
+                    value={filters.sprintId}
+                    onChange={updateFilter}
+                    disabled={loading || filters.projetoIds.length !== 1}
+                    title={
+                      filters.projetoIds.length === 1
+                        ? undefined
+                        : "Escolha um único projeto para filtrar por sprint."
+                    }
+                  >
+                    <option value="">
+                      {filters.projetoIds.length === 1 ? "Todas as sprints" : "Escolha um projeto"}
+                    </option>
+                    {sprintOptions.map((row) => (
+                      <option key={row.id} value={row.id}>
+                        {row.nome}
+                        {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>
+                    Equipe <small>(departamento)</small>
+                  </span>
+                  <select
+                    name="equipe"
+                    value={filters.equipe}
+                    onChange={updateFilter}
+                    disabled={loading || Boolean(optionsError)}
+                  >
+                    <option value="">Todas as equipes</option>
+                    {options.equipes.map((team) => (
+                      <option key={team} value={team}>
+                        {team}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="field">
+                  <span>Status do projeto</span>
+                  <select
+                    name="statusProjeto"
+                    value={filters.statusProjeto}
+                    onChange={updateFilter}
+                    disabled={loading}
+                  >
+                    <option value="">Todos os estados</option>
+                    {projectStatusOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <div className="dashboard-filter-actions">
+                  <button type="submit" className="primary-button" disabled={loading}>
+                    <Filter size={16} />
+                    Aplicar filtros
+                  </button>
+                  <button
+                    type="button"
+                    className="secondary-button"
+                    disabled={loading || (!changed && !filtered)}
+                    onClick={() => {
+                      setFilters(emptyFilters);
+                      loadSummary(emptyFilters);
+                    }}
+                  >
+                    <RotateCcw size={16} />
+                    Limpar
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <p className="dashboard-scope" role="status">
           {loading
             ? "Carregando indicadores…"
             : changed
-              ? "Há filtros alterados. Clique em Aplicar filtros para atualizar os dados."
+              ? "Há filtros alterados. Clique em Aplicar para atualizar os dados."
               : filtered
                 ? "Exibindo o recorte aplicado. O período considera a data dos apontamentos."
                 : "Projetos ativos em todos os períodos, clientes e equipes. Outros estados estão disponíveis no filtro."}
@@ -446,33 +512,7 @@ export function DashboardPage() {
             {data && " Os últimos dados carregados foram mantidos."}
           </div>
         )}
-
-        <div className="summary-grid dashboard-summary" aria-busy={loading}>
-          {cards.map(({ label, value, hint }) => (
-            <article className="summary-card" key={label}>
-              <span>{label}</span>
-              <strong>{loading ? "…" : (value ?? "—")}</strong>
-              <small>{hint}</small>
-            </article>
-          ))}
-        </div>
-        <h2 className="dashboard-operational-title">Indicadores operacionais</h2>
-        <OperationalMetrics summary={summary} loading={loading} context={Boolean(applied.equipe)} />
-      </div>
-
-      {data && (
-        <PendenciasCusto
-          ocorrencias={data.ocorrencias}
-          onVerTodas={() => {
-            setOpenSection("auditoria");
-            requestAnimationFrame(() =>
-              document
-                .getElementById("dashboard-auditoria")
-                ?.scrollIntoView({ behavior: "smooth", block: "start" }),
-            );
-          }}
-        />
-      )}
+      </form>
 
       {data && summary?.projetos > 0 && (
         <section
@@ -482,8 +522,8 @@ export function DashboardPage() {
         >
           <h2 id="dashboard-graficos-titulo">Visão em gráficos</h2>
           <p>
-            Mesmo recorte dos indicadores acima. Os valores de cada gráfico também estão nas tabelas
-            das seções de detalhe.
+            Mesmo recorte dos indicadores abaixo. Os valores de cada gráfico também estão nas
+            tabelas das seções de detalhe.
           </p>
           <Suspense fallback={<p role="status">Carregando gráficos…</p>}>
             <DashboardCharts
@@ -498,6 +538,37 @@ export function DashboardPage() {
             />
           </Suspense>
         </section>
+      )}
+
+      <section className="dashboard-indicators" aria-labelledby="dashboard-indicadores-titulo">
+        <h2 id="dashboard-indicadores-titulo" className="dashboard-operational-title">
+          Indicadores gerais
+        </h2>
+        <div className="summary-grid dashboard-summary" aria-busy={loading}>
+          {cards.map(({ label, value, hint }) => (
+            <article className="summary-card" key={label}>
+              <span>{label}</span>
+              <strong>{loading ? "…" : (value ?? "—")}</strong>
+              <small>{hint}</small>
+            </article>
+          ))}
+        </div>
+        <h2 className="dashboard-operational-title">Indicadores operacionais</h2>
+        <OperationalMetrics summary={summary} loading={loading} context={Boolean(applied.equipe)} />
+      </section>
+
+      {data && (
+        <PendenciasCusto
+          ocorrencias={data.ocorrencias}
+          onVerTodas={() => {
+            setOpenSection("auditoria");
+            requestAnimationFrame(() =>
+              document
+                .getElementById("dashboard-auditoria")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+            );
+          }}
+        />
       )}
 
       {!loading && data && !summary.projetos && (
