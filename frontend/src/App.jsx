@@ -28,6 +28,7 @@ import { RedefinirSenhaPage } from "./pages/RedefinirSenhaPage.jsx";
 import { EsqueciSenhaPage } from "./pages/EsqueciSenhaPage.jsx";
 import { ThemeProvider, ThemeToggle } from "./ThemeContext.jsx";
 import { PageActionsSlot } from "./components/PageActions.jsx";
+import { FontSizeControl } from "./components/FontSizeControl.jsx";
 
 const resourceLink = (key) => {
   const resource = resources.find((item) => item.key === key);
@@ -237,6 +238,7 @@ function ProtectedLayout() {
         <header className="topbar">
           <div className="page-actions" ref={setActionsSlot} />
           <div className="topbar-controls" role="group" aria-label="Preferências de exibição">
+            <FontSizeControl />
             <ThemeToggle />
           </div>
         </header>

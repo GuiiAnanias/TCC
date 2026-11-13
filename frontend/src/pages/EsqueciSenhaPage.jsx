@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { api } from "../api/client.js";
 import { ThemeToggle } from "../ThemeContext.jsx";
+import { FontSizeControl } from "../components/FontSizeControl.jsx";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -53,7 +54,10 @@ export function EsqueciSenhaPage() {
               <span>Gestão de projetos</span>
             </div>
           </div>
-          <ThemeToggle />
+          <div className="login-controls">
+            <FontSizeControl />
+            <ThemeToggle />
+          </div>
         </div>
         <h1>Esqueci minha senha</h1>
         <div className="login-help" role="note">
