@@ -20,8 +20,10 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
     versaoSessao: 0,
   };
   const originalSessions = { ...sessoesRepository };
-  const originalConsume = limitesAutenticacaoRepository.consume;
+  const originalLimites = { ...limitesAutenticacaoRepository };
   limitesAutenticacaoRepository.consume = async () => ({ allowed: true });
+  limitesAutenticacaoRepository.consumeProgressivo = async () => ({ allowed: true });
+  limitesAutenticacaoRepository.liberar = async () => {};
   const sessions = new Map();
   sessoesRepository.create = async (user, data) => {
     const session = { ...data, usuarioId: user.id, versaoSessao: user.versaoSessao, usuario: user };
@@ -155,7 +157,7 @@ test("protected API rejects missing, forged, expired and inactive sessions", asy
     );
   } finally {
     Object.assign(sessoesRepository, originalSessions);
-    limitesAutenticacaoRepository.consume = originalConsume;
+    Object.assign(limitesAutenticacaoRepository, originalLimites);
     prisma.usuario.findFirst = originalFindFirst;
     prisma.usuario.findUnique = originalFindUnique;
     await new Promise((resolve) => server.close(resolve));

@@ -102,10 +102,13 @@ model Sessao {
 }
 
 // [BANCO][SEGURANCA] Contadores de tentativas de login e recuperação de senha (chave em HMAC).
+// No login por usuário, nivel e bloqueadoAte guardam o bloqueio progressivo (10 s, 1 min, 5 min).
 model LimiteAutenticacao {
-  chave       String   @id
-  tentativas  Int
-  expiraEm    DateTime
+  chave        String    @id
+  tentativas   Int
+  expiraEm     DateTime
+  nivel        Int       @default(0)
+  bloqueadoAte DateTime?
 
   @@index([expiraEm])
   @@map("limites_autenticacao")

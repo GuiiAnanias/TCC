@@ -14,7 +14,7 @@ import { autenticar } from "../middlewares/autenticar.js";
 import { senhaService, MENSAGEM_SOLICITACAO } from "../../services/senhaService.js";
 import { sessoesRepository } from "../../repositories/sessoesRepository.js";
 import { novaSenhaSchema } from "../../schemas/senhaSchemas.js";
-import { limiteAutenticacao } from "../middlewares/limiteAutenticacao.js";
+import { limiteAutenticacao, liberarIdentificador } from "../middlewares/limiteAutenticacao.js";
 
 // [SEGURANCA] Hash fictício: quando o usuário não existe, a senha é comparada mesmo assim, para o
 // tempo de resposta não revelar quais usuários existem.
@@ -80,6 +80,7 @@ autenticacaoRoutes.post(
         expiraEm: new Date(jwt.decode(token).exp * 1000),
       });
       if (!session) return response.status(401).json({ message: "Usuário ou senha inválidos." });
+      await liberarIdentificador("login", "login", request.body.login);
       response.json({
         token,
         user: { id: user.id, nomeUsuario: user.nomeUsuario, email: user.email },

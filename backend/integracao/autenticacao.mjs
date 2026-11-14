@@ -254,7 +254,36 @@ try {
       assert.equal((await send("/login", { login: "inexistente", senha: "errada" })).status, 401);
     const blocked = await send("/login", { login: " INEXISTENTE ", senha: "errada" });
     assert.equal(blocked.status, 429);
-    assert.ok(Number(blocked.headers.get("Retry-After")) > 0);
+    assert.equal(blocked.headers.get("Retry-After"), "10");
+    const corpoBloqueio = await blocked.json();
+    assert.deepEqual(corpoBloqueio, {
+      message: "Muitas tentativas. Tente novamente em 10 segundos.",
+      tentarNovamenteEm: 10,
+    });
+    // Durante o bloqueio, insistir não prorroga; depois dele, um novo erro sobe para 1 minuto e
+    // depois para 5 minutos.
+    assert.ok(
+      Number(
+        (await send("/login", { login: "inexistente", senha: "errada" })).headers.get(
+          "Retry-After",
+        ),
+      ) <= 10,
+    );
+    const vencerBloqueios = () =>
+      client.$executeRaw`UPDATE limites_autenticacao SET "bloqueadoAte" = CURRENT_TIMESTAMP - interval '1 second' WHERE "bloqueadoAte" IS NOT NULL`;
+    for (const [segundos, texto] of [
+      [60, "1 minuto"],
+      [300, "5 minutos"],
+      [300, "5 minutos"],
+    ]) {
+      await vencerBloqueios();
+      const novo = await send("/login", { login: "inexistente", senha: "errada" });
+      assert.equal(novo.status, 429);
+      assert.deepEqual(await novo.json(), {
+        message: `Muitas tentativas. Tente novamente em ${texto}.`,
+        tentarNovamenteEm: segundos,
+      });
+    }
     assert.equal(
       (await me(await login("SenhaFinal#123"))).status,
       200,
@@ -277,19 +306,33 @@ try {
       body: JSON.stringify({ login: "outro", senha: "errada" }),
     });
     assert.equal(spoof.status, 429);
-    assert.deepEqual(await spoof.json(), await blocked.json());
+    assert.match(
+      (await spoof.json()).message,
+      /^Muitas tentativas\. Tente novamente em \d+ minutos?/,
+    );
     const originKey = createHmac("sha256", env.jwtSecret)
       .update(JSON.stringify(["login:origin", "127.0.0.1"]))
       .digest("hex");
     const stored = await client.limiteAutenticacao.findMany();
     assert.ok(stored.some((item) => item.chave === originKey));
     assert.ok(stored.every((item) => /^[a-f0-9]{64}$/.test(item.chave)));
-    await client.limiteAutenticacao.updateMany({ data: { expiraEm: new Date(0) } });
+    await client.limiteAutenticacao.updateMany({
+      data: { expiraEm: new Date(0), bloqueadoAte: null },
+    });
     assert.equal(
       (await me(await login("SenhaFinal#123"))).status,
       200,
       "O bloqueio expira sem intervenção administrativa.",
     );
+    // Login certo zera a contagem do usuário: 9 erros + acerto + 9 erros não bloqueiam.
+    for (let rodada = 0; rodada < 2; rodada++) {
+      for (let index = 0; index < env.authLoginLimit.identifierLimit - 1; index++)
+        assert.equal((await send("/login", { login: "auth-test", senha: "errada" })).status, 401);
+      if (rodada === 0) assert.equal((await me(await login("SenhaFinal#123"))).status, 200);
+    }
+    await client.limiteAutenticacao.updateMany({
+      data: { expiraEm: new Date(0), bloqueadoAte: null },
+    });
 
     for (let index = 0; index < env.authResetLimit.identifierLimit; index++)
       assert.equal(
