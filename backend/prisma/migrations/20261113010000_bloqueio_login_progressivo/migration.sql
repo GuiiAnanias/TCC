@@ -1,0 +1,5 @@
+BEGIN;
+ALTER TABLE "limites_autenticacao"
+  ADD COLUMN "nivel" INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN "bloqueadoAte" TIMESTAMP(3);
+COMMIT;

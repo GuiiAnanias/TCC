@@ -1,10 +1,10 @@
 /**
  * [TELA][SEGURANCA] Tela de login (/login). Envia usuário ou e-mail e senha para POST
- * /api/auth/login (via AutenticacaoContext). Mensagens: "Preencha este campo" (navegador) e "Usuário ou
- * senha inválidos" (API).
+ * /api/auth/login (via AutenticacaoContext). Mensagens: "Preencha este campo" (navegador), "Usuário ou
+ * senha inválidos" (API) e, depois de muitas tentativas, "Tente novamente em X" com contagem regressiva.
  */
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { DatabaseZap } from "lucide-react";
 import { useAutenticacao } from "../autenticacao/AutenticacaoContext.jsx";
@@ -15,6 +15,7 @@ import {
   saveRememberedLogin,
   forgetRememberedLogin,
 } from "../autenticacao/loginLembrado.js";
+import { segundosRestantes, tempoDeEspera } from "../autenticacao/tempoEspera.js";
 
 // [TELA] Formulário de acesso, "Lembrar meu usuário" e link Esqueci minha senha.
 export function LoginPage() {
@@ -26,6 +27,23 @@ export function LoginPage() {
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  // [SEGURANCA] Bloqueio por tentativas: horário (ms) em que o login volta a ser aceito e o
+  // relógio que atualiza a contagem regressiva a cada meio segundo.
+  const [liberaEm, setLiberaEm] = useState(0);
+  const [agora, setAgora] = useState(() => Date.now());
+  const espera = segundosRestantes(liberaEm, agora);
+  useEffect(() => {
+    if (!liberaEm) return undefined;
+    const relogio = setInterval(() => {
+      const instante = Date.now();
+      setAgora(instante);
+      if (instante >= liberaEm) {
+        setLiberaEm(0);
+        setError("");
+      }
+    }, 500);
+    return () => clearInterval(relogio);
+  }, [liberaEm]);
   const from = location.state?.from;
   const destination =
     typeof from === "string" &&
@@ -46,6 +64,13 @@ export function LoginPage() {
       await auth.login(login, senha);
       if (rememberUser) saveRememberedLogin(login);
     } catch (error) {
+      // [ERRO] 429: muitas tentativas. A API informa em quantos segundos libera; a tela conta.
+      const segundos = Number(error.response?.data?.tentarNovamenteEm);
+      if (error.response?.status === 429 && segundos > 0) {
+        const instante = Date.now();
+        setAgora(instante);
+        setLiberaEm(instante + segundos * 1000);
+      }
       setError(
         error.response?.data?.message || "Não foi possível conectar ao servidor. Tente novamente.",
       );
@@ -120,13 +145,19 @@ export function LoginPage() {
               Preenche apenas o usuário ou e-mail no próximo acesso.
             </small>
           </div>
-          {error && (
+          {espera > 0 ? (
             <div className="feedback error" role="alert">
-              {error}
+              Muitas tentativas. Tente novamente em {tempoDeEspera(espera)}.
             </div>
+          ) : (
+            error && (
+              <div className="feedback error" role="alert">
+                {error}
+              </div>
+            )
           )}
-          <button className="primary-button" type="submit" disabled={busy}>
-            {busy ? "Entrando…" : "Entrar"}
+          <button className="primary-button" type="submit" disabled={busy || espera > 0}>
+            {busy ? "Entrando…" : espera > 0 ? "Aguarde para tentar de novo" : "Entrar"}
           </button>
         </form>
         <Link className="login-link" to="/esqueci-senha">

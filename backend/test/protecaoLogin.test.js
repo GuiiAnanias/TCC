@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { novaSenhaSchema } from "../src/schemas/senhaSchemas.js";
 import { senhaService } from "../src/services/senhaService.js";
-import { limiteAutenticacao } from "../src/http/middlewares/limiteAutenticacao.js";
+import { limiteAutenticacao, tempoDeEspera } from "../src/http/middlewares/limiteAutenticacao.js";
 import { limitesAutenticacaoRepository as repository } from "../src/repositories/limitesAutenticacaoRepository.js";
 
 test("novas senhas respeitam bytes UTF-8, inclusive no serviço chamado sem HTTP", async () => {
@@ -83,5 +83,50 @@ test("limites por origem e identificador usam chaves opacas e resposta genérica
     assert.ok(!JSON.stringify([...counts.keys()]).includes("pessoa"));
   } finally {
     repository.consume = original;
+  }
+});
+
+test("tempo de espera do bloqueio aparece em segundos ou minutos", () => {
+  assert.equal(tempoDeEspera(1), "1 segundo");
+  assert.equal(tempoDeEspera(10), "10 segundos");
+  assert.equal(tempoDeEspera(60), "1 minuto");
+  assert.equal(tempoDeEspera(270), "4 minutos e 30 segundos");
+  assert.equal(tempoDeEspera(300), "5 minutos");
+});
+
+test("no login o limite por usuário é progressivo e a resposta informa o tempo", async () => {
+  const { consume, consumeProgressivo } = repository;
+  const chamadas = [];
+  repository.consume = async () => ({ allowed: true, retryAfter: 0 });
+  repository.consumeProgressivo = async (key, limit, windowMs, bloqueiosMs) => {
+    chamadas.push({ key, limit, windowMs, bloqueiosMs });
+    return { allowed: false, retryAfter: 60 };
+  };
+  const middleware = limiteAutenticacao(
+    "login",
+    { originLimit: 60, identifierLimit: 10, windowMs: 900000, bloqueiosMs: [10000, 60000, 300000] },
+    "login",
+  );
+  const result = {};
+  const response = {
+    set: (key, value) => (result.header = [key, value]),
+    status: (status) => ((result.status = status), response),
+    json: (body) => (result.body = body),
+  };
+  try {
+    await middleware({ ip: "origem", body: { login: "admin" }, socket: {} }, response, () => {
+      throw new Error("não deveria liberar");
+    });
+    assert.equal(chamadas.length, 1);
+    assert.deepEqual(chamadas[0].bloqueiosMs, [10000, 60000, 300000]);
+    assert.equal(result.status, 429);
+    assert.deepEqual(result.header, ["Retry-After", "60"]);
+    assert.deepEqual(result.body, {
+      message: "Muitas tentativas. Tente novamente em 1 minuto.",
+      tentarNovamenteEm: 60,
+    });
+  } finally {
+    repository.consume = consume;
+    repository.consumeProgressivo = consumeProgressivo;
   }
 });

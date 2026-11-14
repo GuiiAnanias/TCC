@@ -129,7 +129,7 @@ try {
   }
   for (const model of models) assert.ok(initial[model].length, `Tabela sem dados: ${model}`);
   const counts = {
-    usuario: 1,
+    usuario: 2,
     cliente: 4,
     colaborador: 9,
     itemTabelaRemuneracao: 9,

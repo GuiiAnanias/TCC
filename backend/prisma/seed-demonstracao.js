@@ -22,6 +22,13 @@ export async function seedDemo(prisma) {
         update: {},
         create: { nomeUsuario: "admin", email: "admin@sistema.local", senhaHash },
       });
+      // Segunda conta de administrador: permite demonstrar o bloqueio por tentativas em uma conta
+      // e continuar usando o sistema pela outra.
+      await tx.usuario.upsert({
+        where: { email: "admin2@sistema.local" },
+        update: {},
+        create: { nomeUsuario: "admin2", email: "admin2@sistema.local", senhaHash },
+      });
       const rates = {};
       for (const [key, nivel, valorHora, status = "ATIVO"] of [
         ["trainee", "Trainee I", 25],

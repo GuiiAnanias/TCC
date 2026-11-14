@@ -4,7 +4,7 @@
 
 - O login aceita nome de usuário ou e-mail e a senha. A conta precisa estar ativa.
 - As senhas são guardadas só como hash bcrypt. Usuário inexistente, senha errada e conta inativa recebem a mesma mensagem ("Usuário ou senha inválidos."), e a comparação de senha é feita mesmo quando o usuário não existe, para não revelar quais contas existem.
-- As contas vêm do seed (`admin` / `admin123` numa base nova). Não há tela de cadastro de usuários.
+- As contas vêm do seed (`admin` e `admin2`, ambas com senha `admin123` numa base nova; a segunda serve para continuar a demonstração enquanto a primeira está bloqueada por tentativas). Não há tela de cadastro de usuários.
 - A opção "Lembrar meu usuário" guarda só o identificador no navegador ([login.md](login.md)).
 
 ## Sessões
@@ -34,7 +34,9 @@ Não existem perfis ou permissões por função: qualquer conta ativa acessa e a
 | Conferência do link  |              20 |                10 | 15 min |
 | Redefinição de senha |              20 |                10 | 15 min |
 
-O identificador é o login ou o e-mail digitado (sem diferenciar maiúsculas) ou o token de redefinição. Ao passar do limite, a API responde 429 com `Retry-After`. Os contadores ficam no banco (`limites_autenticacao`), então valem para vários processos da API; as chaves são gravadas como HMAC, sem o login em texto. Os limites podem ser ajustados pelas variáveis `AUTH_LOGIN_*`, `AUTH_FORGOT_*` e `AUTH_RESET_*` (`ORIGIN_LIMIT`, `IDENTIFIER_LIMIT`, `WINDOW_MS`).
+O identificador é o login ou o e-mail digitado (sem diferenciar maiúsculas) ou o token de redefinição. Ao passar do limite, a API responde 429 com `Retry-After` e, no corpo, a mensagem "Muitas tentativas. Tente novamente em X" e o campo `tentarNovamenteEm` (segundos); a tela de login mostra a contagem regressiva e desativa o botão Entrar até liberar.
+
+No login, o limite por usuário é progressivo: a 11ª tentativa dentro da janela bloqueia por 10 segundos; depois que o bloqueio acaba, um novo erro bloqueia por 1 minuto e o seguinte por 5 minutos (os próximos continuam em 5 minutos). Insistir durante o bloqueio não aumenta o tempo. Um login certo zera a contagem daquele usuário, e o histórico é esquecido depois de uma janela inteira sem bloqueio. Os tempos ficam em `AUTH_LOGIN_BLOCKS_MS` (padrão `10000,60000,300000`). O limite por origem (IP) continua com janela fixa de 15 minutos. Os contadores ficam no banco (`limites_autenticacao`), então valem para vários processos da API; as chaves são gravadas como HMAC, sem o login em texto. Os limites podem ser ajustados pelas variáveis `AUTH_LOGIN_*`, `AUTH_FORGOT_*` e `AUTH_RESET_*` (`ORIGIN_LIMIT`, `IDENTIFIER_LIMIT`, `WINDOW_MS`).
 
 A API não confia no cabeçalho `X-Forwarded-For`: atrás de um proxy reverso, todas as requisições contam como a mesma origem.
 

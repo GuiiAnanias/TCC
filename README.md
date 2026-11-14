@@ -58,7 +58,7 @@ http://localhost:5173
 
 ### Login e proteção de acesso
 
-Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. Executar o seed novamente não redefine uma conta existente.
+Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. O seed também cria `admin2` (`admin2@sistema.local`, mesma senha), útil para demonstrar o bloqueio por tentativas numa conta e seguir usando a outra. Executar o seed novamente não redefine uma conta existente.
 
 As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há tela de cadastro de usuários: as contas vêm do seed. Sessões, limites de tentativas e regras de senha estão em [docs/seguranca.md](docs/seguranca.md).
 
