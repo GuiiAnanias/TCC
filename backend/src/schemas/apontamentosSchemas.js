@@ -36,3 +36,11 @@ export const apontamentoUpdateSchema = apontamentoCreateSchema
   .partial()
   .extend({ status: statusApontamentoSchema.optional() })
   .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");
+
+export const historicoApontamentoQuerySchema = paginationQuerySchema.extend({
+  situacao: z.enum(["MODIFICADO", "EXCLUIDO"]).optional(),
+  colaboradorId: z.coerce.number().int().positive().optional(),
+  projetoId: z.coerce.number().int().positive().optional(),
+  dataInicio: z.coerce.date().optional(),
+  dataFim: z.coerce.date().optional(),
+});

@@ -8,6 +8,8 @@ import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "luc
 import { api } from "../../api/conexao.js";
 import { useValorMaisRecente, useEscopoRequisicao } from "../../hooks/useEscopoRequisicao.js";
 import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
+import { DialogoConfirmacao } from "../comum/DialogoConfirmacao.jsx";
+import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { EtiquetaStatus } from "../comum/EtiquetaStatus.jsx";
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 import { dataBr, situacaoNaEquipe } from "../../utils/pendencias.js";
@@ -53,6 +55,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
   const [roleEffectiveDate, setRoleEffectiveDate] = useState(today());
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [closingMember, setClosingMember] = useState(null);
   const [teamStatusFilter, setTeamStatusFilter] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -103,6 +106,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
 
     return team;
   }, [team, teamStatusFilter]);
+  const paginacaoEquipe = usePaginacao(filteredTeam);
 
   // [REQUISICAO] GET /projetos/:id/equipe: participações atuais e passadas.
   const loadTeam = useCallback(async () => {
@@ -156,6 +160,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     setRoleEffectiveDate(today());
     setSelectionErrors({});
     setSaving(false);
+    setClosingMember(null);
     setLoadError("");
     setMessage("");
     setError("");
@@ -255,15 +260,16 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     }
   }
 
-  // [REQUISICAO] Encerra a participação hoje, após confirmação (DELETE).
-  async function closeParticipation(member) {
-    if (isInactive || saving || loading || loadError) {
-      return;
-    }
+  // [REQUISICAO] Encerra a participação hoje, após confirmação no modal (DELETE).
+  function closeParticipation(member) {
+    if (isInactive || saving || loading || loadError) return;
+    setClosingMember(member);
+  }
 
-    if (!window.confirm(`Encerrar participação de ${memberName(member)} neste projeto?`)) {
-      return;
-    }
+  async function confirmCloseParticipation() {
+    const member = closingMember;
+    if (!member || isInactive || saving || loading || loadError) return;
+    setClosingMember(null);
 
     const request = requestScope.begin("mutation");
     setSaving(true);
@@ -523,7 +529,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                 </td>
               </tr>
             ) : (
-              filteredTeam.map((member) => (
+              paginacaoEquipe.itensPaginados.map((member) => (
                 <tr
                   key={member.id}
                   className={
@@ -533,8 +539,8 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                       : undefined
                   }
                 >
-                  <td>{memberName(member)}</td>
-                  <td>{member.colaborador?.cargo || "-"}</td>
+                  <td title={memberName(member)}>{memberName(member)}</td>
+                  <td title={member.colaborador?.cargo || "-"}>{member.colaborador?.cargo || "-"}</td>
                   <td>
                     {member.dataSaida ? (
                       member.papel
@@ -625,6 +631,26 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacaoEquipe.pagina}
+        totalPaginas={paginacaoEquipe.totalPaginas}
+        totalItens={paginacaoEquipe.totalItens}
+        inicio={paginacaoEquipe.inicio}
+        fim={paginacaoEquipe.fim}
+        onPageChange={paginacaoEquipe.setPagina}
+        rotulo="Páginas da equipe do projeto"
+      />
+      {closingMember && (
+        <DialogoConfirmacao
+          title="Encerrar participação na equipe"
+          description={`Encerrar a participação de ${memberName(closingMember)} neste projeto? O vínculo anterior e o histórico serão preservados.`}
+          confirmLabel="Encerrar participação"
+          danger
+          busy={saving}
+          onConfirm={confirmCloseParticipation}
+          onCancel={() => setClosingMember(null)}
+        />
+      )}
     </section>
   );
 }

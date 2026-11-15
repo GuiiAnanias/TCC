@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { api } from "../../api/conexao.js";
+import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 
 export function EquipeInicialProjeto({ members, onChange, projectStart, disabled }) {
   const [people, setPeople] = useState([]);
@@ -55,6 +56,7 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
       .toLocaleLowerCase("pt-BR")
       .includes(search.toLocaleLowerCase("pt-BR")),
   );
+  const paginacaoVisiveis = usePaginacao(visible);
 
   return (
     <fieldset className="initial-project-team" disabled={disabled}>
@@ -88,8 +90,8 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
           />
         </label>
         <div className="initial-team-choices">
-          {visible.map((person) => (
-            <label key={person.id} className="initial-team-choice">
+          {paginacaoVisiveis.itensPaginados.map((person) => (
+            <label key={person.id} className="initial-team-choice" title={`${person.nomeCompleto} (${person.email})`}>
               <input
                 type="checkbox"
                 checked={members.some((member) => member.colaboradorId === person.id)}
@@ -104,6 +106,15 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
           ))}
           {!loading && !error && !visible.length && <p>Nenhum colaborador ativo encontrado.</p>}
         </div>
+        <PaginacaoTabela
+          pagina={paginacaoVisiveis.pagina}
+          totalPaginas={paginacaoVisiveis.totalPaginas}
+          totalItens={paginacaoVisiveis.totalItens}
+          inicio={paginacaoVisiveis.inicio}
+          fim={paginacaoVisiveis.fim}
+          onPageChange={paginacaoVisiveis.setPagina}
+          rotulo="Páginas de colaboradores da equipe inicial"
+        />
       </details>
       <div className="initial-team-members">
         {members.map((member) => {

@@ -240,6 +240,25 @@ body:has(.dashboard-help-dialog[open]) {
 .dashboard-help-content dd {
   margin: 4px 0 0;
 }
+.confirm-dialog {
+  width: min(460px, calc(100% - 32px));
+}
+.confirm-dialog-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.confirm-icon-danger {
+  flex: 0 0 auto;
+  color: var(--danger);
+}
+.confirm-icon-warning {
+  flex: 0 0 auto;
+  color: var(--warning);
+}
+.confirm-dialog .dashboard-help-content p {
+  margin: 0;
+}
 @media (max-width: 600px) {
   .dashboard-help-header {
     padding: 16px;

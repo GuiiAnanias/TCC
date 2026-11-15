@@ -92,10 +92,60 @@ export const apontamentosRepository = {
   },
 
   update(id, data, db = prisma) {
-    return db.apontamentoHora.update({ where: { id }, data });
+    return db.apontamentoHora.update({
+      where: { id },
+      data,
+      include: {
+        colaborador: { select: { nomeCompleto: true } },
+        projeto: { select: { nome: true } },
+        tarefa: { select: { titulo: true } },
+      },
+    });
   },
 
   delete(id, db = prisma) {
     return db.apontamentoHora.delete({ where: { id } });
+  },
+
+  // [BANCO] Registra uma modificação ou exclusão no histórico de apontamentos.
+  createHistory(data, db = prisma) {
+    if (!db?.historicoApontamento) return null;
+    return db.historicoApontamento.create({ data });
+  },
+
+  // [BANCO] Lista o histórico de apontamentos modificados e excluídos com filtros.
+  findHistory(
+    { situacao, busca, colaboradorId, projetoId, dataInicio, dataFim } = {},
+    db = prisma,
+  ) {
+    return db.historicoApontamento.findMany({
+      where: {
+        ...(situacao ? { situacao } : {}),
+        ...(colaboradorId ? { colaboradorId } : {}),
+        ...(projetoId ? { projetoId } : {}),
+        ...(dataInicio || dataFim
+          ? {
+              data: {
+                ...(dataInicio ? { gte: dataInicio } : {}),
+                ...(dataFim ? { lte: dataFim } : {}),
+              },
+            }
+          : {}),
+        ...(busca
+          ? {
+              OR: [
+                { colaboradorNome: { contains: busca, mode: "insensitive" } },
+                { projetoNome: { contains: busca, mode: "insensitive" } },
+                { tarefaTitulo: { contains: busca, mode: "insensitive" } },
+                { descricao: { contains: busca, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
+      include: {
+        usuario: { select: { nomeUsuario: true } },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    });
   },
 };

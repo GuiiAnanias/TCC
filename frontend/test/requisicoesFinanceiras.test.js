@@ -33,6 +33,7 @@ test("encerrar uma vigência anterior não publica sucesso nem recarrega a pesso
   try {
     await resolveGroup(network, [...network.requests], "Faixa A");
     await click(view.container.querySelector('[title="Encerrar vigência"]'));
+    await click(document.querySelector(".confirm-dialog .primary-button"));
     const count = network.requests.length;
     await view.render(
       React.createElement(FinanceiroColaborador, {

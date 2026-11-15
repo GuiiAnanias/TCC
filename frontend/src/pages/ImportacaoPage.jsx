@@ -18,13 +18,14 @@ import {
 import { api } from "../api/conexao.js";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { HistoricoImportacoes } from "../components/importacao/HistoricoImportacoes.jsx";
 import { date, number } from "../components/dashboard/DashboardOperacional.jsx";
 import { mensagemDeErro, salvarArquivo } from "../utils/baixarArquivos.js";
 
 const XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const TAMANHO_MAXIMO = 5 * 1024 * 1024;
-const PREVIA = 50;
+const PREVIA = 20;
 const STATUS = { PENDENTE: "Pendente", APROVADO: "Aprovado", FATURADO: "Faturado" };
 const plural = (quantidade, singular, varios) =>
   `${number(quantidade)} ${quantidade === 1 ? singular : varios}`;
@@ -98,6 +99,7 @@ function Resumo({ resumo }) {
 
 // [TELA] Erros por linha do Excel.
 function TabelaErros({ erros }) {
+  const paginacao = usePaginacao(erros, PREVIA);
   return (
     <div className="table-panel">
       <div className="table-wrap">
@@ -110,23 +112,34 @@ function TabelaErros({ erros }) {
             </tr>
           </thead>
           <tbody>
-            {erros.map((erro, indice) => (
+            {paginacao.itensPaginados.map((erro, indice) => (
               <tr key={`${erro.linha}-${erro.campo}-${indice}`}>
                 <td>{erro.linha}</td>
                 <td>{erro.coluna}</td>
-                <td className="import-message">{erro.mensagem}</td>
+                <td className="import-message" title={erro.mensagem}>
+                  <span className="cell-clamp">{erro.mensagem}</span>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas de erros da planilha"
+      />
     </div>
   );
 }
 
 // [TELA] Prévia das linhas reconhecidas, com os avisos de custo incompleto.
 function TabelaPrevia({ linhas }) {
-  const visiveis = linhas.slice(0, PREVIA);
+  const paginacao = usePaginacao(linhas, PREVIA);
   return (
     <div className="table-panel">
       <div className="table-wrap">
@@ -144,30 +157,44 @@ function TabelaPrevia({ linhas }) {
             </tr>
           </thead>
           <tbody>
-            {visiveis.map((linha) => (
-              <tr key={linha.linha}>
-                <td>{linha.linha}</td>
-                <td>{date(linha.data)}</td>
-                <td>{linha.colaborador.nome}</td>
-                <td>{linha.projeto.nome}</td>
-                <td>{linha.tarefa?.titulo ?? "Sem tarefa"}</td>
-                <td>{number(linha.horas)}</td>
-                <td>{STATUS[linha.status]}</td>
-                <td className="import-message">
-                  {linha.avisos.length ? (
-                    <span className="import-warning">{linha.avisos.join(" ")}</span>
-                  ) : (
-                    "—"
-                  )}
-                </td>
-              </tr>
-            ))}
+            {paginacao.itensPaginados.map((linha) => {
+              const textoAvisos = linha.avisos.join(" ");
+              return (
+                <tr key={linha.linha}>
+                  <td>{linha.linha}</td>
+                  <td>{date(linha.data)}</td>
+                  <td title={linha.colaborador.nome}>{linha.colaborador.nome}</td>
+                  <td title={linha.projeto.nome}>{linha.projeto.nome}</td>
+                  <td title={linha.tarefa?.titulo ?? "Sem tarefa"}>
+                    {linha.tarefa?.titulo ?? "Sem tarefa"}
+                  </td>
+                  <td>{number(linha.horas)}</td>
+                  <td>{STATUS[linha.status]}</td>
+                  <td className="import-message" title={textoAvisos || undefined}>
+                    {linha.avisos.length ? (
+                      <span className="import-warning">{textoAvisos}</span>
+                    ) : (
+                      "—"
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas da prévia de importação"
+      />
       {linhas.length > PREVIA && (
         <p className="import-footnote">
-          Mostrando {PREVIA} de {number(linhas.length)} apontamentos. Todos serão importados.
+          Mostrando {paginacao.inicio}–{paginacao.fim} de {number(linhas.length)} apontamentos. Todos serão importados.
         </p>
       )}
     </div>

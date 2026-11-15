@@ -32,6 +32,14 @@ export function installDom() {
     Object.defineProperty(globalThis, key, { configurable: true, writable: true, value });
   }
   dom.window.HTMLElement.prototype.scrollIntoView = () => {};
+  if (dom.window.HTMLDialogElement) {
+    dom.window.HTMLDialogElement.prototype.showModal = function () {
+      this.setAttribute("open", "");
+    };
+    dom.window.HTMLDialogElement.prototype.close = function () {
+      this.removeAttribute("open");
+    };
+  }
   dom.window.matchMedia = () => ({
     matches: false,
     addEventListener() {},

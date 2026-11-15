@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Plus, Save, Check, X } from "lucide-react";
 import { api } from "../api/conexao.js";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 import {
@@ -135,6 +136,12 @@ export function PremiacaoPage() {
     status: "",
     historico: false,
   });
+  const [choiceFilters, setChoiceFilters] = useState({
+    buscaProjeto: "",
+    statusProjeto: "",
+    buscaSprint: "",
+    statusSprint: "",
+  });
   const sequence = useRef(0);
   const region = useRef(null);
   // [REQUISICAO] Modelos, regras, colaboradores, projetos, sprints e avaliações.
@@ -205,6 +212,7 @@ export function PremiacaoPage() {
     setDirty(true);
     setError("");
     setMessage("");
+    setChoiceFilters({ buscaProjeto: "", statusProjeto: "", buscaSprint: "", statusSprint: "" });
     requestAnimationFrame(() =>
       region.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
     );
@@ -225,6 +233,7 @@ export function PremiacaoPage() {
         dados: data.conteudo.dados,
       });
       setDirty(false);
+      setChoiceFilters({ buscaProjeto: "", statusProjeto: "", buscaSprint: "", statusSprint: "" });
       requestAnimationFrame(() =>
         region.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
       );
@@ -331,6 +340,42 @@ export function PremiacaoPage() {
         .toLocaleLowerCase("pt-BR")
         .includes(filters.busca.toLocaleLowerCase("pt-BR")),
   );
+  const paginacaoAvaliacoes = usePaginacao(visible);
+  const projetosFiltradosEscolhas = projects.filter((row) => {
+    if (!form) return false;
+    const selecionado = form.dados.projetoIds.includes(row.id);
+    if (choiceFilters.statusProjeto === "SELECIONADOS" && !selecionado) return false;
+    if (
+      choiceFilters.statusProjeto &&
+      choiceFilters.statusProjeto !== "SELECIONADOS" &&
+      row.status !== choiceFilters.statusProjeto
+    )
+      return false;
+    const termo = choiceFilters.buscaProjeto.trim().toLocaleLowerCase("pt-BR");
+    if (termo && !row.nome.toLocaleLowerCase("pt-BR").includes(termo)) return false;
+    return true;
+  });
+  const paginacaoProjetosAvaliados = usePaginacao(projetosFiltradosEscolhas);
+  const sprintsDosProjetosEscolhidos = sprints.filter(
+    (row) => form && form.dados.projetoIds.includes(row.projetoId),
+  );
+  const sprintsFiltradasEscolhas = sprintsDosProjetosEscolhidos.filter((row) => {
+    const selecionada = form.dados.sprintIds.includes(row.id);
+    if (choiceFilters.statusSprint === "SELECIONADOS" && !selecionada) return false;
+    if (
+      choiceFilters.statusSprint &&
+      choiceFilters.statusSprint !== "SELECIONADOS" &&
+      row.statusRegistro !== choiceFilters.statusSprint
+    )
+      return false;
+    const termoSprint = choiceFilters.buscaSprint.trim().toLocaleLowerCase("pt-BR");
+    if (termoSprint) {
+      const texto = `${row.projeto?.nome || ""} ${row.nome}`.toLocaleLowerCase("pt-BR");
+      if (!texto.includes(termoSprint)) return false;
+    }
+    return true;
+  });
+  const paginacaoSprintsAvaliadas = usePaginacao(sprintsFiltradasEscolhas);
   const ruleDefinition = editor?.conteudo.regra || selectedRule?.definicao;
   return (
     <section className="content-panel awards-page">
@@ -501,41 +546,163 @@ export function PremiacaoPage() {
                         </select>
                       </label>
                     </div>
-                    <h3>Projetos avaliados</h3>
-                    <div className="award-choices">
-                      {projects.map((row) => (
-                        <label key={row.id} className="tasks-check">
-                          <input
-                            type="checkbox"
-                            checked={form.dados.projetoIds.includes(row.id)}
-                            onChange={(e) => toggleProject(row.id, e.target.checked)}
-                          />
-                          {row.nome}
-                          {` (${projectStatusLabel(row.status)})`}
-                        </label>
-                      ))}
+                    <div className="award-choice-section">
+                      <div className="award-choice-header">
+                        <h3>Projetos avaliados</h3>
+                        <span className="award-choice-count">
+                          {form.dados.projetoIds.length} selecionado(s) de {projects.length}
+                        </span>
+                      </div>
+                      <div className="award-choice-toolbar">
+                        <input
+                          type="search"
+                          aria-label="Filtrar projetos avaliados"
+                          placeholder="Filtrar projetos por nome..."
+                          value={choiceFilters.buscaProjeto}
+                          onChange={(e) =>
+                            setChoiceFilters((current) => ({
+                              ...current,
+                              buscaProjeto: e.target.value,
+                            }))
+                          }
+                        />
+                        <select
+                          aria-label="Filtrar status dos projetos avaliados"
+                          value={choiceFilters.statusProjeto}
+                          onChange={(e) =>
+                            setChoiceFilters((current) => ({
+                              ...current,
+                              statusProjeto: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Todos os status</option>
+                          <option value="SELECIONADOS">Apenas selecionados</option>
+                          <option value="ATIVO">Ativo</option>
+                          <option value="PAUSADO">Pausado</option>
+                          <option value="ENCERRADO">Encerrado</option>
+                          <option value="CANCELADO">Cancelado</option>
+                        </select>
+                      </div>
+                      <div className="award-choices">
+                        {!projetosFiltradosEscolhas.length ? (
+                          <p className="award-choices-empty">
+                            Nenhum projeto encontrado para este filtro.
+                          </p>
+                        ) : (
+                          paginacaoProjetosAvaliados.itensPaginados.map((row) => (
+                            <label
+                              key={row.id}
+                              className="tasks-check"
+                              title={`${row.nome} (${projectStatusLabel(row.status)})`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.dados.projetoIds.includes(row.id)}
+                                onChange={(e) => toggleProject(row.id, e.target.checked)}
+                              />
+                              <span>
+                                {row.nome}
+                                {` (${projectStatusLabel(row.status)})`}
+                              </span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoProjetosAvaliados.pagina}
+                        totalPaginas={paginacaoProjetosAvaliados.totalPaginas}
+                        totalItens={paginacaoProjetosAvaliados.totalItens}
+                        inicio={paginacaoProjetosAvaliados.inicio}
+                        fim={paginacaoProjetosAvaliados.fim}
+                        onPageChange={paginacaoProjetosAvaliados.setPagina}
+                        rotulo="Páginas de projetos avaliados"
+                      />
                     </div>
-                    <h3>Sprints do recorte (opcional)</h3>
-                    <div className="award-choices">
-                      {sprints
-                        .filter((row) => form.dados.projetoIds.includes(row.projetoId))
-                        .map((row) => (
-                          <label key={row.id} className="tasks-check">
-                            <input
-                              type="checkbox"
-                              checked={form.dados.sprintIds.includes(row.id)}
-                              onChange={(e) =>
-                                changeData(
-                                  "sprintIds",
-                                  e.target.checked
-                                    ? [...form.dados.sprintIds, row.id]
-                                    : form.dados.sprintIds.filter((id) => id !== row.id),
-                                )
-                              }
-                            />
-                            {row.projeto?.nome} · {row.nome}
-                          </label>
-                        ))}
+                    <div className="award-choice-section">
+                      <div className="award-choice-header">
+                        <h3>Sprints do recorte (opcional)</h3>
+                        <span className="award-choice-count">
+                          {form.dados.sprintIds.length} selecionada(s) de{" "}
+                          {sprintsDosProjetosEscolhidos.length}
+                        </span>
+                      </div>
+                      <div className="award-choice-toolbar">
+                        <input
+                          type="search"
+                          aria-label="Filtrar sprints do recorte"
+                          placeholder="Filtrar sprints por nome ou projeto..."
+                          disabled={!sprintsDosProjetosEscolhidos.length}
+                          value={choiceFilters.buscaSprint}
+                          onChange={(e) =>
+                            setChoiceFilters((current) => ({
+                              ...current,
+                              buscaSprint: e.target.value,
+                            }))
+                          }
+                        />
+                        <select
+                          aria-label="Filtrar status das sprints do recorte"
+                          disabled={!sprintsDosProjetosEscolhidos.length}
+                          value={choiceFilters.statusSprint}
+                          onChange={(e) =>
+                            setChoiceFilters((current) => ({
+                              ...current,
+                              statusSprint: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Todas as sprints</option>
+                          <option value="SELECIONADOS">Apenas selecionadas</option>
+                          <option value="ATIVO">Ativas</option>
+                          <option value="INATIVO">Arquivadas</option>
+                        </select>
+                      </div>
+                      <div className="award-choices">
+                        {!form.dados.projetoIds.length ? (
+                          <p className="award-choices-empty">
+                            Selecione ao menos um projeto acima para listar as sprints.
+                          </p>
+                        ) : !sprintsFiltradasEscolhas.length ? (
+                          <p className="award-choices-empty">
+                            Nenhuma sprint encontrada para este filtro.
+                          </p>
+                        ) : (
+                          paginacaoSprintsAvaliadas.itensPaginados.map((row) => (
+                            <label
+                              key={row.id}
+                              className="tasks-check"
+                              title={`${row.projeto?.nome} · ${row.nome}${row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={form.dados.sprintIds.includes(row.id)}
+                                onChange={(e) =>
+                                  changeData(
+                                    "sprintIds",
+                                    e.target.checked
+                                      ? [...form.dados.sprintIds, row.id]
+                                      : form.dados.sprintIds.filter((id) => id !== row.id),
+                                  )
+                                }
+                              />
+                              <span>
+                                {row.projeto?.nome} · {row.nome}
+                                {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
+                              </span>
+                            </label>
+                          ))
+                        )}
+                      </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoSprintsAvaliadas.pagina}
+                        totalPaginas={paginacaoSprintsAvaliadas.totalPaginas}
+                        totalItens={paginacaoSprintsAvaliadas.totalItens}
+                        inicio={paginacaoSprintsAvaliadas.inicio}
+                        fim={paginacaoSprintsAvaliadas.fim}
+                        onPageChange={paginacaoSprintsAvaliadas.setPagina}
+                        rotulo="Páginas de sprints do recorte"
+                      />
                     </div>
                     {ruleDefinition && (
                       <>
@@ -742,15 +909,15 @@ export function PremiacaoPage() {
                 </tr>
               </thead>
               <tbody>
-                {visible.map((row) => (
+                {paginacaoAvaliacoes.itensPaginados.map((row) => (
                   <tr key={row.id}>
-                    <td>
+                    <td title={`${row.colaborador.nome} · ${row.competencia}`}>
                       {row.colaborador.nome}
                       <small className="dashboard-detail-note">
                         {row.competencia} · versão {row.versao}
                       </small>
                     </td>
-                    <td>
+                    <td title={`${categories[row.categoria]} — ${row.regraNome}`}>
                       {categories[row.categoria]}
                       <small className="dashboard-detail-note">{row.regraNome}</small>
                     </td>
@@ -787,6 +954,15 @@ export function PremiacaoPage() {
               </tbody>
             </table>
           </div>
+          <PaginacaoTabela
+            pagina={paginacaoAvaliacoes.pagina}
+            totalPaginas={paginacaoAvaliacoes.totalPaginas}
+            totalItens={paginacaoAvaliacoes.totalItens}
+            inicio={paginacaoAvaliacoes.inicio}
+            fim={paginacaoAvaliacoes.fim}
+            onPageChange={paginacaoAvaliacoes.setPagina}
+            rotulo="Páginas do histórico de avaliações"
+          />
         </>
       )}
     </section>
@@ -888,6 +1064,7 @@ function AwardRules({ models, rules, onSaved }) {
   const [draft, setDraft] = useState(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const paginacaoRegras = usePaginacao(rules);
   function start(source) {
     setDraft(JSON.parse(JSON.stringify(source)));
     setError("");
@@ -1076,9 +1253,9 @@ function AwardRules({ models, rules, onSaved }) {
             </tr>
           </thead>
           <tbody>
-            {rules.map((rule) => (
+            {paginacaoRegras.itensPaginados.map((rule) => (
               <tr key={rule.id}>
-                <td>{rule.nome}</td>
+                <td title={rule.nome}>{rule.nome}</td>
                 <td>{categories[rule.categoria]}</td>
                 <td>
                   {rule.definicao.criterios.length} critérios · {rule.definicao.faixas.length}{" "}
@@ -1112,6 +1289,15 @@ function AwardRules({ models, rules, onSaved }) {
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacaoRegras.pagina}
+        totalPaginas={paginacaoRegras.totalPaginas}
+        totalItens={paginacaoRegras.totalItens}
+        inicio={paginacaoRegras.inicio}
+        fim={paginacaoRegras.fim}
+        onPageChange={paginacaoRegras.setPagina}
+        rotulo="Páginas de versões publicadas das regras"
+      />
     </section>
   );
 }

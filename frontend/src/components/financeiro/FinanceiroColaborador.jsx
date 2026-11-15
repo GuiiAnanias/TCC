@@ -9,6 +9,8 @@ import { AlertTriangle, Check, Copy, WalletCards, X } from "lucide-react";
 import { api } from "../../api/conexao.js";
 import { useValorMaisRecente, useEscopoRequisicao } from "../../hooks/useEscopoRequisicao.js";
 import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
+import { DialogoConfirmacao } from "../comum/DialogoConfirmacao.jsx";
+import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { EtiquetaStatus } from "../comum/EtiquetaStatus.jsx";
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 import { dataBr } from "../../utils/pendencias.js";
@@ -74,6 +76,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
   // Histórico já carregado para este colaborador (a pendência só é conferida depois disso).
   const [carregado, setCarregado] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [closingConfig, setClosingConfig] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const isInactive = collaborator?.status === "INATIVO";
@@ -82,6 +85,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
     () => configs.filter((config) => !statusFilter || statusOf(config) === statusFilter),
     [configs, statusFilter],
   );
+  const paginacaoConfigs = usePaginacao(filteredConfigs);
 
   // [REQUISICAO] GET das vigências do colaborador.
   const loadConfigs = useCallback(async () => {
@@ -118,6 +122,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
     setConfigs([]);
     setRemunerations([]);
     setSaving(false);
+    setClosingConfig(null);
     setLoadError("");
     setFormData(initialForm());
     setCarregado(false);
@@ -167,18 +172,16 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
     }
   }
 
-  // [REQUISICAO] Encerra a vigência aberta hoje (DELETE), após confirmação.
-  async function close(config) {
-    if (
-      isInactive ||
-      saving ||
-      loading ||
-      loadError ||
-      !window.confirm(
-        "Encerrar esta vigência ao final de hoje? Os valores e o histórico serão preservados.",
-      )
-    )
-      return;
+  // [REQUISICAO] Encerra a vigência aberta hoje (DELETE), após confirmação no modal.
+  function close(config) {
+    if (isInactive || saving || loading || loadError) return;
+    setClosingConfig(config);
+  }
+
+  async function confirmClose() {
+    const config = closingConfig;
+    if (!config || isInactive || saving || loading || loadError) return;
+    setClosingConfig(null);
     const request = requestScope.begin("mutation");
     setSaving(true);
     setMessage("");
@@ -482,7 +485,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
                 </td>
               </tr>
             ) : (
-              filteredConfigs.map((config) => (
+              paginacaoConfigs.itensPaginados.map((config) => (
                 <tr key={config.id}>
                   <td>{config.nivelAplicado}</td>
                   <td>{currency(config.valorHoraAplicado)}</td>
@@ -514,7 +517,11 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
                                 ? "Substitui a configuração anterior"
                                 : "Configuração inicial"}
                           </span>
-                          {reason && <small className="finance-history-reason">{reason}</small>}
+                          {reason && (
+                            <small className="finance-history-reason" title={reason}>
+                              {reason}
+                            </small>
+                          )}
                         </>
                       );
                     })()}
@@ -553,6 +560,26 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacaoConfigs.pagina}
+        totalPaginas={paginacaoConfigs.totalPaginas}
+        totalItens={paginacaoConfigs.totalItens}
+        inicio={paginacaoConfigs.inicio}
+        fim={paginacaoConfigs.fim}
+        onPageChange={paginacaoConfigs.setPagina}
+        rotulo="Páginas do histórico financeiro"
+      />
+      {closingConfig && (
+        <DialogoConfirmacao
+          title="Encerrar vigência financeira"
+          description={`Encerrar a vigência "${closingConfig.nivelAplicado}" (início em ${formatDate(closingConfig.dataInicio)}) ao final de hoje? Os valores e o histórico serão preservados.`}
+          confirmLabel="Encerrar vigência"
+          danger
+          busy={saving}
+          onConfirm={confirmClose}
+          onCancel={() => setClosingConfig(null)}
+        />
+      )}
     </section>
   );
 }

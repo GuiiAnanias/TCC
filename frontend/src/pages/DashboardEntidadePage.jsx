@@ -9,6 +9,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { Filter, RotateCcw } from "lucide-react";
 import { api } from "../api/conexao.js";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AjudaDashboard } from "../components/dashboard/AjudaDashboard.jsx";
 import { entryStatusLabel, projectStatusLabel } from "../config/opcoesProjeto.js";
 import { SelecaoMultipla } from "../components/comum/SelecaoMultipla.jsx";
@@ -96,6 +97,10 @@ export function DashboardEntidadePage({ type }) {
     };
   }, [load, id, type]);
   const summary = data?.resumo;
+  const paginacaoApontamentos = usePaginacao(data?.apontamentos);
+  const paginacaoProjetosIndiv = usePaginacao(data?.projetos);
+  const paginacaoColaboradoresProj = usePaginacao(data?.colaboradores);
+  const paginacaoEquipe = usePaginacao(data?.equipe);
   const entity = individual ? data?.colaborador : data?.projeto;
   const changed = !mesmoRecorte(filters, applied);
   const filtered = !mesmoRecorte(applied, emptyFilters);
@@ -171,12 +176,6 @@ export function DashboardEntidadePage({ type }) {
           loading={loading}
         />
       </header>
-      <nav className="entity-dashboard-links" aria-label="Navegação do dashboard">
-        <Link to="/dashboard">Dashboard geral</Link>
-        <Link to={individual ? "/colaboradores" : "/projetos"}>
-          {individual ? "Cadastro de colaboradores" : "Cadastro de projetos"}
-        </Link>
-      </nav>
       <div className="dashboard-overview">
         <label className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>
@@ -415,20 +414,20 @@ export function DashboardEntidadePage({ type }) {
                           </td>
                         </tr>
                       ) : (
-                        data.apontamentos.map((row) => (
+                        paginacaoApontamentos.itensPaginados.map((row) => (
                           <tr key={row.id}>
                             <td>{date(row.data)}</td>
-                            <td>
+                            <td title={row.projeto}>
                               <Link to={`/dashboard/projetos/${row.projetoId}`}>{row.projeto}</Link>
                             </td>
-                            <td>
+                            <td title={row.colaborador}>
                               <Link to={`/dashboard/colaboradores/${row.colaboradorId}`}>
                                 {row.colaborador}
                               </Link>
                             </td>
-                            <td>{row.tarefa || "Sem tarefa"}</td>
+                            <td title={row.tarefa || "Sem tarefa"}>{row.tarefa || "Sem tarefa"}</td>
                             <td>{number(row.horas)} h</td>
-                            <td>{row.papel || "Sem vínculo"}</td>
+                            <td title={row.papel || "Sem vínculo"}>{row.papel || "Sem vínculo"}</td>
                             <td>
                               {row.valorHora == null ? "Sem remuneração" : money(row.valorHora)}
                             </td>
@@ -448,98 +447,129 @@ export function DashboardEntidadePage({ type }) {
                     </tbody>
                   </table>
                 </div>
+                <PaginacaoTabela
+                  pagina={paginacaoApontamentos.pagina}
+                  totalPaginas={paginacaoApontamentos.totalPaginas}
+                  totalItens={paginacaoApontamentos.totalItens}
+                  inicio={paginacaoApontamentos.inicio}
+                  fim={paginacaoApontamentos.fim}
+                  onPageChange={paginacaoApontamentos.setPagina}
+                  rotulo="Páginas de apontamentos"
+                />
               </>
             ) : (
               <>
                 <h2>Participação e custos</h2>
                 {individual ? (
-                  <div className="dashboard-table">
-                    <table>
-                      <caption>
-                        Custos individuais por projeto, sem atribuir orçamento integral à pessoa.
-                      </caption>
-                      <thead>
-                        <tr>
-                          <th>Projeto</th>
-                          <th>Horas próprias</th>
-                          <th>Custo base</th>
-                          <th>Bonificação</th>
-                          <th>Custo total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {!data.projetos.length ? (
+                  <>
+                    <div className="dashboard-table">
+                      <table>
+                        <caption>
+                          Custos individuais por projeto, sem atribuir orçamento integral à pessoa.
+                        </caption>
+                        <thead>
                           <tr>
-                            <td colSpan={5} className="empty-cell">
-                              Sem projetos neste recorte.
-                            </td>
+                            <th>Projeto</th>
+                            <th>Horas próprias</th>
+                            <th>Custo base</th>
+                            <th>Bonificação</th>
+                            <th>Custo total</th>
                           </tr>
-                        ) : (
-                          data.projetos.map((row) => (
-                            <tr key={row.id}>
-                              <td>
-                                <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
-                              </td>
-                              <td>{number(row.horas)} h</td>
-                              <td>{money(row.custoBase)}</td>
-                              <td>{money(row.bonificacao)}</td>
-                              <td>
-                                {money(row.custo)}
-                                {row.horasSemCusto > 0 && (
-                                  <small className="dashboard-detail-note">
-                                    Parcial · {number(row.horasSemCusto)} h sem custo
-                                  </small>
-                                )}
+                        </thead>
+                        <tbody>
+                          {!data.projetos.length ? (
+                            <tr>
+                              <td colSpan={5} className="empty-cell">
+                                Sem projetos neste recorte.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                          ) : (
+                            paginacaoProjetosIndiv.itensPaginados.map((row) => (
+                              <tr key={row.id}>
+                                <td title={row.nome}>
+                                  <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
+                                </td>
+                                <td>{number(row.horas)} h</td>
+                                <td>{money(row.custoBase)}</td>
+                                <td>{money(row.bonificacao)}</td>
+                                <td>
+                                  {money(row.custo)}
+                                  {row.horasSemCusto > 0 && (
+                                    <small className="dashboard-detail-note">
+                                      Parcial · {number(row.horasSemCusto)} h sem custo
+                                    </small>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <PaginacaoTabela
+                      pagina={paginacaoProjetosIndiv.pagina}
+                      totalPaginas={paginacaoProjetosIndiv.totalPaginas}
+                      totalItens={paginacaoProjetosIndiv.totalItens}
+                      inicio={paginacaoProjetosIndiv.inicio}
+                      fim={paginacaoProjetosIndiv.fim}
+                      onPageChange={paginacaoProjetosIndiv.setPagina}
+                      rotulo="Páginas de custos por projeto"
+                    />
+                  </>
                 ) : (
-                  <div className="dashboard-table">
-                    <table>
-                      <caption>Custos por colaborador no recorte.</caption>
-                      <thead>
-                        <tr>
-                          <th>Colaborador</th>
-                          <th>Horas</th>
-                          <th>Custo base</th>
-                          <th>Bonificação</th>
-                          <th>Custo total</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {!data.colaboradores.length ? (
+                  <>
+                    <div className="dashboard-table">
+                      <table>
+                        <caption>Custos por colaborador no recorte.</caption>
+                        <thead>
                           <tr>
-                            <td colSpan={5} className="empty-cell">
-                              Sem horas registradas.
-                            </td>
+                            <th>Colaborador</th>
+                            <th>Horas</th>
+                            <th>Custo base</th>
+                            <th>Bonificação</th>
+                            <th>Custo total</th>
                           </tr>
-                        ) : (
-                          data.colaboradores.map((row) => (
-                            <tr key={row.id}>
-                              <td>
-                                <Link to={`/dashboard/colaboradores/${row.id}`}>{row.nome}</Link>
-                              </td>
-                              <td>{number(row.horas)} h</td>
-                              <td>{money(row.custoBase)}</td>
-                              <td>{money(row.bonificacao)}</td>
-                              <td>
-                                {money(row.custo)}
-                                {row.horasSemCusto > 0 && (
-                                  <small className="dashboard-detail-note">
-                                    Parcial · {number(row.horasSemCusto)} h sem custo
-                                  </small>
-                                )}
+                        </thead>
+                        <tbody>
+                          {!data.colaboradores.length ? (
+                            <tr>
+                              <td colSpan={5} className="empty-cell">
+                                Sem horas registradas.
                               </td>
                             </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
+                          ) : (
+                            paginacaoColaboradoresProj.itensPaginados.map((row) => (
+                              <tr key={row.id}>
+                                <td title={row.nome}>
+                                  <Link to={`/dashboard/colaboradores/${row.id}`}>{row.nome}</Link>
+                                </td>
+                                <td>{number(row.horas)} h</td>
+                                <td>{money(row.custoBase)}</td>
+                                <td>{money(row.bonificacao)}</td>
+                                <td>
+                                  {money(row.custo)}
+                                  {row.horasSemCusto > 0 && (
+                                    <small className="dashboard-detail-note">
+                                      Parcial · {number(row.horasSemCusto)} h sem custo
+                                    </small>
+                                  )}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <PaginacaoTabela
+                      pagina={paginacaoColaboradoresProj.pagina}
+                      totalPaginas={paginacaoColaboradoresProj.totalPaginas}
+                      totalItens={paginacaoColaboradoresProj.totalItens}
+                      inicio={paginacaoColaboradoresProj.inicio}
+                      fim={paginacaoColaboradoresProj.fim}
+                      onPageChange={paginacaoColaboradoresProj.setPagina}
+                      rotulo="Páginas de custos por colaborador"
+                    />
+                  </>
                 )}
                 <div className="dashboard-table entity-memberships">
                   <table>
@@ -565,20 +595,20 @@ export function DashboardEntidadePage({ type }) {
                           </td>
                         </tr>
                       ) : (
-                        data.equipe.map((member) => (
+                        paginacaoEquipe.itensPaginados.map((member) => (
                           <tr key={`${member.projetoId}:${member.id}`}>
-                            <td>
+                            <td title={member.projeto}>
                               <Link to={`/dashboard/projetos/${member.projetoId}`}>
                                 {member.projeto}
                               </Link>
                             </td>
-                            <td>
+                            <td title={member.nome}>
                               <Link to={`/dashboard/colaboradores/${member.colaboradorId}`}>
                                 {member.nome}
                               </Link>
                             </td>
-                            <td>{member.cargo}</td>
-                            <td>{member.papel}</td>
+                            <td title={member.cargo}>{member.cargo}</td>
+                            <td title={member.papel}>{member.papel}</td>
                             <td>{date(member.dataEntrada)}</td>
                             <td>{date(member.dataSaida)}</td>
                           </tr>
@@ -587,6 +617,15 @@ export function DashboardEntidadePage({ type }) {
                     </tbody>
                   </table>
                 </div>
+                <PaginacaoTabela
+                  pagina={paginacaoEquipe.pagina}
+                  totalPaginas={paginacaoEquipe.totalPaginas}
+                  totalItens={paginacaoEquipe.totalItens}
+                  inicio={paginacaoEquipe.inicio}
+                  fim={paginacaoEquipe.fim}
+                  onPageChange={paginacaoEquipe.setPagina}
+                  rotulo="Páginas de participações na equipe"
+                />
               </>
             )}
           </section>
@@ -607,6 +646,7 @@ const monthLabel = (month) => {
 /** Gráfico do projeto com a tabela dos mesmos números, para ler sem o gráfico. */
 // [TELA] Aba Evolução: gráfico e tabela do custo mensal e acumulado contra o orçamento.
 function ProjectEvolution({ rows, budget, partial }) {
+  const paginacao = usePaginacao(rows);
   if (!rows.length)
     return (
       <>
@@ -650,7 +690,7 @@ function ProjectEvolution({ rows, budget, partial }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {paginacao.itensPaginados.map((row) => (
               <tr key={row.mes}>
                 <td>{monthLabel(row.mes)}</td>
                 <td>{number(row.horas)} h</td>
@@ -664,6 +704,15 @@ function ProjectEvolution({ rows, budget, partial }) {
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas da evolução mensal"
+      />
     </>
   );
 }
@@ -685,9 +734,6 @@ function EntitySelection({ individual, options, optionsError, onRefresh, onPick 
         </div>
         <AcoesPagina onRefresh={onRefresh} loading={false} />
       </header>
-      <nav className="entity-dashboard-links" aria-label="Navegação do dashboard">
-        <Link to="/dashboard">Dashboard geral</Link>
-      </nav>
       <div className="dashboard-overview">
         <label className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>

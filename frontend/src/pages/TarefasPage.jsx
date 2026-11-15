@@ -8,6 +8,8 @@ import { Archive, Check, Edit3, RotateCcw, Save, Search, X } from "lucide-react"
 import { useSearchParams } from "react-router-dom";
 import { api } from "../api/conexao.js";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 
@@ -62,6 +64,7 @@ export function TarefasPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [archivingItem, setArchivingItem] = useState(null);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
   const request = useRef(0);
@@ -145,6 +148,9 @@ export function TarefasPage() {
           .includes(filters.busca.toLocaleLowerCase("pt-BR"))) &&
       (!filters.registro || sprint.statusRegistro === filters.registro),
   );
+  const paginacaoTarefas = usePaginacao(visibleTasks);
+  const paginacaoSprints = usePaginacao(visibleSprints);
+  const paginacaoAtiva = tab === "tarefas" ? paginacaoTarefas : paginacaoSprints;
 
   async function refresh() {
     setError("");
@@ -264,20 +270,21 @@ export function TarefasPage() {
     }
   }
   // [REQUISICAO] Arquivar ou restaurar (PUT com statusRegistro INATIVO/ATIVO).
-  async function archive(row) {
+  function archive(row) {
+    if (saving || readOnly) return;
+    setArchivingItem({ row, kind: tab });
+  }
+
+  async function confirmArchive() {
+    if (!archivingItem || saving || readOnly) return;
+    const { row, kind } = archivingItem;
     const restoring = row.statusRegistro === "INATIVO";
-    const label = tab === "tarefas" ? row.titulo : row.nome;
-    if (
-      !window.confirm(
-        `${restoring ? "Restaurar" : "Arquivar"} “${label}”? Os vínculos e apontamentos serão preservados.`,
-      )
-    )
-      return;
+    setArchivingItem(null);
     setSaving(true);
     setMessage("");
     setError("");
     try {
-      await api.put(`/${tab}/${row.id}`, { statusRegistro: restoring ? "ATIVO" : "INATIVO" });
+      await api.put(`/${kind}/${row.id}`, { statusRegistro: restoring ? "ATIVO" : "INATIVO" });
       reset();
       setMessage(restoring ? "Registro restaurado." : "Registro arquivado. Histórico preservado.");
       await load();
@@ -739,70 +746,76 @@ export function TarefasPage() {
                     </tr>
                   ) : tab === "tarefas" ? (
                     visibleTasks.length ? (
-                      visibleTasks.map((task) => (
-                        <tr key={task.id}>
-                          <td>
-                            <strong>{task.titulo}</strong>
-                            {task.correcao && <span className="tasks-detail">Correção</span>}
-                            {task.statusRegistro === "INATIVO" && (
-                              <span className="tasks-detail">Arquivada</span>
-                            )}
-                            {task.descricao && (
-                              <span className="tasks-detail">{task.descricao}</span>
-                            )}
-                          </td>
-                          <td>{task.sprint?.nome ?? "Sem sprint"}</td>
-                          <td>
-                            {task.responsaveis
-                              .map((row) => row.colaborador.nomeCompleto)
-                              .join(", ") || "Sem responsáveis"}
-                          </td>
-                          <td>{statuses[task.status]}</td>
-                          <td>{duration(task.minutosEstimados)}</td>
-                          <td>
-                            {Number(task.horasRealizadas).toLocaleString("pt-BR", {
-                              maximumFractionDigits: 2,
-                            })}
-                            h
-                          </td>
-                          <td>{date(task.dataInicio)}</td>
-                          <td>{date(task.dataConclusao)}</td>
-                          <td>
-                            {!readOnly && (
-                              <div className="row-actions">
-                                <button
-                                  type="button"
-                                  className="icon-button"
-                                  title="Editar tarefa"
-                                  aria-label={`Editar ${task.titulo}`}
-                                  disabled={saving}
-                                  onClick={() => editTask(task)}
-                                >
-                                  <Edit3 size={17} />
-                                </button>
-                                <button
-                                  type="button"
-                                  className="icon-button"
-                                  title={
-                                    task.statusRegistro === "ATIVO"
-                                      ? "Arquivar tarefa"
-                                      : "Restaurar tarefa"
-                                  }
-                                  aria-label={`${task.statusRegistro === "ATIVO" ? "Arquivar" : "Restaurar"} ${task.titulo}`}
-                                  disabled={saving}
-                                  onClick={() => archive(task)}
-                                >
-                                  {task.statusRegistro === "ATIVO" ? (
-                                    <Archive size={17} />
-                                  ) : (
-                                    <RotateCcw size={17} />
-                                  )}
-                                </button>
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))
+                      paginacaoTarefas.itensPaginados.map((task) => {
+                        const textoResponsaveis =
+                          task.responsaveis
+                            .map((row) => row.colaborador.nomeCompleto)
+                            .join(", ") || "Sem responsáveis";
+                        return (
+                          <tr key={task.id}>
+                            <td title={task.descricao ? `${task.titulo} — ${task.descricao}` : task.titulo}>
+                              <strong>{task.titulo}</strong>
+                              {task.correcao && <span className="tasks-detail">Correção</span>}
+                              {task.statusRegistro === "INATIVO" && (
+                                <span className="tasks-detail">Arquivada</span>
+                              )}
+                              {task.descricao && (
+                                <span className="tasks-detail" title={task.descricao}>
+                                  {task.descricao}
+                                </span>
+                              )}
+                            </td>
+                            <td title={task.sprint?.nome ?? "Sem sprint"}>
+                              {task.sprint?.nome ?? "Sem sprint"}
+                            </td>
+                            <td title={textoResponsaveis}>{textoResponsaveis}</td>
+                            <td>{statuses[task.status]}</td>
+                            <td>{duration(task.minutosEstimados)}</td>
+                            <td>
+                              {Number(task.horasRealizadas).toLocaleString("pt-BR", {
+                                maximumFractionDigits: 2,
+                              })}
+                              h
+                            </td>
+                            <td>{date(task.dataInicio)}</td>
+                            <td>{date(task.dataConclusao)}</td>
+                            <td>
+                              {!readOnly && (
+                                <div className="row-actions">
+                                  <button
+                                    type="button"
+                                    className="icon-button"
+                                    title="Editar tarefa"
+                                    aria-label={`Editar ${task.titulo}`}
+                                    disabled={saving}
+                                    onClick={() => editTask(task)}
+                                  >
+                                    <Edit3 size={17} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="icon-button"
+                                    title={
+                                      task.statusRegistro === "ATIVO"
+                                        ? "Arquivar tarefa"
+                                        : "Restaurar tarefa"
+                                    }
+                                    aria-label={`${task.statusRegistro === "ATIVO" ? "Arquivar" : "Restaurar"} ${task.titulo}`}
+                                    disabled={saving}
+                                    onClick={() => archive(task)}
+                                  >
+                                    {task.statusRegistro === "ATIVO" ? (
+                                      <Archive size={17} />
+                                    ) : (
+                                      <RotateCcw size={17} />
+                                    )}
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
                     ) : (
                       <tr>
                         <td colSpan={9} className="empty-cell">
@@ -811,9 +824,9 @@ export function TarefasPage() {
                       </tr>
                     )
                   ) : visibleSprints.length ? (
-                    visibleSprints.map((sprint) => (
+                    paginacaoSprints.itensPaginados.map((sprint) => (
                       <tr key={sprint.id}>
-                        <td>{sprint.nome}</td>
+                        <td title={sprint.nome}>{sprint.nome}</td>
                         <td>{date(sprint.dataInicio)}</td>
                         <td>{date(sprint.dataFim)}</td>
                         <td>{sprint._count.tarefas}</td>
@@ -864,8 +877,28 @@ export function TarefasPage() {
                 </tbody>
               </table>
             </div>
+            <PaginacaoTabela
+              pagina={paginacaoAtiva.pagina}
+              totalPaginas={paginacaoAtiva.totalPaginas}
+              totalItens={paginacaoAtiva.totalItens}
+              inicio={paginacaoAtiva.inicio}
+              fim={paginacaoAtiva.fim}
+              onPageChange={paginacaoAtiva.setPagina}
+              rotulo={`Páginas de ${tab}`}
+            />
           </div>
         </>
+      )}
+      {archivingItem && (
+        <DialogoConfirmacao
+          title={`${archivingItem.row.statusRegistro === "INATIVO" ? "Restaurar" : "Arquivar"} ${archivingItem.kind === "tarefas" ? "tarefa" : "sprint"}`}
+          description={`${archivingItem.row.statusRegistro === "INATIVO" ? "Restaurar" : "Arquivar"} "${archivingItem.kind === "tarefas" ? archivingItem.row.titulo : archivingItem.row.nome}"? Os vínculos e apontamentos serão preservados.`}
+          confirmLabel={archivingItem.row.statusRegistro === "INATIVO" ? "Restaurar" : "Arquivar"}
+          danger={archivingItem.row.statusRegistro !== "INATIVO"}
+          busy={saving}
+          onConfirm={confirmArchive}
+          onCancel={() => setArchivingItem(null)}
+        />
       )}
     </section>
   );

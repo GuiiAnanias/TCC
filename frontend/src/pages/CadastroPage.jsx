@@ -6,6 +6,9 @@
 
 import { DialogoExclusaoProjeto } from "../components/projetos/DialogoExclusaoProjeto.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
+import { HistoricoApontamentos } from "../components/apontamentos/HistoricoApontamentos.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
@@ -13,7 +16,9 @@ import {
   Building2,
   UserRound,
   Check,
+  Clock3,
   Edit3,
+  History,
   Plus,
   RotateCcw,
   Save,
@@ -101,7 +106,11 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
 export function CadastroPage({ config }) {
   const requestScope = useEscopoRequisicao(config);
   const [deletingProject, setDeletingProject] = useState(null);
+  const [confirmingRecord, setConfirmingRecord] = useState(null);
+  const [activeTab, setActiveTab] = useState("lancamentos");
+  const [historyVersion, setHistoryVersion] = useState(0);
   const isClient = config.key === "clientes";
+  const isApontamentos = config.key === "apontamentos";
   const [query] = useSearchParams();
   const handledNavigation = useRef("");
   const detailRegion = useRef(null);
@@ -118,6 +127,7 @@ export function CadastroPage({ config }) {
       ? ["Dados pessoais", "Contato", "Endereço"]
       : config.formSections;
   const [records, setRecords] = useState([]);
+  const paginacaoRegistros = usePaginacao(records);
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
   const [tarefas, setTarefas] = useState([]);
@@ -335,6 +345,9 @@ export function CadastroPage({ config }) {
     setError("");
     setFilters({ busca: "", status: "" });
     setDeletingProject(null);
+    setConfirmingRecord(null);
+    setActiveTab("lancamentos");
+    setHistoryVersion(0);
     setSelectedRecord(null);
     setSaving(false);
     setRecords([]);
@@ -437,7 +450,15 @@ export function CadastroPage({ config }) {
     setError("");
   }
 
-  // [TELA] Abre o registro no formulário para edição.
+  // [TELA] Abre o painel inferior (Financeiro ou Equipe) e ancora a rolagem até ele.
+  function openDetailSection(record) {
+    setSelectedRecord(record);
+    requestAnimationFrame(() =>
+      detailRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
+  }
+
+  // [TELA] Abre o registro no formulário para edição e ancora o usuário no topo do formulário.
   function handleEdit(record) {
     requestScope.cancel("mutation");
     setSaving(false);
@@ -445,15 +466,15 @@ export function CadastroPage({ config }) {
     cancelCepLookup();
     cnpjRequest.current?.abort();
     setConsultingCnpj(false);
+    if (isApontamentos) {
+      setActiveTab("lancamentos");
+    }
     const kind = record.tipoPessoa || "PJ";
     const fields = isClient && kind === "PF" ? config.personFields(config.fields) : config.fields;
     if (isClient) {
       setClientKind(kind);
       setFormOpen(true);
       clientDrafts.current = {};
-      requestAnimationFrame(() =>
-        formRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      );
     }
     const nextForm = getInitialForm(fields, true);
 
@@ -473,6 +494,9 @@ export function CadastroPage({ config }) {
     setFieldErrors({});
     setMessage("");
     setError("");
+    requestAnimationFrame(() =>
+      formRegion.current?.scrollIntoView({ behavior: "smooth", block: "start" }),
+    );
   }
 
   // [VALIDACAO][REQUISICAO] Confere os campos obrigatórios, monta o payload e envia POST (novo) ou
@@ -525,6 +549,9 @@ export function CadastroPage({ config }) {
       }
 
       if (!request.isCurrent()) return;
+      if (isEditing && isApontamentos) {
+        setHistoryVersion((value) => value + 1);
+      }
       resetForm();
       setMessage(`${config.singular} ${isEditing ? "atualizado" : "cadastrado"} com sucesso.`);
       await loadRecords();
@@ -581,14 +608,17 @@ export function CadastroPage({ config }) {
     }
   }
 
-  // [REQUISICAO] Excluir/Inativar com confirmação (DELETE na API, que inativa).
-  async function handleInactivate(record) {
-    const deleting = config.deleteMode === "delete";
-    const confirmMessage = `${deleting ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${record.nome || record.nomeCompleto || record.nivel || record.descricao}"?`;
+  // [TELA] Solicita confirmação em modal antes de excluir/inativar.
+  function handleInactivate(record) {
+    setConfirmingRecord(record);
+  }
 
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
+  // [REQUISICAO] Excluir/Inativar após confirmação no modal (DELETE na API).
+  async function executeInactivate() {
+    const record = confirmingRecord;
+    if (!record) return;
+    setConfirmingRecord(null);
+    const deleting = config.deleteMode === "delete";
 
     const request = requestScope.begin("mutation");
     setError("");
@@ -598,6 +628,9 @@ export function CadastroPage({ config }) {
       await api.delete(`${config.endpoint}/${record.id}`);
       if (!request.isCurrent()) return;
       if (editingId === record.id) resetForm();
+      if (isApontamentos) {
+        setHistoryVersion((value) => value + 1);
+      }
       setMessage(
         `${config.singular} ${deleting ? "excluído" : config.inactivatedLabel || "inativado"} com sucesso.`,
       );
@@ -950,8 +983,35 @@ export function CadastroPage({ config }) {
             </DialogoAjuda>
           </div>
         </div>
-        <AcoesPagina onRefresh={loadRecords} loading={loading} />
+        <AcoesPagina
+          onRefresh={() => {
+            loadRecords();
+            if (isApontamentos) setHistoryVersion((value) => value + 1);
+          }}
+          loading={loading}
+        />
       </header>
+
+      {isApontamentos && (
+        <nav className="tasks-tabs" aria-label="Seções de apontamento de horas">
+          <button
+            type="button"
+            className={activeTab === "lancamentos" ? "primary-button" : "secondary-button"}
+            onClick={() => setActiveTab("lancamentos")}
+          >
+            <Clock3 size={16} aria-hidden="true" />
+            Lançar horas
+          </button>
+          <button
+            type="button"
+            className={activeTab === "historico" ? "primary-button" : "secondary-button"}
+            onClick={() => setActiveTab("historico")}
+          >
+            <History size={16} aria-hidden="true" />
+            Histórico
+          </button>
+        </nav>
+      )}
 
       <div className="feedback-row">
         {Object.entries(optionErrors)
@@ -997,289 +1057,335 @@ export function CadastroPage({ config }) {
         )}
       </div>
 
-      {isClient && (
-        <div
-          className={`client-type-picker ${formOpen ? "is-open" : ""}`}
-          aria-label="Tipo de cliente"
-        >
-          {[
-            ["PF", "Pessoa Física", UserRound],
-            ["PJ", "Pessoa Jurídica", Building2],
-          ].map(([kind, label, Icon]) => (
-            <button
-              key={kind}
-              type="button"
-              className={`secondary-button client-type-button ${formOpen && clientKind === kind ? "is-selected" : ""}`}
-              disabled={saving}
-              aria-pressed={formOpen && clientKind === kind}
-              aria-expanded={formOpen && clientKind === kind}
-              aria-controls="client-form"
-              onClick={() => chooseClientKind(kind)}
+      {isApontamentos && activeTab === "historico" ? (
+        <HistoricoApontamentos
+          colaboradores={colaboradores}
+          projetos={projetos}
+          refreshSignal={historyVersion}
+        />
+      ) : (
+        <>
+          {isClient && (
+            <div
+              className={`client-type-picker ${formOpen ? "is-open" : ""}`}
+              aria-label="Tipo de cliente"
             >
-              <Icon size={21} />
-              <span>+ {label}</span>
-            </button>
-          ))}
-        </div>
-      )}
-      <div
-        ref={formRegion}
-        id={isClient ? "client-form" : undefined}
-        className={isClient ? `client-form-reveal ${formOpen ? "is-open" : ""}` : undefined}
-        inert={isClient && !formOpen ? true : undefined}
-        aria-hidden={isClient && !formOpen ? true : undefined}
-      >
-        <div className={isClient ? "client-form-inner" : undefined}>
-          <form className="form-panel" onSubmit={handleSubmit}>
-            <div className="form-title">
-              <Plus size={18} />
-              <strong>
-                {isClient
-                  ? `${isEditing ? "Editar" : "Cadastrar"} ${clientKind === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}`
-                  : isEditing
-                    ? `Editar ${config.singular}`
-                    : `Novo ${config.singular}`}
-              </strong>
-            </div>
-
-            {formSections ? (
-              formSections.map((section) => (
-                <fieldset
-                  className="company-section"
-                  key={section}
-                  disabled={consultingCnpj || saving}
+              {[
+                ["PF", "Pessoa Física", UserRound],
+                ["PJ", "Pessoa Jurídica", Building2],
+              ].map(([kind, label, Icon]) => (
+                <button
+                  key={kind}
+                  type="button"
+                  className={`secondary-button client-type-button ${formOpen && clientKind === kind ? "is-selected" : ""}`}
+                  disabled={saving}
+                  aria-pressed={formOpen && clientKind === kind}
+                  aria-expanded={formOpen && clientKind === kind}
+                  aria-controls="client-form"
+                  onClick={() => chooseClientKind(kind)}
                 >
-                  <legend>{section}</legend>
-                  <div className="form-grid">
-                    {visibleFields
-                      .filter((field) => field.section === section)
-                      .map((field) => (
-                        <div
-                          key={field.name}
-                          className={`field ${field.name === "cnpj" ? "field-wide" : ""}`}
-                        >
-                          <label htmlFor={field.name}>
-                            <span>
-                              {field.label}
-                              {field.required || (field.requiredOnCreate && !isEditing) ? " *" : ""}
-                            </span>
-                          </label>
-                          {renderField(field)}
-                          {fieldErrors[field.name] && (
-                            <small id={`${field.name}-error`} role="alert">
-                              {fieldErrors[field.name]}
-                            </small>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                </fieldset>
-              ))
-            ) : (
-              <div className="form-grid">
-                {visibleFields.map((field) => (
-                  <label key={field.name} className="field">
-                    <span>{field.label}</span>
-                    {renderField(field)}
-                    {fieldErrors[field.name] && (
-                      <small id={`${field.name}-error`} role="alert">
-                        {fieldErrors[field.name]}
-                      </small>
-                    )}
-                  </label>
-                ))}
-              </div>
-            )}
+                  <Icon size={21} />
+                  <span>+ {label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          <div
+            ref={formRegion}
+            id={isClient ? "client-form" : undefined}
+            className={isClient ? `client-form-reveal ${formOpen ? "is-open" : ""}` : undefined}
+            inert={isClient && !formOpen ? true : undefined}
+            aria-hidden={isClient && !formOpen ? true : undefined}
+          >
+            <div className={isClient ? "client-form-inner" : undefined}>
+              <form className="form-panel" onSubmit={handleSubmit}>
+                <div className="form-title">
+                  <Plus size={18} />
+                  <strong>
+                    {isClient
+                      ? `${isEditing ? "Editar" : "Cadastrar"} ${clientKind === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}`
+                      : isEditing
+                        ? `Editar ${config.singular}`
+                        : `Novo ${config.singular}`}
+                  </strong>
+                </div>
 
-            {config.teamManager &&
-              (isEditing ? (
-                <div className="initial-project-team">
-                  <strong>Equipe vinculada</strong>
-                  <p>
-                    Alterar os dados do projeto preserva a equipe existente. Entradas, saídas e
-                    mudanças de papel são registradas no gerenciamento de equipe.
-                  </p>
+                {formSections ? (
+                  formSections.map((section) => (
+                    <fieldset
+                      className="company-section"
+                      key={section}
+                      disabled={consultingCnpj || saving}
+                    >
+                      <legend>{section}</legend>
+                      <div className="form-grid">
+                        {visibleFields
+                          .filter((field) => field.section === section)
+                          .map((field) => (
+                            <div
+                              key={field.name}
+                              className={`field ${field.name === "cnpj" ? "field-wide" : ""}`}
+                            >
+                              <label htmlFor={field.name}>
+                                <span>
+                                  {field.label}
+                                  {field.required || (field.requiredOnCreate && !isEditing)
+                                    ? " *"
+                                    : ""}
+                                </span>
+                              </label>
+                              {renderField(field)}
+                              {fieldErrors[field.name] && (
+                                <small id={`${field.name}-error`} role="alert">
+                                  {fieldErrors[field.name]}
+                                </small>
+                              )}
+                            </div>
+                          ))}
+                      </div>
+                    </fieldset>
+                  ))
+                ) : (
+                  <div className="form-grid">
+                    {visibleFields.map((field) => (
+                      <label key={field.name} className="field">
+                        <span>{field.label}</span>
+                        {renderField(field)}
+                        {fieldErrors[field.name] && (
+                          <small id={`${field.name}-error`} role="alert">
+                            {fieldErrors[field.name]}
+                          </small>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+
+                {config.teamManager &&
+                  (isEditing ? (
+                    <div className="initial-project-team">
+                      <strong>Equipe vinculada</strong>
+                      <p>
+                        Alterar os dados do projeto preserva a equipe existente. Entradas, saídas e
+                        mudanças de papel são registradas no gerenciamento de equipe.
+                      </p>
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={saving}
+                        onClick={() => openDetailSection(originalRecord)}
+                      >
+                        Gerenciar equipe do projeto
+                      </button>
+                    </div>
+                  ) : (
+                    <EquipeInicialProjeto
+                      members={initialTeam}
+                      onChange={setInitialTeam}
+                      projectStart={formData.dataInicio}
+                      disabled={saving}
+                    />
+                  ))}
+                <div className="actions-row">
                   <button
-                    type="button"
-                    className="secondary-button"
-                    disabled={saving}
-                    onClick={() => setSelectedRecord(originalRecord)}
+                    className="primary-button"
+                    type="submit"
+                    disabled={
+                      saving ||
+                      consultingCnpj ||
+                      consultingCep ||
+                      Object.values(loadingOptions).some(Boolean) ||
+                      Object.values(optionErrors).some(Boolean) ||
+                      loadingTarefas ||
+                      Boolean(taskLoadError)
+                    }
+                    title="Salvar"
                   >
-                    Gerenciar equipe do projeto
+                    <Save size={18} />
+                    {saving ? "Salvando" : "Salvar"}
+                  </button>
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={resetForm}
+                    disabled={saving}
+                    title={isClient ? "Cancelar cadastro" : "Limpar"}
+                  >
+                    <RotateCcw size={18} />
+                    {isClient ? "Cancelar" : "Limpar"}
                   </button>
                 </div>
-              ) : (
-                <EquipeInicialProjeto
-                  members={initialTeam}
-                  onChange={setInitialTeam}
-                  projectStart={formData.dataInicio}
-                  disabled={saving}
-                />
-              ))}
-            <div className="actions-row">
-              <button
-                className="primary-button"
-                type="submit"
-                disabled={
-                  saving ||
-                  consultingCnpj ||
-                  consultingCep ||
-                  Object.values(loadingOptions).some(Boolean) ||
-                  Object.values(optionErrors).some(Boolean) ||
-                  loadingTarefas ||
-                  Boolean(taskLoadError)
-                }
-                title="Salvar"
-              >
-                <Save size={18} />
-                {saving ? "Salvando" : "Salvar"}
-              </button>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={resetForm}
-                disabled={saving}
-                title={isClient ? "Cancelar cadastro" : "Limpar"}
-              >
-                <RotateCcw size={18} />
-                {isClient ? "Cancelar" : "Limpar"}
-              </button>
+              </form>
             </div>
-          </form>
-        </div>
-      </div>
+          </div>
 
-      <div className="table-panel">
-        <div className="table-toolbar">
-          <label className="search-field">
-            <Search size={18} />
-            <input
-              value={filters.busca}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, busca: event.target.value }))
-              }
-              placeholder="Buscar"
-            />
-          </label>
+          <div className="table-panel">
+            <div className="table-toolbar">
+              <label className="search-field">
+                <Search size={18} />
+                <input
+                  value={filters.busca}
+                  onChange={(event) =>
+                    setFilters((current) => ({ ...current, busca: event.target.value }))
+                  }
+                  placeholder="Buscar"
+                />
+              </label>
 
-          <select
-            value={filters.status}
-            onChange={(event) =>
-              setFilters((current) => ({ ...current, status: event.target.value }))
-            }
-            title="Filtrar por status"
-          >
-            <option value="">Todos</option>
-            {config.fields
-              .find((field) => field.name === "status")
-              ?.options.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-          </select>
-        </div>
+              <select
+                value={filters.status}
+                onChange={(event) =>
+                  setFilters((current) => ({ ...current, status: event.target.value }))
+                }
+                title="Filtrar por status"
+              >
+                <option value="">Todos</option>
+                {config.fields
+                  .find((field) => field.name === "status")
+                  ?.options.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+              </select>
+            </div>
 
-        <div className="table-wrap">
-          <table className={isClient ? "clients-table" : undefined}>
-            <thead>
-              <tr>
-                {config.columns.map((column) => (
-                  <th key={column.key}>{column.label}</th>
-                ))}
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 ? (
-                <tr>
-                  <td className="empty-cell" colSpan={config.columns.length + 1}>
-                    {loading
-                      ? "Carregando registros"
-                      : filters.busca || filters.status
-                        ? "Nenhum registro encontrado"
-                        : (config.emptyMessage ?? "Nenhum registro encontrado")}
-                  </td>
-                </tr>
-              ) : (
-                records.map((record) => (
-                  <tr key={record.id}>
+            <div className="table-wrap">
+              <table className={isClient ? "clients-table" : undefined}>
+                <thead>
+                  <tr>
                     {config.columns.map((column) => (
-                      <td key={column.key}>{readValue(record, column)}</td>
+                      <th key={column.key}>{column.label}</th>
                     ))}
-                    <td>
-                      <div className="row-actions">
-                        {(config.key === "projetos" || config.key === "colaboradores") && (
-                          <Link
-                            className="icon-button"
-                            to={`/dashboard/${config.key}/${record.id}`}
-                            title="Dashboard"
-                            aria-label={`Dashboard de ${record.nome || record.nomeCompleto}`}
-                          >
-                            <BarChart3 size={17} />
-                          </Link>
-                        )}
-                        <button
-                          type="button"
-                          className="icon-button"
-                          onClick={() => handleEdit(record)}
-                          title="Editar"
-                        >
-                          <Edit3 size={17} />
-                        </button>
-                        {config.teamManager ? (
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => setSelectedRecord(record)}
-                            title="Equipe"
-                          >
-                            <UsersRound size={17} />
-                          </button>
-                        ) : null}
-                        {config.financeManager ? (
-                          <button
-                            type="button"
-                            className="icon-button"
-                            onClick={() => setSelectedRecord(record)}
-                            title="Financeiro"
-                          >
-                            <WalletCards size={17} />
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="icon-button danger"
-                          onClick={() => handleInactivate(record)}
-                          title={
-                            config.deleteMode === "delete"
-                              ? "Excluir"
-                              : config.inactivateLabel || "Inativar"
-                          }
-                          disabled={config.teamManager && record.status === "ENCERRADO"}
-                        >
-                          {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
-                        </button>
-                        {config.key === "projetos" && (
-                          <button
-                            type="button"
-                            className="icon-button danger"
-                            title="Excluir definitivamente"
-                            aria-label={`Excluir definitivamente o projeto ${record.nome}`}
-                            onClick={() => setDeletingProject(record)}
-                          >
-                            <Trash2 size={17} />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    <th>Ações</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                </thead>
+                <tbody>
+                  {records.length === 0 ? (
+                    <tr>
+                      <td className="empty-cell" colSpan={config.columns.length + 1}>
+                        {loading
+                          ? "Carregando registros"
+                          : filters.busca || filters.status
+                            ? "Nenhum registro encontrado"
+                            : (config.emptyMessage ?? "Nenhum registro encontrado")}
+                      </td>
+                    </tr>
+                  ) : (
+                    paginacaoRegistros.itensPaginados.map((record) => (
+                      <tr key={record.id}>
+                        {config.columns.map((column) => {
+                          const content = readValue(record, column);
+                          const textTitle = typeof content === "string" || typeof content === "number" ? String(content) : undefined;
+                          return (
+                            <td key={column.key} title={textTitle}>
+                              {content}
+                            </td>
+                          );
+                        })}
+                        <td>
+                          <div className="row-actions">
+                            {(config.key === "projetos" || config.key === "colaboradores") && (
+                              <Link
+                                className="icon-button"
+                                to={`/dashboard/${config.key}/${record.id}`}
+                                title="Dashboard"
+                                aria-label={`Dashboard de ${record.nome || record.nomeCompleto}`}
+                              >
+                                <BarChart3 size={17} />
+                              </Link>
+                            )}
+                            <button
+                              type="button"
+                              className="icon-button"
+                              onClick={() => handleEdit(record)}
+                              title="Editar"
+                            >
+                              <Edit3 size={17} />
+                            </button>
+                            {config.teamManager ? (
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={() => openDetailSection(record)}
+                                title="Equipe"
+                              >
+                                <UsersRound size={17} />
+                              </button>
+                            ) : null}
+                            {config.financeManager ? (
+                              <button
+                                type="button"
+                                className="icon-button"
+                                onClick={() => openDetailSection(record)}
+                                title="Financeiro"
+                              >
+                                <WalletCards size={17} />
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              className="icon-button danger"
+                              onClick={() => handleInactivate(record)}
+                              title={
+                                config.deleteMode === "delete"
+                                  ? "Excluir"
+                                  : config.inactivateLabel || "Inativar"
+                              }
+                              disabled={config.teamManager && record.status === "ENCERRADO"}
+                            >
+                              {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
+                            </button>
+                            {config.key === "projetos" && (
+                              <button
+                                type="button"
+                                className="icon-button danger"
+                                title="Excluir definitivamente"
+                                aria-label={`Excluir definitivamente o projeto ${record.nome}`}
+                                onClick={() => setDeletingProject(record)}
+                              >
+                                <Trash2 size={17} />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            <PaginacaoTabela
+              pagina={paginacaoRegistros.pagina}
+              totalPaginas={paginacaoRegistros.totalPaginas}
+              totalItens={paginacaoRegistros.totalItens}
+              inicio={paginacaoRegistros.inicio}
+              fim={paginacaoRegistros.fim}
+              onPageChange={paginacaoRegistros.setPagina}
+              rotulo={`Páginas de ${config.title}`}
+            />
+          </div>
+        </>
+      )}
+
+      {confirmingRecord && (
+        <DialogoConfirmacao
+          title={
+            config.deleteMode === "delete"
+              ? `Excluir ${config.singular}`
+              : `${config.inactivateLabel || "Inativar"} ${config.singular}`
+          }
+          description={`${config.deleteMode === "delete" ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${confirmingRecord.nome || confirmingRecord.nomeCompleto || confirmingRecord.nivel || confirmingRecord.descricao}"?`}
+          confirmLabel={
+            config.deleteMode === "delete"
+              ? "Excluir definitivamente"
+              : config.inactivateLabel || "Inativar"
+          }
+          danger={config.deleteMode === "delete"}
+          onConfirm={executeInactivate}
+          onCancel={() => setConfirmingRecord(null)}
+        />
+      )}
 
       {config.key === "remuneracoes" && <BonificacaoPapeis />}
       {config.key === "projetos" && deletingProject && (

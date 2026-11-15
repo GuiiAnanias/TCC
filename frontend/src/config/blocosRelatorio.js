@@ -77,3 +77,13 @@ export const COLUNAS_PROJETOS = [
   { value: "assertividade", label: "Assertividade" },
   { value: "inconsistencias", label: "Inconsistências" },
 ];
+
+// Colunas opcionais da tabela de clientes; o nome do cliente sempre aparece.
+export const COLUNAS_CLIENTES = [
+  { value: "projetos", label: "Projetos" },
+  { value: "horas", label: "Horas" },
+  { value: "custoBase", label: "Custo base" },
+  { value: "bonificacao", label: "Bonificação" },
+  { value: "custo", label: "Custo total" },
+  { value: "horasSemCusto", label: "Horas sem custo" },
+];

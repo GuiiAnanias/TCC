@@ -63,7 +63,7 @@ export const resources = [
     key: "clientes",
     emptyMessage: "Nenhum cliente cadastrado",
     title: "Clientes",
-    singular: "cliente",
+    singular: "Cliente",
     endpoint: "/clientes",
     icon: Building2,
     cnpjLookup: true,
@@ -254,7 +254,10 @@ export const resources = [
         key: "nome",
         label: "Cliente",
         render: (item) => (
-          <div className="company-name">
+          <div
+            className="company-name"
+            title={`${item.nome}${item.nomeFantasia ? ` — ${item.nomeFantasia}` : ""}`}
+          >
             <strong>{item.nome}</strong>
             {item.nomeFantasia && <small>{item.nomeFantasia}</small>}
             <small>{item.tipoPessoa === "PF" ? "Pessoa Física" : "Pessoa Jurídica"}</small>
@@ -280,7 +283,12 @@ export const resources = [
         key: "contato",
         label: "Contato",
         render: (item) => (
-          <div className="company-contact">
+          <div
+            className="company-contact"
+            title={[item.contato, item.email, item.telefone ? formatTelefone(item.telefone) : ""]
+              .filter(Boolean)
+              .join(" · ")}
+          >
             {item.contato && <span>{item.contato}</span>}
             <span>{item.email || "—"}</span>
             {item.telefone && <small>{formatTelefone(item.telefone)}</small>}
@@ -294,7 +302,7 @@ export const resources = [
     key: "colaboradores",
     emptyMessage: "Nenhum colaborador cadastrado",
     title: "Colaboradores",
-    singular: "colaborador",
+    singular: "Colaborador",
     endpoint: "/colaboradores",
     icon: UsersRound,
     financeManager: true,
@@ -350,7 +358,7 @@ export const resources = [
     key: "remuneracoes",
     emptyMessage: "Não há itens cadastrados",
     title: "Remuneração",
-    singular: "item",
+    singular: "Item",
     endpoint: "/remuneracoes",
     icon: WalletCards,
     fields: [
@@ -390,7 +398,7 @@ export const resources = [
     key: "projetos",
     emptyMessage: "Nenhum projeto cadastrado",
     title: "Projetos",
-    singular: "projeto",
+    singular: "Projeto",
     endpoint: "/projetos",
     icon: BriefcaseBusiness,
     loadClientes: true,
@@ -467,7 +475,7 @@ export const resources = [
     key: "apontamentos",
     deleteMode: "delete",
     title: "Apontamento de Horas",
-    singular: "apontamento",
+    singular: "Apontamento",
     endpoint: "/apontamentos",
     icon: Clock,
     loadColaboradores: true,
@@ -526,7 +534,15 @@ export const resources = [
         label: "Status",
         render: (item) => <EtiquetaStatus status={item.status || "PENDENTE"} />,
       },
-      { key: "descricao", label: "Descrição" },
+      {
+        key: "descricao",
+        label: "Descrição",
+        render: (item) => (
+          <span className="cell-clamp" title={item.descricao || ""}>
+            {item.descricao || "-"}
+          </span>
+        ),
+      },
     ],
   },
 ];

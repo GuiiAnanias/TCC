@@ -188,6 +188,13 @@ const tabelas = {
         { titulo: "Custo base", chave: "custoBase", formato: FORMATOS.moeda, texto: moeda },
         { titulo: "Bonificação", chave: "bonificacao", formato: FORMATOS.moeda, texto: moeda },
         { titulo: "Custo total", chave: "custo", formato: FORMATOS.moeda, texto: moeda },
+        {
+          titulo: "Horas sem custo",
+          chave: "horasSemCusto",
+          formato: FORMATOS.numero,
+          texto: horas,
+          peso: 0.8,
+        },
       ],
       linhas: dados.linhas,
     },
@@ -349,11 +356,16 @@ const formatoIndicador = (bloco, rotulo) =>
       ? FORMATOS.numero
       : FORMATOS.inteiro;
 
-// Tabelas do bloco; na de projetos, só as colunas escolhidas (o nome sempre aparece).
+// Tabelas do bloco; nas de projetos e clientes, só as colunas escolhidas (o nome sempre aparece).
 function tabelasDoBloco(bloco, conteudo) {
   const listas = tabelas[bloco](conteudo.dados[bloco]);
-  const colunas = conteudo.opcoes?.colunasProjetos;
-  if (bloco !== "PROJETOS" || !colunas) return listas;
+  const colunas =
+    bloco === "PROJETOS"
+      ? conteudo.opcoes?.colunasProjetos
+      : bloco === "CLIENTES"
+        ? conteudo.opcoes?.colunasClientes
+        : null;
+  if (!colunas) return listas;
   return listas.map((tabela) => ({
     ...tabela,
     colunas: tabela.colunas.filter(
