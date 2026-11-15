@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { api } from "../api/conexao.js";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AuditTable, OperationalMetrics } from "../components/dashboard/DashboardOperacional.jsx";
 import { AjudaDashboard } from "../components/dashboard/AjudaDashboard.jsx";
 import { Link } from "react-router-dom";
@@ -186,6 +187,15 @@ export function DashboardGeralPage() {
   }
 
   const summary = data?.resumo;
+  const paginacaoProjetos = usePaginacao(data?.projetos);
+  const paginacaoAuditoria = usePaginacao(data?.auditoria);
+  const rankingComIndice = (data?.rankingInconsistencias ?? []).map((row, index) => ({
+    ...row,
+    posicaoOriginal: index + 1,
+  }));
+  const paginacaoRanking = usePaginacao(rankingComIndice);
+  const paginacaoEquipes = usePaginacao(data?.equipes);
+  const paginacaoClientes = usePaginacao(data?.clientes);
   const filtered = !mesmoRecorte(applied, emptyFilters);
   const changed = !mesmoRecorte(filters, applied);
   const projectOptions = projetosDisponiveis(options.projetos, filters).map((project) => ({
@@ -631,12 +641,12 @@ export function DashboardGeralPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {data.projetos.map((row) => (
+                            {paginacaoProjetos.itensPaginados.map((row) => (
                               <tr key={row.id}>
-                                <td>
+                                <td title={row.nome}>
                                   <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
                                 </td>
-                                <td>{row.cliente}</td>
+                                <td title={row.cliente}>{row.cliente}</td>
                                 <td>{projectStatusLabel(row.status)}</td>
                                 <td>{number(row.horas)} h</td>
                                 <td>{money(row.custoBase)}</td>
@@ -651,6 +661,15 @@ export function DashboardGeralPage() {
                           </tbody>
                         </table>
                       </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoProjetos.pagina}
+                        totalPaginas={paginacaoProjetos.totalPaginas}
+                        totalItens={paginacaoProjetos.totalItens}
+                        inicio={paginacaoProjetos.inicio}
+                        fim={paginacaoProjetos.fim}
+                        onPageChange={paginacaoProjetos.setPagina}
+                        rotulo="Páginas do comparativo por projeto"
+                      />
                     </>
                   )}
                   {key === "auditoria" && (
@@ -674,9 +693,9 @@ export function DashboardGeralPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {data.auditoria.map((row) => (
+                            {paginacaoAuditoria.itensPaginados.map((row) => (
                               <tr key={row.id}>
-                                <td>
+                                <td title={row.nome}>
                                   <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
                                 </td>
                                 <td>{money(row.orcamento)}</td>
@@ -694,71 +713,137 @@ export function DashboardGeralPage() {
                           </tbody>
                         </table>
                       </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoAuditoria.pagina}
+                        totalPaginas={paginacaoAuditoria.totalPaginas}
+                        totalItens={paginacaoAuditoria.totalItens}
+                        inicio={paginacaoAuditoria.inicio}
+                        fim={paginacaoAuditoria.fim}
+                        onPageChange={paginacaoAuditoria.setPagina}
+                        rotulo="Páginas da auditoria de orçamento"
+                      />
                     </>
                   )}
                   {key === "inconsistencias" && (
-                    <div className="dashboard-table">
-                      <table>
-                        <caption>
-                          Projetos com mais ocorrências primeiro. A ordem pela assertividade do
-                          orçamento continua na Auditoria operacional.
-                        </caption>
-                        <thead>
-                          <tr>
-                            <th>Posição</th>
-                            <th>Projeto</th>
-                            <th>Ocorrências</th>
-                            {issueColumns.map(([type, title]) => (
-                              <th key={type}>{title}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {(data.rankingInconsistencias ?? []).map((row, index) => (
-                            <tr key={row.id}>
-                              <td>{row.total ? `${index + 1}º` : "—"}</td>
-                              <td>
-                                <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
-                              </td>
-                              <td>
-                                <strong>{row.total}</strong>
-                              </td>
-                              {issueColumns.map(([type]) => (
-                                <td key={type}>{row.porTipo[type] ?? 0}</td>
+                    <>
+                      <div className="dashboard-table">
+                        <table>
+                          <caption>
+                            Projetos com mais ocorrências primeiro. A ordem pela assertividade do
+                            orçamento continua na Auditoria operacional.
+                          </caption>
+                          <thead>
+                            <tr>
+                              <th>Posição</th>
+                              <th>Projeto</th>
+                              <th>Ocorrências</th>
+                              {issueColumns.map(([type, title]) => (
+                                <th key={type}>{title}</th>
                               ))}
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {paginacaoRanking.itensPaginados.map((row) => (
+                              <tr key={row.id}>
+                                <td>{row.total ? `${row.posicaoOriginal}º` : "—"}</td>
+                                <td title={row.nome}>
+                                  <Link to={`/dashboard/projetos/${row.id}`}>{row.nome}</Link>
+                                </td>
+                                <td>
+                                  <strong>{row.total}</strong>
+                                </td>
+                                {issueColumns.map(([type]) => (
+                                  <td key={type}>{row.porTipo[type] ?? 0}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoRanking.pagina}
+                        totalPaginas={paginacaoRanking.totalPaginas}
+                        totalItens={paginacaoRanking.totalItens}
+                        inicio={paginacaoRanking.inicio}
+                        fim={paginacaoRanking.fim}
+                        onPageChange={paginacaoRanking.setPagina}
+                        rotulo="Páginas do ranking de inconsistências"
+                      />
+                    </>
                   )}
                   {key === "equipes" &&
                     (!data.equipes?.length ? (
                       <p className="dashboard-empty">Sem apontamentos no recorte.</p>
                     ) : (
+                      <>
+                        <div className="dashboard-table">
+                          <table>
+                            <caption>
+                              Equipe é o departamento do colaborador. Cada apontamento conta uma
+                              vez, mesmo em tarefas com vários responsáveis.
+                            </caption>
+                            <thead>
+                              <tr>
+                                <th>Equipe (departamento)</th>
+                                <th>Colaboradores</th>
+                                <th>Projetos</th>
+                                <th>Horas trabalhadas</th>
+                                <th>Custo base</th>
+                                <th>Bonificação</th>
+                                <th>Custo total</th>
+                                <th>Pendências nas horas</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginacaoEquipes.itensPaginados.map((row) => (
+                                <tr key={row.equipe}>
+                                  <td title={row.equipe}>{row.equipe}</td>
+                                  <td>{row.colaboradores}</td>
+                                  <td>{row.projetos}</td>
+                                  <td>{number(row.horas)} h</td>
+                                  <td>{money(row.custoBase)}</td>
+                                  <td>
+                                    <Bonus row={row} />
+                                  </td>
+                                  <td>
+                                    <Cost row={row} />
+                                  </td>
+                                  <td>{row.pendencias}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <PaginacaoTabela
+                          pagina={paginacaoEquipes.pagina}
+                          totalPaginas={paginacaoEquipes.totalPaginas}
+                          totalItens={paginacaoEquipes.totalItens}
+                          inicio={paginacaoEquipes.inicio}
+                          fim={paginacaoEquipes.fim}
+                          onPageChange={paginacaoEquipes.setPagina}
+                          rotulo="Páginas do resumo por equipe"
+                        />
+                      </>
+                    ))}
+                  {key === "clientes" && (
+                    <>
                       <div className="dashboard-table">
                         <table>
-                          <caption>
-                            Equipe é o departamento do colaborador. Cada apontamento conta uma vez,
-                            mesmo em tarefas com vários responsáveis.
-                          </caption>
+                          <caption>Consolidação dos projetos por cliente</caption>
                           <thead>
                             <tr>
-                              <th>Equipe (departamento)</th>
-                              <th>Colaboradores</th>
+                              <th>Cliente</th>
                               <th>Projetos</th>
                               <th>Horas trabalhadas</th>
                               <th>Custo base</th>
                               <th>Bonificação</th>
                               <th>Custo total</th>
-                              <th>Pendências nas horas</th>
                             </tr>
                           </thead>
                           <tbody>
-                            {data.equipes.map((row) => (
-                              <tr key={row.equipe}>
-                                <td>{row.equipe}</td>
-                                <td>{row.colaboradores}</td>
+                            {paginacaoClientes.itensPaginados.map((row) => (
+                              <tr key={row.id}>
+                                <td title={row.nome}>{row.nome}</td>
                                 <td>{row.projetos}</td>
                                 <td>{number(row.horas)} h</td>
                                 <td>{money(row.custoBase)}</td>
@@ -768,45 +853,21 @@ export function DashboardGeralPage() {
                                 <td>
                                   <Cost row={row} />
                                 </td>
-                                <td>{row.pendencias}</td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    ))}
-                  {key === "clientes" && (
-                    <div className="dashboard-table">
-                      <table>
-                        <caption>Consolidação dos projetos por cliente</caption>
-                        <thead>
-                          <tr>
-                            <th>Cliente</th>
-                            <th>Projetos</th>
-                            <th>Horas trabalhadas</th>
-                            <th>Custo base</th>
-                            <th>Bonificação</th>
-                            <th>Custo total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {data.clientes.map((row) => (
-                            <tr key={row.id}>
-                              <td>{row.nome}</td>
-                              <td>{row.projetos}</td>
-                              <td>{number(row.horas)} h</td>
-                              <td>{money(row.custoBase)}</td>
-                              <td>
-                                <Bonus row={row} />
-                              </td>
-                              <td>
-                                <Cost row={row} />
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                      <PaginacaoTabela
+                        pagina={paginacaoClientes.pagina}
+                        totalPaginas={paginacaoClientes.totalPaginas}
+                        totalItens={paginacaoClientes.totalItens}
+                        inicio={paginacaoClientes.inicio}
+                        fim={paginacaoClientes.fim}
+                        onPageChange={paginacaoClientes.setPagina}
+                        rotulo="Páginas do resumo por cliente"
+                      />
+                    </>
                   )}
                 </>
               )}

@@ -102,6 +102,7 @@
   display: grid;
   gap: 16px;
   padding: 18px;
+  scroll-margin-top: 20px;
 }
 
 .team-header {
@@ -252,11 +253,43 @@ table {
   grid-template-columns: minmax(0, 1fr);
   white-space: normal;
   overflow-wrap: anywhere;
-  line-height: 1.5;
+  line-height: 1.45;
+}
+.clients-table .company-name strong,
+.clients-table .company-name small,
+.clients-table .company-contact span,
+.clients-table .company-contact small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .clients-table td:nth-child(3) {
   white-space: normal;
   overflow-wrap: anywhere;
+}
+
+/* Limite de altura/linhas para evitar que textos extensos estourem a altura das linhas em listas */
+.cell-clamp,
+.finance-history-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.finance-history-reason {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+td {
+  max-width: 340px;
 }
 
 th,
@@ -430,6 +463,18 @@ tbody tr:last-child > td {
   background-color: var(--info-soft);
   color: var(--info);
   border: 1px solid var(--line-strong);
+}
+
+.status-modificado {
+  background-color: var(--info-soft);
+  color: var(--info);
+  border: 1px solid var(--accent-line);
+}
+
+.status-excluido {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger-line);
 }
 
 .icon-button {
@@ -866,9 +911,13 @@ td .icon-button {
   accent-color: var(--primary);
 }
 .tasks-detail {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--muted);
-  margin-top: 6px;
+  margin-top: 4px;
   max-width: 320px;
   white-space: normal;
   overflow-wrap: anywhere;

@@ -167,6 +167,7 @@ export function montarFotografia(relatorio, { filtros, blocos, geradoEm, opcoes 
     observacoes: opcoes.observacoes ?? null,
     ordenacao: opcoes.ordenacao ?? "NOME",
     colunasProjetos: opcoes.colunasProjetos ?? null,
+    ...(opcoes.colunasClientes ? { colunasClientes: opcoes.colunasClientes } : {}),
   };
   return {
     versao: VERSAO_RELATORIO,
@@ -358,6 +359,7 @@ async function montarConteudo(dados, agora) {
       observacoes: dados.observacoes,
       ordenacao: dados.ordenacao,
       colunasProjetos: dados.colunasProjetos,
+      colunasClientes: dados.colunasClientes,
     },
   });
   return { filtros, blocos, conteudo };

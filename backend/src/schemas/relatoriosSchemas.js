@@ -35,6 +35,16 @@ export const COLUNAS_PROJETOS = [
   "inconsistencias",
 ];
 
+// Colunas opcionais da tabela de clientes; o nome do cliente sempre aparece.
+export const COLUNAS_CLIENTES = [
+  "projetos",
+  "horas",
+  "custoBase",
+  "bonificacao",
+  "custo",
+  "horasSemCusto",
+];
+
 const dia = z
   .string()
   .date("Data inválida.")
@@ -74,6 +84,12 @@ export const relatorioCreateSchema = z
       .optional()
       .transform((lista) =>
         lista ? COLUNAS_PROJETOS.filter((coluna) => lista.includes(coluna)) : undefined,
+      ),
+    colunasClientes: z
+      .array(z.enum(COLUNAS_CLIENTES, { message: "Coluna inválida." }))
+      .optional()
+      .transform((lista) =>
+        lista ? COLUNAS_CLIENTES.filter((coluna) => lista.includes(coluna)) : undefined,
       ),
     projetoIds: z
       .array(z.number().int().positive())

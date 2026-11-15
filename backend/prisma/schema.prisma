@@ -82,6 +82,7 @@ model Usuario {
   relatoriosGerados RelatorioGerado[]
   exportacoesRelatorios RelatorioExportacao[]
   importacoesApontamentos ImportacaoApontamentos[]
+  historicosApontamentos HistoricoApontamento[]
 
   @@map("usuarios")
 }
@@ -481,4 +482,34 @@ model ImportacaoApontamentos {
 
   @@index([createdAt])
   @@map("importacoes_apontamentos")
+}
+
+// [BANCO][REGRA] Histórico de apontamentos modificados ou excluídos (auditoria).
+// Os dados do apontamento ficam preservados em JSON (dadosAnteriores / dadosNovos) para que
+// mesmo após a exclusão definitiva do apontamento o histórico continue completo.
+model HistoricoApontamento {
+  id              Int       @id @default(autoincrement())
+  apontamentoId   Int
+  situacao        String
+  colaboradorId   Int
+  colaboradorNome String
+  projetoId       Int
+  projetoNome     String
+  tarefaId        Int?
+  tarefaTitulo    String?
+  data            DateTime  @db.Date
+  horas           Decimal   @db.Decimal(5, 2)
+  status          String
+  descricao       String
+  dadosAnteriores Json
+  dadosNovos      Json?
+  usuarioId       Int?
+  usuario         Usuario?  @relation(fields: [usuarioId], references: [id], onDelete: Restrict, onUpdate: NoAction)
+  createdAt       DateTime  @default(now())
+
+  @@index([situacao, createdAt])
+  @@index([apontamentoId])
+  @@index([colaboradorId])
+  @@index([projetoId])
+  @@map("historico_apontamentos")
 }

@@ -350,6 +350,7 @@
 
 .form-panel {
   padding: 1.25rem;
+  scroll-margin-top: 20px;
 }
 
 .client-type-picker {
@@ -555,6 +556,15 @@ td .row-actions {
 
 .primary-button:hover {
   background: var(--primary-dark);
+}
+
+.danger-button {
+  background: var(--danger);
+  color: var(--button-text);
+}
+
+.danger-button:hover:not(:disabled) {
+  filter: brightness(0.92);
 }
 
 .secondary-button {

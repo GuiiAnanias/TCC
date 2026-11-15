@@ -143,9 +143,27 @@ async function validateDiaEHoras(data, previous = {}, db) {
   }
 }
 
+function snapshotApontamento(record) {
+  return {
+    colaboradorId: record.colaboradorId,
+    colaboradorNome: record.colaborador?.nomeCompleto ?? `Colaborador #${record.colaboradorId}`,
+    projetoId: record.projetoId,
+    projetoNome: record.projeto?.nome ?? `Projeto #${record.projetoId}`,
+    tarefaId: record.tarefaId ?? null,
+    tarefaTitulo: record.tarefa?.titulo ?? null,
+    data: financeDay(record.data),
+    horas: Number(record.horas),
+    status: record.status ?? "PENDENTE",
+    descricao: record.descricao ?? "",
+  };
+}
+
 export const apontamentosService = {
   list(filters) {
     return apontamentosRepository.findAll(filters);
+  },
+  listHistory(filters) {
+    return apontamentosRepository.findHistory(filters);
   },
   getById: ensureApontamentoExists,
   // [TRANSACAO] Valida e grava dentro de uma transação Serializable (ver apontamentosRepository).
@@ -156,19 +174,72 @@ export const apontamentosService = {
       return apontamentosRepository.create(data, db);
     });
   },
-  async update(id, data) {
+  async update(id, data, usuario = null) {
     return apontamentosRepository.transaction(async (db) => {
       const previous = await ensureApontamentoExists(id, db);
       ensureEditavel(previous, data);
       await validate(data, previous, db);
       await validateDiaEHoras(data, previous, db);
-      return apontamentosRepository.update(id, data, db);
+      const updated = await apontamentosRepository.update(id, data, db);
+      const merged = { ...previous, ...data, ...updated };
+      const anterior = snapshotApontamento(previous);
+      const novo = snapshotApontamento({
+        ...merged,
+        colaborador: updated?.colaborador ?? previous.colaborador,
+        projeto: updated?.projeto ?? previous.projeto,
+        tarefa:
+          merged.tarefaId === null
+            ? null
+            : (updated?.tarefa ?? (merged.tarefaId === previous.tarefaId ? previous.tarefa : null)),
+      });
+      await apontamentosRepository.createHistory?.(
+        {
+          apontamentoId: previous.id,
+          situacao: "MODIFICADO",
+          colaboradorId: novo.colaboradorId,
+          colaboradorNome: novo.colaboradorNome,
+          projetoId: novo.projetoId,
+          projetoNome: novo.projetoNome,
+          tarefaId: novo.tarefaId,
+          tarefaTitulo: novo.tarefaTitulo,
+          data: financeDate(merged.data),
+          horas: novo.horas,
+          status: novo.status,
+          descricao: novo.descricao,
+          dadosAnteriores: anterior,
+          dadosNovos: novo,
+          usuarioId: usuario?.id ?? null,
+        },
+        db,
+      );
+      return updated;
     });
   },
-  async remove(id) {
+  async remove(id, usuario = null) {
     return apontamentosRepository.transaction(async (db) => {
       const registro = await ensureApontamentoExists(id, db);
       ensureExcluivel(registro);
+      const anterior = snapshotApontamento(registro);
+      await apontamentosRepository.createHistory?.(
+        {
+          apontamentoId: registro.id,
+          situacao: "EXCLUIDO",
+          colaboradorId: anterior.colaboradorId,
+          colaboradorNome: anterior.colaboradorNome,
+          projetoId: anterior.projetoId,
+          projetoNome: anterior.projetoNome,
+          tarefaId: anterior.tarefaId,
+          tarefaTitulo: anterior.tarefaTitulo,
+          data: financeDate(registro.data),
+          horas: anterior.horas,
+          status: anterior.status,
+          descricao: anterior.descricao,
+          dadosAnteriores: anterior,
+          dadosNovos: null,
+          usuarioId: usuario?.id ?? null,
+        },
+        db,
+      );
       return apontamentosRepository.delete(id, db);
     });
   },

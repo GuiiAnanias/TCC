@@ -68,7 +68,7 @@ test("sem importações mostra a mensagem do requisito", async () => {
     assert.match(pagina.tela.textContent, /Nenhuma importação registrada/);
     assert.equal(pagina.tela.querySelector("table"), null);
     assert.deepEqual(pagina.pedidos, [
-      { url: "/importacoes/apontamentos/historico", params: { pagina: 1, porPagina: 10 } },
+      { url: "/importacoes/apontamentos/historico", params: { pagina: 1, porPagina: 20 } },
     ]);
   } finally {
     await pagina.fechar();

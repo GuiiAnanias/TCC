@@ -18,12 +18,14 @@ import {
 import { api } from "../api/conexao.js";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { SelecaoEscopoRelatorio } from "../components/relatorios/SelecaoEscopoRelatorio.jsx";
 import { DialogoPersonalizacaoRelatorio } from "../components/relatorios/DialogoPersonalizacaoRelatorio.jsx";
 import { AbasRelatorios } from "../components/relatorios/AbasRelatorios.jsx";
 import {
   BLOCOS,
   BLOCOS_PADRAO,
+  COLUNAS_CLIENTES,
   COLUNAS_PROJETOS,
   ORDENACOES,
   STATUS_HORAS,
@@ -45,6 +47,7 @@ const ROTULO_STATUS_HORAS = Object.fromEntries(
 );
 const TODOS_STATUS = STATUS_HORAS.map((item) => item.value);
 const TODAS_COLUNAS = COLUNAS_PROJETOS.map((item) => item.value);
+const TODAS_COLUNAS_CLIENTES = COLUNAS_CLIENTES.map((item) => item.value);
 // Na prévia, listas longas mostram as primeiras linhas; o PDF e o Excel trazem todas.
 const LIMITE_LINHAS_PREVIA = 200;
 
@@ -62,6 +65,7 @@ const formularioVazio = () => ({
   statusApontamentos: [...TODOS_STATUS],
   ordenacao: "NOME",
   colunasProjetos: [...TODAS_COLUNAS],
+  colunasClientes: [...TODAS_COLUNAS_CLIENTES],
 });
 
 const number = (value) =>
@@ -117,6 +121,7 @@ export function validarFormulario(form) {
 export function corpoDoPedido(form) {
   const status = form.statusApontamentos ?? TODOS_STATUS;
   const colunas = form.colunasProjetos ?? TODAS_COLUNAS;
+  const colunasClientes = form.colunasClientes ?? TODAS_COLUNAS_CLIENTES;
   return {
     projetoIds: form.projetoIds.map(Number),
     ...(form.clienteIds?.length ? { clienteIds: form.clienteIds.map(Number) } : {}),
@@ -132,6 +137,9 @@ export function corpoDoPedido(form) {
     ...(form.ordenacao && form.ordenacao !== "NOME" ? { ordenacao: form.ordenacao } : {}),
     ...(form.blocos.includes("PROJETOS") && colunas.length !== TODAS_COLUNAS.length
       ? { colunasProjetos: colunas }
+      : {}),
+    ...(form.blocos.includes("CLIENTES") && colunasClientes.length !== TODAS_COLUNAS_CLIENTES.length
+      ? { colunasClientes }
       : {}),
   };
 }
@@ -154,6 +162,7 @@ function formularioDoRelatorio(relatorio) {
     statusApontamentos: filtros.statusApontamentos ?? [...TODOS_STATUS],
     ordenacao: opcoes.ordenacao ?? "NOME",
     colunasProjetos: opcoes.colunasProjetos ?? [...TODAS_COLUNAS],
+    colunasClientes: opcoes.colunasClientes ?? [...TODAS_COLUNAS_CLIENTES],
   };
 }
 
@@ -392,6 +401,7 @@ export function RelatoriosPage() {
 
   const ocupado = Boolean(gerando) || carregando;
   const temProjetos = form.blocos.includes("PROJETOS");
+  const temClientes = form.blocos.includes("CLIENTES");
 
   return (
     <section className="content-panel dashboard-page report-page">
@@ -591,6 +601,35 @@ export function RelatoriosPage() {
                               current.colunasProjetos,
                               coluna.value,
                               TODAS_COLUNAS,
+                            ),
+                          }))
+                        }
+                      />
+                      <span>{coluna.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset className="report-option-checks report-option-wide" disabled={!temClientes}>
+                <legend>
+                  Colunas da tabela de clientes
+                  {!temClientes && " (marque o bloco Clientes para escolher)"}
+                </legend>
+                <div>
+                  {COLUNAS_CLIENTES.map((coluna) => (
+                    <label className="tasks-check" key={coluna.value}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Coluna de clientes: ${coluna.label}`}
+                        checked={(form.colunasClientes ?? TODAS_COLUNAS_CLIENTES).includes(
+                          coluna.value,
+                        )}
+                        onChange={() =>
+                          mudar((current) => ({
+                            colunasClientes: alternar(
+                              current.colunasClientes ?? TODAS_COLUNAS_CLIENTES,
+                              coluna.value,
+                              TODAS_COLUNAS_CLIENTES,
                             ),
                           }))
                         }
@@ -802,8 +841,9 @@ function RelatoriosHelp() {
 }
 
 function Tabela({ caption, colunas, linhas, vazio, limite }) {
-  if (!linhas.length) return <p className="dashboard-empty">{vazio}</p>;
   const visiveis = limite ? linhas.slice(0, limite) : linhas;
+  const paginacao = usePaginacao(visiveis);
+  if (!linhas.length) return <p className="dashboard-empty">{vazio}</p>;
   return (
     <>
       <div className="dashboard-table">
@@ -822,16 +862,34 @@ function Tabela({ caption, colunas, linhas, vazio, limite }) {
             </tr>
           </thead>
           <tbody>
-            {visiveis.map((linha, indice) => (
+            {paginacao.itensPaginados.map((linha, indice) => (
               <tr key={linha.chave ?? linha.id ?? indice}>
-                {colunas.map((coluna) => (
-                  <td key={coluna.titulo}>{coluna.valor(linha)}</td>
-                ))}
+                {colunas.map((coluna) => {
+                  const valor = coluna.valor(linha);
+                  const textoDica =
+                    typeof valor === "string" || typeof valor === "number"
+                      ? String(valor)
+                      : undefined;
+                  return (
+                    <td key={coluna.titulo} title={textoDica}>
+                      {valor}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo={`Páginas de ${caption}`}
+      />
       {visiveis.length < linhas.length && (
         <p className="dashboard-empty">
           Mostrando {visiveis.length} de {linhas.length} linhas. O PDF e o Excel trazem todas.
@@ -881,6 +939,20 @@ const colunasDosProjetos = [
   { chave: "inconsistencias", titulo: "Inconsistências", valor: (row) => row.inconsistencias },
 ];
 
+const colunasDosClientes = [
+  { chave: "nome", titulo: "Cliente", valor: (row) => row.nome, largura: 200 },
+  { chave: "projetos", titulo: "Projetos", valor: (row) => row.projetos },
+  { chave: "horas", titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
+  { chave: "custoBase", titulo: "Custo base", valor: (row) => money(row.custoBase) },
+  { chave: "bonificacao", titulo: "Bonificação", valor: (row) => money(row.bonificacao) },
+  { chave: "custo", titulo: "Custo total", valor: (row) => money(row.custo) },
+  {
+    chave: "horasSemCusto",
+    titulo: "Horas sem custo",
+    valor: (row) => `${number(row.horasSemCusto ?? 0)} h`,
+  },
+];
+
 const conteudoDoBloco = {
   PROJETOS: (dados, conteudo) => {
     const escolhidas = conteudo.opcoes?.colunasProjetos;
@@ -895,21 +967,19 @@ const conteudoDoBloco = {
       />
     );
   },
-  CLIENTES: (dados) => (
-    <Tabela
-      caption="Clientes do recorte"
-      vazio="Nenhum cliente no recorte."
-      linhas={dados.linhas}
-      colunas={[
-        { titulo: "Cliente", valor: (row) => row.nome, largura: 200 },
-        { titulo: "Projetos", valor: (row) => row.projetos },
-        { titulo: "Horas", valor: (row) => `${number(row.horas)} h` },
-        { titulo: "Custo base", valor: (row) => money(row.custoBase) },
-        { titulo: "Bonificação", valor: (row) => money(row.bonificacao) },
-        { titulo: "Custo total", valor: (row) => money(row.custo) },
-      ]}
-    />
-  ),
+  CLIENTES: (dados, conteudo) => {
+    const escolhidas = conteudo?.opcoes?.colunasClientes;
+    return (
+      <Tabela
+        caption="Clientes do recorte"
+        vazio="Nenhum cliente no recorte."
+        linhas={dados.linhas}
+        colunas={colunasDosClientes.filter(
+          (coluna) => !escolhidas || coluna.chave === "nome" || escolhidas.includes(coluna.chave),
+        )}
+      />
+    );
+  },
   EQUIPES: (dados) => (
     <Tabela
       caption="Equipes (departamentos) do recorte"

@@ -5,6 +5,7 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
+import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { api } from "../../api/conexao.js";
 
 const date = (value) => new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
@@ -12,6 +13,7 @@ import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 
 export function BonificacaoPapeis() {
   const [rows, setRows] = useState([]);
+  const paginacao = usePaginacao(rows);
   const [roles, setRoles] = useState([]);
   const [form, setForm] = useState({ papel: "", percentual: "", dataInicio: today() });
   const [loading, setLoading] = useState(true);
@@ -170,7 +172,7 @@ export function BonificacaoPapeis() {
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              paginacao.itensPaginados.map((row) => (
                 <tr key={row.id}>
                   <td>{row.papel}</td>
                   <td>{Number(row.percentual).toLocaleString("pt-BR")}%</td>
@@ -186,6 +188,15 @@ export function BonificacaoPapeis() {
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas do histórico de bonificações por papel"
+      />
     </section>
   );
 }

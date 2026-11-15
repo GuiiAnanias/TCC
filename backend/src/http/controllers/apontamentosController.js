@@ -11,6 +11,7 @@ import {
   apontamentoCreateSchema,
   apontamentoUpdateSchema,
   apontamentoQuerySchema,
+  historicoApontamentoQuerySchema,
 } from "../../schemas/apontamentosSchemas.js";
 export const apontamentosController = {
   // [CONTROLLER] Lista os registros. Os filtros da URL (?busca=&status=) passam pelo schema Zod de
@@ -19,6 +20,12 @@ export const apontamentosController = {
     const filters = apontamentoQuerySchema.parse(req.query);
     const apontamentos = await apontamentosService.list(filters);
     res.json(apontamentos);
+  }),
+  // [CONTROLLER] Lista o histórico de apontamentos modificados ou excluídos.
+  listHistory: tratarAssincrono(async (req, res) => {
+    const filters = historicoApontamentoQuerySchema.parse(req.query);
+    const historico = await apontamentosService.listHistory(filters);
+    res.json(historico);
   }),
   // [CONTROLLER] Busca um registro pelo id da URL. [VALIDACAO] lerId recusa id que não seja
   // inteiro positivo (400).
@@ -39,13 +46,13 @@ export const apontamentosController = {
   update: tratarAssincrono(async (req, res) => {
     const id = lerId(req.params.id);
     const data = apontamentoUpdateSchema.parse(req.body);
-    const apontamento = await apontamentosService.update(id, data);
+    const apontamento = await apontamentosService.update(id, data, req.user);
     res.json(apontamento);
   }),
   // [CONTROLLER] Exclui de verdade; apontamento faturado é recusado no service.
   remove: tratarAssincrono(async (req, res) => {
     const id = lerId(req.params.id);
-    await apontamentosService.remove(id);
+    await apontamentosService.remove(id, req.user);
     res.status(204).send();
   }),
 };

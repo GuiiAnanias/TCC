@@ -5,6 +5,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { TIPOS_PENDENCIA_CUSTO, linkDaPendencia } from "../../utils/pendencias.js";
 
 export const number = (value) =>
@@ -99,6 +100,7 @@ export function AuditTable({ occurrences = [] }) {
           .toLocaleLowerCase("pt-BR")
           .includes(search.toLocaleLowerCase("pt-BR"))),
   );
+  const paginacao = usePaginacao(visible);
   return (
     <div className="operational-audit">
       <div className="table-toolbar">
@@ -146,16 +148,26 @@ export function AuditTable({ occurrences = [] }) {
                 </td>
               </tr>
             ) : (
-              visible.map((row) => (
+              paginacao.itensPaginados.map((row) => (
                 <tr key={row.chave}>
-                  <td>
+                  <td
+                    title={
+                      row.descricao
+                        ? `${issueLabels[row.tipo]} — ${row.descricao}`
+                        : issueLabels[row.tipo]
+                    }
+                  >
                     {issueLabels[row.tipo]}
-                    <small className="dashboard-detail-note">{row.descricao}</small>
+                    <small className="dashboard-detail-note" title={row.descricao}>
+                      {row.descricao}
+                    </small>
                   </td>
-                  <td>
+                  <td title={row.projeto}>
                     <Link to={`/dashboard/projetos/${row.projetoId}`}>{row.projeto}</Link>
                   </td>
-                  <td>{row.tarefa || row.colaborador || "Apontamento"}</td>
+                  <td title={row.tarefa || row.colaborador || "Apontamento"}>
+                    {row.tarefa || row.colaborador || "Apontamento"}
+                  </td>
                   <td>{date(row.data)}</td>
                   <td>
                     <Link
@@ -182,12 +194,22 @@ export function AuditTable({ occurrences = [] }) {
           </tbody>
         </table>
       </div>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas de ocorrências da auditoria"
+      />
     </div>
   );
 }
 
 // [TELA] Tarefas que entram nos indicadores (estimativa, horas, correção).
 export function IndicatorTasksTable({ tasks = [], individual = false }) {
+  const paginacao = usePaginacao(tasks);
   return (
     <div className="dashboard-table">
       <table>
@@ -215,41 +237,52 @@ export function IndicatorTasksTable({ tasks = [], individual = false }) {
               </td>
             </tr>
           ) : (
-            tasks.map((task) => (
-              <tr key={task.id}>
-                <td>
-                  <Link to={taskUrl(task)}>{task.titulo}</Link>
-                  {task.correcao && <small className="dashboard-detail-note">Correção</small>}
-                  {task.statusRegistro === "INATIVO" && (
-                    <small className="dashboard-detail-note">Arquivada</small>
-                  )}
-                </td>
-                <td>
-                  {task.projeto}
-                  <small className="dashboard-detail-note">{task.sprint || "Sem sprint"}</small>
-                </td>
-                <td>
-                  {task.responsaveis.map((person) => person.nome).join(", ") || "Sem responsáveis"}
-                </td>
-                <td>{taskStatus[task.status]}</td>
-                <td>
-                  {task.minutosEstimados == null
-                    ? "Sem estimativa"
-                    : `${Math.floor(task.minutosEstimados / 60)}h ${task.minutosEstimados % 60}min`}
-                </td>
-                <td>{number(task.horasNoRecorte)} h</td>
-                <td>{number(task.horasTotais)} h</td>
-                <td>
-                  {task.comparavel ? "Sim" : "Não"}
-                  {task.semHoras && (
-                    <small className="dashboard-detail-note">Concluída sem horas</small>
-                  )}
-                </td>
-              </tr>
-            ))
+            paginacao.itensPaginados.map((task) => {
+              const textoResponsaveis =
+                task.responsaveis.map((person) => person.nome).join(", ") || "Sem responsáveis";
+              return (
+                <tr key={task.id}>
+                  <td title={task.titulo}>
+                    <Link to={taskUrl(task)}>{task.titulo}</Link>
+                    {task.correcao && <small className="dashboard-detail-note">Correção</small>}
+                    {task.statusRegistro === "INATIVO" && (
+                      <small className="dashboard-detail-note">Arquivada</small>
+                    )}
+                  </td>
+                  <td title={`${task.projeto} — ${task.sprint || "Sem sprint"}`}>
+                    {task.projeto}
+                    <small className="dashboard-detail-note">{task.sprint || "Sem sprint"}</small>
+                  </td>
+                  <td title={textoResponsaveis}>{textoResponsaveis}</td>
+                  <td>{taskStatus[task.status]}</td>
+                  <td>
+                    {task.minutosEstimados == null
+                      ? "Sem estimativa"
+                      : `${Math.floor(task.minutosEstimados / 60)}h ${task.minutosEstimados % 60}min`}
+                  </td>
+                  <td>{number(task.horasNoRecorte)} h</td>
+                  <td>{number(task.horasTotais)} h</td>
+                  <td>
+                    {task.comparavel ? "Sim" : "Não"}
+                    {task.semHoras && (
+                      <small className="dashboard-detail-note">Concluída sem horas</small>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
+      <PaginacaoTabela
+        pagina={paginacao.pagina}
+        totalPaginas={paginacao.totalPaginas}
+        totalItens={paginacao.totalItens}
+        inicio={paginacao.inicio}
+        fim={paginacao.fim}
+        onPageChange={paginacao.setPagina}
+        rotulo="Páginas de tarefas dos indicadores"
+      />
     </div>
   );
 }
