@@ -1276,7 +1276,10 @@ export function CadastroPage({ config }) {
                       <tr key={record.id}>
                         {config.columns.map((column) => {
                           const content = readValue(record, column);
-                          const textTitle = typeof content === "string" || typeof content === "number" ? String(content) : undefined;
+                          const textTitle =
+                            typeof content === "string" || typeof content === "number"
+                              ? String(content)
+                              : undefined;
                           return (
                             <td key={column.key} title={textTitle}>
                               {content}

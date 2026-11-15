@@ -150,7 +150,13 @@ export function AuditTable({ occurrences = [] }) {
             ) : (
               paginacao.itensPaginados.map((row) => (
                 <tr key={row.chave}>
-                  <td title={row.descricao ? `${issueLabels[row.tipo]} — ${row.descricao}` : issueLabels[row.tipo]}>
+                  <td
+                    title={
+                      row.descricao
+                        ? `${issueLabels[row.tipo]} — ${row.descricao}`
+                        : issueLabels[row.tipo]
+                    }
+                  >
                     {issueLabels[row.tipo]}
                     <small className="dashboard-detail-note" title={row.descricao}>
                       {row.descricao}

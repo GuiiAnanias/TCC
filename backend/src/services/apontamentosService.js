@@ -153,7 +153,7 @@ function snapshotApontamento(record) {
     tarefaTitulo: record.tarefa?.titulo ?? null,
     data: financeDay(record.data),
     horas: Number(record.horas),
-    status: record.status,
+    status: record.status ?? "PENDENTE",
     descricao: record.descricao ?? "",
   };
 }

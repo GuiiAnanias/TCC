@@ -194,7 +194,8 @@ function TabelaPrevia({ linhas }) {
       />
       {linhas.length > PREVIA && (
         <p className="import-footnote">
-          Mostrando {paginacao.inicio}–{paginacao.fim} de {number(linhas.length)} apontamentos. Todos serão importados.
+          Mostrando {paginacao.inicio}–{paginacao.fim} de {number(linhas.length)} apontamentos.
+          Todos serão importados.
         </p>
       )}
     </div>

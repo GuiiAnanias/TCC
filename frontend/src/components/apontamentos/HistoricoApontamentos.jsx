@@ -63,7 +63,11 @@ function descreverMudancas(item) {
   if (ant.data && novo.data && String(ant.data).slice(0, 10) !== String(novo.data).slice(0, 10)) {
     mudancas.push(`Data: ${dataBr(ant.data)} → ${dataBr(novo.data)}`);
   }
-  if (ant.horas !== undefined && novo.horas !== undefined && Number(ant.horas) !== Number(novo.horas)) {
+  if (
+    ant.horas !== undefined &&
+    novo.horas !== undefined &&
+    Number(ant.horas) !== Number(novo.horas)
+  ) {
     mudancas.push(`Horas: ${number(ant.horas)} h → ${number(novo.horas)} h`);
   }
   if (ant.status && novo.status && ant.status !== novo.status) {
@@ -137,18 +141,22 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
 
   const temFiltro = Boolean(
     filters.situacao ||
-      filters.busca ||
-      filters.colaboradorId ||
-      filters.projetoId ||
-      filters.dataInicio ||
-      filters.dataFim,
+    filters.busca ||
+    filters.colaboradorId ||
+    filters.projetoId ||
+    filters.dataInicio ||
+    filters.dataFim,
   );
 
   return (
     <div className="entries-history">
       <div className="table-panel">
         <div className="table-toolbar entries-history-toolbar">
-          <div className="entries-history-situations" role="group" aria-label="Filtrar por situação">
+          <div
+            className="entries-history-situations"
+            role="group"
+            aria-label="Filtrar por situação"
+          >
             {SITUACOES.map((opcao) => {
               const ativo = filters.situacao === opcao.value;
               return (
@@ -157,9 +165,7 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
                   type="button"
                   className={ativo ? "primary-button" : "secondary-button"}
                   aria-pressed={ativo}
-                  onClick={() =>
-                    setFilters((current) => ({ ...current, situacao: opcao.value }))
-                  }
+                  onClick={() => setFilters((current) => ({ ...current, situacao: opcao.value }))}
                 >
                   {opcao.label}
                 </button>
@@ -276,7 +282,8 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
                       <td>
                         <strong>{dataHora(item.createdAt)}</strong>
                         <span className="report-history-note">
-                          Por {item.usuario?.nomeUsuario || "Sistema"} · Apontamento #{item.apontamentoId}
+                          Por {item.usuario?.nomeUsuario || "Sistema"} · Apontamento #
+                          {item.apontamentoId}
                         </span>
                       </td>
                       <td>
@@ -300,7 +307,9 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
                       <td title={mudancas.join(" | ")}>
                         <ul className="entries-history-changes">
                           {mudancas.map((texto, idx) => (
-                            <li key={idx} title={texto}>{texto}</li>
+                            <li key={idx} title={texto}>
+                              {texto}
+                            </li>
                           ))}
                         </ul>
                       </td>

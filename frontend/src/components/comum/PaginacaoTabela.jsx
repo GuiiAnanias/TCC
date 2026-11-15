@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 export const ITENS_POR_PAGINA = 20;
 
 export function usePaginacao(itens = [], porPagina = ITENS_POR_PAGINA) {
-  const lista = Array.isArray(itens) ? itens : [];
+  const lista = useMemo(() => (Array.isArray(itens) ? itens : []), [itens]);
   const [paginaSolicitada, setPagina] = useState(1);
 
   const totalItens = lista.length;
@@ -21,7 +21,7 @@ export function usePaginacao(itens = [], porPagina = ITENS_POR_PAGINA) {
 
   const itensPaginados = useMemo(
     () => lista.slice(inicioIndice, fimIndice),
-    [lista, inicioIndice, fimIndice]
+    [lista, inicioIndice, fimIndice],
   );
 
   return {

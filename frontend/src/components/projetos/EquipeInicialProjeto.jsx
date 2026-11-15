@@ -91,7 +91,11 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
         </label>
         <div className="initial-team-choices">
           {paginacaoVisiveis.itensPaginados.map((person) => (
-            <label key={person.id} className="initial-team-choice" title={`${person.nomeCompleto} (${person.email})`}>
+            <label
+              key={person.id}
+              className="initial-team-choice"
+              title={`${person.nomeCompleto} (${person.email})`}
+            >
               <input
                 type="checkbox"
                 checked={members.some((member) => member.colaboradorId === person.id)}

@@ -540,7 +540,9 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                   }
                 >
                   <td title={memberName(member)}>{memberName(member)}</td>
-                  <td title={member.colaborador?.cargo || "-"}>{member.colaborador?.cargo || "-"}</td>
+                  <td title={member.colaborador?.cargo || "-"}>
+                    {member.colaborador?.cargo || "-"}
+                  </td>
                   <td>
                     {member.dataSaida ? (
                       member.papel

@@ -779,8 +779,8 @@ export function DashboardGeralPage() {
                         <div className="dashboard-table">
                           <table>
                             <caption>
-                              Equipe é o departamento do colaborador. Cada apontamento conta uma vez,
-                              mesmo em tarefas com vários responsáveis.
+                              Equipe é o departamento do colaborador. Cada apontamento conta uma
+                              vez, mesmo em tarefas com vários responsáveis.
                             </caption>
                             <thead>
                               <tr>

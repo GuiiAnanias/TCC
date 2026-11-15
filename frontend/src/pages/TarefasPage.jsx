@@ -748,12 +748,15 @@ export function TarefasPage() {
                     visibleTasks.length ? (
                       paginacaoTarefas.itensPaginados.map((task) => {
                         const textoResponsaveis =
-                          task.responsaveis
-                            .map((row) => row.colaborador.nomeCompleto)
-                            .join(", ") || "Sem responsáveis";
+                          task.responsaveis.map((row) => row.colaborador.nomeCompleto).join(", ") ||
+                          "Sem responsáveis";
                         return (
                           <tr key={task.id}>
-                            <td title={task.descricao ? `${task.titulo} — ${task.descricao}` : task.titulo}>
+                            <td
+                              title={
+                                task.descricao ? `${task.titulo} — ${task.descricao}` : task.titulo
+                              }
+                            >
                               <strong>{task.titulo}</strong>
                               {task.correcao && <span className="tasks-detail">Correção</span>}
                               {task.statusRegistro === "INATIVO" && (

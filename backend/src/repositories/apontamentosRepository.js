@@ -108,7 +108,7 @@ export const apontamentosRepository = {
   },
 
   // [BANCO] Registra uma modificação ou exclusão no histórico de apontamentos.
-  createHistory(data, db = prisma) {
+  createHistory(data, db) {
     if (!db?.historicoApontamento) return null;
     return db.historicoApontamento.create({ data });
   },
