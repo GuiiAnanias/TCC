@@ -1,12 +1,17 @@
+/**
+ * [SERVICE][REGRA] Regras da tabela de remuneração: nível único e inativação. Mudar o valor/hora de
+ * um item vale só para novas vigências; as já criadas guardam o valor da época.
+ */
+
 import { remuneracoesRepository } from "../repositories/remuneracoesRepository.js";
-import { HttpError } from "../utils/HttpError.js";
-import { niveisRemuneracao } from "../schemas/cadastroOptions.js";
+import { ErroHttp } from "../utils/ErroHttp.js";
+import { niveisRemuneracao } from "../schemas/opcoesCadastro.js";
 
 async function ensureRemuneracaoExists(id) {
   const remuneracao = await remuneracoesRepository.findById(id);
 
   if (!remuneracao) {
-    throw new HttpError(404, "Item da tabela de remuneração não encontrado.");
+    throw new ErroHttp(404, "Item da tabela de remuneração não encontrado.");
   }
 
   return remuneracao;
@@ -25,7 +30,7 @@ export const remuneracoesService = {
     const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
     if (remuneracao) {
-      throw new HttpError(409, "Já existe um item com este nível.");
+      throw new ErroHttp(409, "Já existe um item com este nível.");
     }
 
     return remuneracoesRepository.create(data);
@@ -36,12 +41,15 @@ export const remuneracoesService = {
 
     if (data.nivel) {
       if (data.nivel !== current.nivel && !niveisRemuneracao.includes(data.nivel)) {
-        throw new HttpError(400, "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.");
+        throw new ErroHttp(
+          400,
+          "Selecione um nível de remuneração válido. O nome antigo só pode ser mantido no próprio registro.",
+        );
       }
       const remuneracao = await remuneracoesRepository.findByNivel(data.nivel);
 
       if (remuneracao && remuneracao.id !== id) {
-        throw new HttpError(409, "Já existe um item com este nível.");
+        throw new ErroHttp(409, "Já existe um item com este nível.");
       }
     }
 
@@ -51,5 +59,5 @@ export const remuneracoesService = {
   async inactivate(id) {
     await ensureRemuneracaoExists(id);
     return remuneracoesRepository.update(id, { status: "INATIVO" });
-  }
+  },
 };

@@ -1,0 +1,23 @@
+/**
+ * [ROTA] /api/relatorios: gerar relatório (grava uma cópia dos dados), histórico, prévia e
+ * downloads em PDF e Excel; e a planilha de indicadores do Dashboard Geral.
+ */
+
+import { Router } from "express";
+import { relatoriosController } from "../controllers/relatoriosController.js";
+
+export const relatoriosRoutes = Router();
+
+// Rota para exportar o Excel (existente)
+// [ROTA] Excel do Dashboard Geral com os mesmos filtros da tela.
+relatoriosRoutes.get("/indicadores.xlsx", relatoriosController.indicadores);
+// Fotografias: gerar grava os dados do recorte; a consulta devolve sempre a mesma cópia.
+relatoriosRoutes.post("/", relatoriosController.gerar);
+// Prévia: mesmo cálculo de gerar, sem gravar; o relatório só entra no histórico ao salvar.
+relatoriosRoutes.post("/previa", relatoriosController.previa);
+// Histórico: página dos relatórios gerados, com autor, filtros e formatos baixados.
+relatoriosRoutes.get("/", relatoriosController.listar);
+// Arquivos da fotografia: PDF e Excel com os mesmos números da prévia.
+relatoriosRoutes.get("/:id/pdf", relatoriosController.pdf);
+relatoriosRoutes.get("/:id/xlsx", relatoriosController.xlsx);
+relatoriosRoutes.get("/:id", relatoriosController.buscar);

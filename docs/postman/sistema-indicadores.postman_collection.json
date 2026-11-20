@@ -39,7 +39,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"E/Code\"\n}"
+              "raw": "{\n  \"nome\": \"Cliente Exemplo\"\n}"
             },
             "url": "{{baseUrl}}/clientes"
           }
@@ -63,7 +63,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"nome\": \"E/Code Software\",\n  \"status\": \"ATIVO\"\n}"
+              "raw": "{\n  \"nome\": \"Cliente Exemplo Ltda.\",\n  \"status\": \"ATIVO\"\n}"
             },
             "url": "{{baseUrl}}/clientes/1"
           }

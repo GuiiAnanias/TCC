@@ -1,10 +1,11 @@
-# Roda a cada Pull Request para develop ou main e a cada push nessas branches.
+# Roda nos PRs para integração ou funcionalidades e nos pushes para develop/main.
+# Confere formatação (Prettier), lint (ESLint), testes, migrations e build.
 # Se algum passo falhar, o PR fica marcado com X vermelho e não deve ser mergeado.
 name: CI
 
 on:
   pull_request:
-    branches: [develop, main]
+    branches: [develop, main, "feature/**", "fix/**"]
   push:
     branches: [develop, main]
 
@@ -52,18 +53,36 @@ jobs:
         run: corepack enable
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
+      - name: Formatação (Prettier)
+        run: pnpm run format:check
+      - name: Lint (ESLint)
+        run: pnpm run lint
       - name: Gerar Prisma Client
         run: pnpm run prisma:generate
       - name: Testes unitários
         run: pnpm test
       - name: Migrations em banco limpo
         run: pnpm exec prisma migrate deploy
+      - name: Testes de integração com banco (sessões)
+        run: pnpm run test:auth-db
       - name: Testes de integração com banco (seed)
         run: pnpm run test:seed-db
       - name: Testes de integração com banco (dashboard)
         run: pnpm run test:dashboard-db
+      - name: Testes de integração com banco (custos faturados)
+        run: pnpm run test:invoiced-costs-db
+      - name: Testes de integração com banco (equipe)
+        run: pnpm run test:team-db
+      - name: Testes de integração com banco (exclusão de projetos)
+        run: pnpm run test:project-deletion-db
+      - name: Testes de integração com banco (relatórios)
+        run: pnpm run test:reports-db
       - name: Testes de integração com banco (tarefas)
         run: pnpm run test:tasks-db
+      - name: Testes de integração com banco (concorrência de apontamentos)
+        run: pnpm run test:hours-db
+      - name: Testes de integração com banco (importação e exportação em Excel)
+        run: pnpm run test:excel-db
       - name: Testes de integração com banco (premiação)
         run: pnpm run test:awards-db
       - name: Testes de integração com banco (histórico financeiro)
@@ -85,5 +104,11 @@ jobs:
         run: corepack enable
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
+      - name: Formatação (Prettier)
+        run: pnpm run format:check
+      - name: Lint (ESLint)
+        run: pnpm run lint
       - name: Build de produção
         run: pnpm run build
+      - name: Regressões da interface
+        run: pnpm test

@@ -1,3 +1,7 @@
+/**
+ * [REPOSITORY][BANCO] Consultas e gravações da tabela de remuneração.
+ */
+
 import prisma from "../config/prisma.js";
 
 export const remuneracoesRepository = {
@@ -5,9 +9,9 @@ export const remuneracoesRepository = {
     return prisma.itemTabelaRemuneracao.findMany({
       where: {
         ...(status ? { status } : {}),
-        ...(busca ? { nivel: { contains: busca, mode: "insensitive" } } : {})
+        ...(busca ? { nivel: { contains: busca, mode: "insensitive" } } : {}),
       },
-      orderBy: [{ status: "asc" }, { nivel: "asc" }]
+      orderBy: [{ status: "asc" }, { nivel: "asc" }],
     });
   },
 
@@ -15,6 +19,7 @@ export const remuneracoesRepository = {
     return prisma.itemTabelaRemuneracao.findUnique({ where: { id } });
   },
 
+  // [BANCO] Usado para impedir nível repetido na tabela.
   findByNivel(nivel) {
     return prisma.itemTabelaRemuneracao.findUnique({ where: { nivel } });
   },
@@ -26,7 +31,7 @@ export const remuneracoesRepository = {
   update(id, data) {
     return prisma.itemTabelaRemuneracao.update({
       where: { id },
-      data
+      data,
     });
-  }
+  },
 };

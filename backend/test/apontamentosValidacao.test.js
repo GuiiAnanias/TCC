@@ -4,31 +4,67 @@ import { apontamentosService } from "../src/services/apontamentosService.js";
 import { apontamentosRepository } from "../src/repositories/apontamentosRepository.js";
 import { colaboradoresRepository } from "../src/repositories/colaboradoresRepository.js";
 import { projetosRepository } from "../src/repositories/projetosRepository.js";
-import { todayFinanceDate } from "../src/utils/financeDates.js";
+import { todayFinanceDate } from "../src/utils/datasFinanceiras.js";
 
 const day = (offset) => new Date(todayFinanceDate().getTime() + offset * 86400000);
-const existente = { id: 9, colaboradorId: 2, projetoId: 1, tarefaId: null, data: day(-3), horas: "6", status: "PENDENTE", descricao: "Desenvolvimento" };
+const existente = {
+  id: 9,
+  colaboradorId: 2,
+  projetoId: 1,
+  tarefaId: null,
+  data: day(-3),
+  horas: "6",
+  status: "PENDENTE",
+  descricao: "Desenvolvimento",
+};
 
 async function withRepositories({ horasNoDia = 0, record = existente } = {}, run) {
-  const originals = [apontamentosRepository, colaboradoresRepository, projetosRepository].map((repo) => ({ ...repo }));
+  const originals = [apontamentosRepository, colaboradoresRepository, projetosRepository].map(
+    (repo) => ({ ...repo }),
+  );
   const calls = { sums: [], writes: [] };
+  apontamentosRepository.transaction = async (operation) => operation();
+  apontamentosRepository.lockReferences = async () => {};
   apontamentosRepository.findById = async () => ({ ...record });
-  apontamentosRepository.sumHorasNoDia = async (...args) => { calls.sums.push(args); return horasNoDia; };
-  apontamentosRepository.create = async (data) => { calls.writes.push(data); return { id: 10, ...data }; };
-  apontamentosRepository.update = async (id, data) => { calls.writes.push(data); return { ...record, ...data }; };
+  apontamentosRepository.sumHorasNoDia = async (...args) => {
+    calls.sums.push(args);
+    return horasNoDia;
+  };
+  apontamentosRepository.create = async (data) => {
+    calls.writes.push(data);
+    return { id: 10, ...data };
+  };
+  apontamentosRepository.update = async (id, data) => {
+    calls.writes.push(data);
+    return { ...record, ...data };
+  };
   colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
   projetosRepository.findById = async (id) => ({ id, status: "ATIVO" });
-  try { await run(calls); } finally {
-    [apontamentosRepository, colaboradoresRepository, projetosRepository].forEach((repo, index) => Object.assign(repo, originals[index]));
+  projetosRepository.hasOperationalTeam = async () => true;
+  try {
+    await run(calls);
+  } finally {
+    [apontamentosRepository, colaboradoresRepository, projetosRepository].forEach((repo, index) =>
+      Object.assign(repo, originals[index]),
+    );
   }
 }
 
-const novo = (data, horas = 4) => ({ colaboradorId: 2, projetoId: 1, data, horas, status: "PENDENTE", descricao: "Desenvolvimento" });
+const novo = (data, horas = 4) => ({
+  colaboradorId: 2,
+  projetoId: 1,
+  data,
+  horas,
+  status: "PENDENTE",
+  descricao: "Desenvolvimento",
+});
 
 test("apontamento novo recusa data futura e aceita hoje", async () => {
   await withRepositories({}, async (calls) => {
     await assert.rejects(apontamentosService.create(novo(day(1))), { statusCode: 400 });
-    await assert.rejects(apontamentosService.create(novo(new Date("2030-01-01"))), { statusCode: 400 });
+    await assert.rejects(apontamentosService.create(novo(new Date("2030-01-01"))), {
+      statusCode: 400,
+    });
     await apontamentosService.create(novo(day(0)));
     assert.equal(calls.writes.length, 1);
   });
@@ -59,5 +95,25 @@ test("apontamento antigo com data futura pode ser editado sem mudar a data", asy
     await apontamentosService.update(9, { data: day(30), descricao: "Ajuste" });
     await apontamentosService.update(9, { data: day(-1) });
     assert.equal(calls.writes.length, 2);
+  });
+});
+
+test("novos lançamentos e transferências recusam inativos, mas preservam correções históricas", async () => {
+  await withRepositories({}, async (calls) => {
+    colaboradoresRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
+    await assert.rejects(apontamentosService.update(9, { colaboradorId: 3 }), { statusCode: 409 });
+    colaboradoresRepository.findById = async (id) => ({ id, status: "ATIVO" });
+    projetosRepository.findById = async (id) => ({ id, status: "ENCERRADO" });
+    await assert.rejects(apontamentosService.create(novo(day(-1))), { statusCode: 409 });
+    await assert.rejects(apontamentosService.update(9, { projetoId: 3 }), { statusCode: 409 });
+    colaboradoresRepository.findById = async (id) => ({ id, status: "INATIVO" });
+    await apontamentosService.update(9, {
+      colaboradorId: 2,
+      projetoId: 1,
+      horas: 5,
+      descricao: "Correção histórica",
+    });
+    assert.equal(calls.writes.length, 1);
   });
 });

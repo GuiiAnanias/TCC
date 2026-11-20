@@ -5,8 +5,12 @@
   "packageManager": "pnpm@11.19.0",
   "type": "module",
   "scripts": {
+    "test:project-deletion-db": "node integracao/exclusao-projetos.mjs",
+    "test:auth-db": "node integracao/autenticacao.mjs",
     "test": "node --test",
-    "test:finance-db": "node scripts/verify-finance-history.mjs",
+    "test:finance-db": "node integracao/historico-financeiro.mjs",
+    "test:hours-db": "node integracao/concorrencia-horas.mjs",
+    "test:excel-db": "node integracao/excel.mjs",
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "prisma:generate": "prisma generate",
@@ -14,22 +18,36 @@
     "prisma:studio": "prisma studio",
     "seed": "node prisma/seed.js",
     "senha:link": "node scripts/gerar-link-senha.mjs",
-    "test:seed-db": "node scripts/verify-seed.mjs",
-    "test:dashboard-db": "node scripts/verify-dashboard.mjs",
-    "test:tasks-db": "node scripts/verify-tasks.mjs",
-    "test:awards-db": "node scripts/verify-awards.mjs"
+    "test:seed-db": "node integracao/seed.mjs",
+    "test:dashboard-db": "node integracao/dashboard.mjs",
+    "test:tasks-db": "node integracao/tarefas.mjs",
+    "test:awards-db": "node integracao/premiacao.mjs",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "test:team-db": "node integracao/equipe.mjs",
+    "test:invoiced-costs-db": "node integracao/custos-faturados.mjs",
+    "test:reports-db": "node integracao/relatorios.mjs",
+    "check:invoiced-costs": "node scripts/conferir-custos-faturados.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.15.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
+    "exceljs": "4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "nodemailer": "9.1.1",
+    "pdfkit": "0.17.2",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.14.0",
+    "globals": "^17.14.0",
     "nodemon": "^3.1.10",
+    "prettier": "^3.9.10",
     "prisma": "^6.15.0"
   }
 }

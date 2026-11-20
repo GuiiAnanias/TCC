@@ -1,0 +1,937 @@
+/* [ESTILO] Indicadores, tabelas, status, seletores com busca, abas e tarefas. */
+
+.table-panel {
+  overflow: hidden;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.summary-card {
+  display: block;
+  min-width: 0;
+  padding: 1rem 1.125rem;
+}
+
+/* Faixa de indicadores: um quadro só, dividido por linhas finas. */
+.dashboard-summary.summary-grid,
+.operational-metrics {
+  gap: 1px;
+  overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.dashboard-summary .summary-card,
+.operational-metrics .summary-card {
+  border: 0;
+  border-radius: 0;
+}
+
+.summary-card span,
+.summary-card small {
+  display: block;
+}
+
+.summary-card span {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 0.375rem;
+  color: var(--text);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+
+.summary-card small {
+  margin-top: 0.375rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.insight-panel {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+}
+
+.insight-panel h2 {
+  margin: 2px 0 0;
+  font-size: 1.375rem;
+}
+
+.insight-panel p {
+  max-width: 760px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.insight-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.insight-metrics span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.team-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  scroll-margin-top: 20px;
+}
+
+.team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.team-header h2 {
+  margin: 2px 0 0;
+  font-size: 1.375rem;
+}
+
+.team-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.team-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.3fr) minmax(180px, 1.1fr) 180px auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface-soft);
+}
+
+/* O botão acompanha a altura dos campos ao lado (50 px, ver .field > input). */
+.team-form > button {
+  min-height: 2.375rem;
+}
+
+/* Quatro campos na mesma linha, alinhados pelo topo (rótulos na mesma altura; o texto de
+   apoio dos benefícios fica embaixo do campo dele), e o botão numa linha própria. */
+.finance-form {
+  grid-template-columns: minmax(230px, 1.4fr) 190px 180px minmax(180px, 1fr);
+  align-items: start;
+}
+.finance-form .field small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+.finance-form > button {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-width: 220px;
+}
+
+.team-table-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.team-table-toolbar .field {
+  width: 210px;
+}
+
+.team-table-toolbar input,
+.team-table-toolbar select {
+  width: 100%;
+}
+
+.table-toolbar {
+  justify-content: space-between;
+  padding: 0.75rem 0.875rem;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.search-field {
+  position: relative;
+  width: min(460px, 100%);
+}
+
+.search-field svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+.search-field input {
+  padding-left: 38px;
+}
+
+.table-toolbar select {
+  width: 160px;
+  flex: 0 0 auto;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+}
+
+.clients-table {
+  table-layout: fixed;
+  min-width: 960px;
+}
+.clients-table th:nth-child(1) {
+  width: 25%;
+}
+.clients-table th:nth-child(2) {
+  width: 170px;
+}
+.clients-table th:nth-child(3) {
+  width: 14%;
+}
+.clients-table th:nth-child(5) {
+  width: 100px;
+}
+.clients-table th:nth-child(6) {
+  width: 112px;
+}
+.clients-table .company-name,
+.clients-table .company-contact {
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.45;
+}
+.clients-table .company-name strong,
+.clients-table .company-name small,
+.clients-table .company-contact span,
+.clients-table .company-contact small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.clients-table td:nth-child(3) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Limite de altura/linhas para evitar que textos extensos estourem a altura das linhas em listas */
+.cell-clamp,
+.finance-history-reason {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 340px;
+}
+
+.finance-history-reason {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+td {
+  max-width: 340px;
+}
+
+th,
+td {
+  padding: 0.6875rem 0.875rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Textos longos (nomes de projeto, cliente, descrições e cabeçalhos compridos) quebram
+   linha entre palavras em vez de esticar a tabela para o lado. Valores em reais já usam
+   espaço sem quebra; datas e números não têm espaço, então continuam numa linha só. */
+th,
+td {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+
+td {
+  line-height: 1.45;
+}
+
+th {
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+td {
+  color: var(--text);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr:hover {
+  background: var(--hover);
+}
+
+tbody tr:last-child > td {
+  border-bottom: 0;
+}
+
+.empty-cell {
+  height: 74px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 1.5rem;
+  padding: 0.125rem 0.5rem 0.125rem 0.4375rem;
+  border: 0 !important;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Ponto da cor do status: a cor não é a única pista, o nome continua escrito. */
+.status::before {
+  content: "";
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-ativo {
+  color: var(--success);
+  background: var(--success-soft);
+  border: 1px solid var(--success-line);
+}
+
+.status-inativo,
+.status-pausado,
+.status-cancelado {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border: 1px solid var(--warning-line);
+}
+.status-encerrado {
+  color: var(--muted);
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+}
+
+.initial-project-team {
+  min-width: 0;
+  margin: 24px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.initial-project-team legend {
+  font-weight: 500;
+}
+.initial-project-team p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+.initial-project-team summary {
+  cursor: pointer;
+  padding: 12px 0;
+  font-weight: 500;
+}
+.initial-team-choices {
+  max-height: 240px;
+  overflow-y: auto;
+  margin: 12px 0;
+}
+.initial-team-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  cursor: pointer;
+}
+.initial-team-choice input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+}
+.initial-team-choice small {
+  display: block;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.initial-team-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.initial-team-member {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+.initial-team-member > strong {
+  display: block;
+  overflow-wrap: anywhere;
+  margin-bottom: 12px;
+}
+.initial-team-member .form-grid {
+  grid-template-columns: 1fr;
+}
+.initial-team-member button {
+  margin-top: 12px;
+}
+
+.status-pendente {
+  background-color: var(--warning-soft);
+  color: var(--warning);
+  border: 1px solid var(--warning-line);
+}
+
+.status-aprovado {
+  background-color: var(--success-soft);
+  color: var(--success);
+  border: 1px solid var(--success-line);
+}
+
+.status-faturado {
+  background-color: var(--info-soft);
+  color: var(--info);
+  border: 1px solid var(--line-strong);
+}
+
+.status-modificado {
+  background-color: var(--info-soft);
+  color: var(--info);
+  border: 1px solid var(--accent-line);
+}
+
+.status-excluido {
+  background-color: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid var(--danger-line);
+}
+
+.icon-button {
+  width: 2.25rem;
+  min-height: 2.25rem;
+  color: var(--text-secondary);
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+/* Ações de linha (editar, excluir) sem moldura, para a tabela não virar uma grade de botões. */
+td .icon-button {
+  width: 2rem;
+  min-height: 2rem;
+  background: transparent;
+  border-color: transparent;
+}
+
+.icon-button:hover {
+  background: var(--hover);
+}
+
+.icon-button.danger {
+  color: var(--danger);
+}
+
+.icon-button.danger:hover {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+}
+
+@media (max-width: 860px) {
+  /* Em telas estreitas o menu fica sobre o conteúdo; recolhido, ocupa só a faixa dos ícones. */
+  .app-shell {
+    grid-template-columns: 4.25rem minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    left: 0;
+    z-index: 100;
+    width: min(15.5rem, calc(100vw - 3rem));
+    box-shadow: var(--dropdown-shadow);
+  }
+
+  .sidebar-collapsed .sidebar {
+    width: 4.25rem;
+    box-shadow: none;
+  }
+
+  .main-area {
+    grid-column: 2;
+  }
+
+  .topbar,
+  .main-content {
+    padding-left: 1.125rem;
+    padding-right: 1.125rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .team-header,
+  .team-header-actions,
+  .team-table-toolbar,
+  .team-form {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+
+  .page-header,
+  .table-toolbar,
+  .actions-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .table-toolbar select {
+    width: 100%;
+  }
+
+  .team-table-toolbar .field {
+    width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .page-header h1 {
+    font-size: 1.375rem;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* SelecaoComBusca -------------------------------------------------------- */
+.searchable-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.searchable-select__control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  min-height: 2.375rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  background: var(--surface);
+  text-align: left;
+  font: inherit;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.searchable-select__control:hover:not(:disabled) {
+  border-color: var(--line-hover);
+}
+
+.searchable-select.is-open .searchable-select__control,
+.searchable-select__control:focus-visible {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  outline: none;
+}
+
+.searchable-select__control:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+  background: var(--disabled);
+}
+
+.searchable-select__value,
+.searchable-select__placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+}
+
+.searchable-select__value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.searchable-select__placeholder {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* Dentro de um campo, o texto do seletor herdava o estilo do rótulo (.field span):
+   pequeno e em negrito. Aqui ele volta a parecer com os outros campos. */
+.field .searchable-select__value,
+.field .searchable-select__placeholder {
+  font-size: 0.9375rem;
+  font-weight: 400;
+}
+.field .searchable-select__value {
+  color: var(--text);
+}
+.field .searchable-select__placeholder {
+  color: var(--muted);
+}
+
+.searchable-select__chevron {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform 0.16s ease;
+}
+
+.searchable-select.is-open .searchable-select__chevron {
+  transform: rotate(180deg);
+}
+
+.searchable-select__dropdown {
+  position: absolute;
+  z-index: 50;
+  top: calc(100% + 7px);
+  left: 0;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--dropdown-shadow);
+}
+
+.searchable-select__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.searchable-select__search svg {
+  position: absolute;
+  left: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.searchable-select__search input {
+  min-height: 2.375rem;
+  padding-left: 2.25rem;
+  border-radius: var(--radius-sm);
+}
+
+.searchable-select__options {
+  display: grid;
+  gap: 3px;
+  max-height: 230px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.searchable-select__option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 2.375rem;
+  padding: 0.5rem 0.625rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  background: transparent;
+  text-align: left;
+  font: inherit;
+}
+
+.searchable-select__option:hover,
+.searchable-select__option.is-selected {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+}
+
+.searchable-select__option.is-selected {
+  font-weight: 600;
+}
+
+.searchable-select__option svg {
+  flex: 0 0 auto;
+  color: var(--primary);
+}
+
+.searchable-select__empty {
+  padding: 13px 10px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+/* Seleção de vários itens: caixa de marcação à esquerda e rodapé com limpar. */
+.multi-select .searchable-select__option {
+  justify-content: flex-start;
+}
+.multi-select__box {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 5px;
+  background: var(--surface);
+}
+.multi-select .is-selected .multi-select__box {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+.multi-select .is-selected .multi-select__box svg {
+  color: var(--button-text);
+}
+.multi-select__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 8px;
+  padding: 8px 4px 0;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.multi-select__footer span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+/* No painel de filtros, o seletor múltiplo usa a mesma letra dos selects nativos ao lado. */
+.dashboard-filters .multi-select .searchable-select__control span {
+  color: var(--text);
+  font-size: inherit;
+  font-weight: 400;
+}
+.dashboard-filters .multi-select .searchable-select__option span:not(.multi-select__box) {
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: inherit;
+}
+.multi-select__clear {
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--primary);
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.multi-select__clear:hover:not(:disabled) {
+  background: var(--accent-soft);
+}
+.multi-select__clear:disabled {
+  color: var(--muted);
+  cursor: default;
+}
+
+/* Deixa os campos comuns com a mesma presença visual do seletor pesquisável. */
+.field > input,
+.field > select,
+.field > .cep-input > input {
+  min-height: 2.375rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-sm);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+
+.field > input:hover:not(:disabled),
+.field > select:hover:not(:disabled),
+.field > .cep-input > input:hover:not(:disabled) {
+  border-color: var(--line-hover);
+}
+
+/* Abas (tarefas/sprints, premiação, relatórios, dashboard do projeto): um controle segmentado,
+   para não competir com o botão principal da tela. */
+.tasks-tabs,
+.entity-dashboard-tabs,
+.report-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+.tasks-tabs > button,
+.entity-dashboard-tabs > button,
+.report-tabs > a {
+  min-height: 2rem;
+  padding: 0.25rem 0.875rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border-color: transparent;
+}
+.tasks-tabs > button:hover:not(:disabled),
+.entity-dashboard-tabs > button:hover,
+.report-tabs > a:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+.tasks-tabs > .primary-button,
+.entity-dashboard-tabs > .primary-button,
+.report-tabs > .report-tab.is-active {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--line);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.tasks-form-fields {
+  padding: 0;
+  margin: 0;
+  border: 0;
+  min-width: 0;
+}
+/* Campos alinhados pela base: a estimativa tem dois rótulos e deixava o campo ao lado
+   esticado e desalinhado. */
+.tasks-form-fields .form-grid {
+  align-items: end;
+}
+.tasks-estimate {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.tasks-responsibles {
+  margin: 20px 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.tasks-responsibles legend {
+  padding: 0 8px;
+}
+.tasks-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  align-self: center;
+  cursor: pointer;
+}
+.tasks-check input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: var(--primary);
+}
+.tasks-detail {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  margin-top: 4px;
+  max-width: 320px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.tasks-filters {
+  flex-wrap: wrap;
+}
+.tasks-page textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--input-bg, var(--surface));
+  color: var(--text);
+  font: inherit;
+}

@@ -1,38 +1,169 @@
-import React, { useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { DatabaseZap } from "lucide-react";
-import { useAuth } from "../auth/AuthContext.jsx";
-import { ThemeToggle } from "../ThemeContext.jsx";
+/**
+ * [TELA][SEGURANCA] Tela de login (/login). Envia usuário ou e-mail e senha para POST
+ * /api/auth/login (via AutenticacaoContext). Mensagens: "Preencha este campo" (navegador), "Usuário ou
+ * senha inválidos" (API) e, depois de muitas tentativas, "Tente novamente em X" com contagem regressiva.
+ */
 
+import React, { useEffect, useState } from "react";
+import { Link, Navigate, useLocation } from "react-router-dom";
+import { DatabaseZap } from "lucide-react";
+import { useAutenticacao } from "../autenticacao/AutenticacaoContext.jsx";
+import { BotaoTema } from "../aparencia/TemaContext.jsx";
+import { ControleTamanhoTexto } from "../aparencia/ControleTamanhoTexto.jsx";
+import {
+  readRememberedLogin,
+  saveRememberedLogin,
+  forgetRememberedLogin,
+} from "../autenticacao/loginLembrado.js";
+import { segundosRestantes, tempoDeEspera } from "../autenticacao/tempoEspera.js";
+
+// [TELA] Formulário de acesso, "Lembrar meu usuário" e link Esqueci minha senha.
 export function LoginPage() {
-  const auth = useAuth();
+  const auth = useAutenticacao();
   const location = useLocation();
-  const [login, setLogin] = useState("");
+  const [initialLogin] = useState(readRememberedLogin);
+  const [login, setLogin] = useState(initialLogin);
+  const [rememberUser, setRememberUser] = useState(Boolean(initialLogin));
   const [senha, setSenha] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-  const [showHelp, setShowHelp] = useState(false);
+  // [SEGURANCA] Bloqueio por tentativas: horário (ms) em que o login volta a ser aceito e o
+  // relógio que atualiza a contagem regressiva a cada meio segundo.
+  const [liberaEm, setLiberaEm] = useState(0);
+  const [agora, setAgora] = useState(() => Date.now());
+  const espera = segundosRestantes(liberaEm, agora);
+  useEffect(() => {
+    if (!liberaEm) return undefined;
+    const relogio = setInterval(() => {
+      const instante = Date.now();
+      setAgora(instante);
+      if (instante >= liberaEm) {
+        setLiberaEm(0);
+        setError("");
+      }
+    }, 500);
+    return () => clearInterval(relogio);
+  }, [liberaEm]);
   const from = location.state?.from;
-  const destination = typeof from === "string" && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/login") ? from : "/dashboard";
+  const destination =
+    typeof from === "string" &&
+    from.startsWith("/") &&
+    !from.startsWith("//") &&
+    !from.startsWith("/login")
+      ? from
+      : "/dashboard";
   if (auth.user) return <Navigate to={destination} replace />;
+  // [REQUISICAO] Faz o login pelo AutenticacaoContext; quando o usuário fica logado, a tela redireciona.
+  // [ERRO] Mostra a mensagem da API ("Usuário ou senha inválidos") ou a de servidor fora do ar.
+  // [SEGURANCA] Com "lembrar" marcado salva só o usuário, nunca a senha.
   async function submit(event) {
     event.preventDefault();
     setBusy(true);
     setError("");
-    try { await auth.login(login, senha); }
-    catch (error) { setError(error.response?.data?.message || "Não foi possível conectar ao servidor. Tente novamente."); }
-    finally { setBusy(false); }
+    try {
+      await auth.login(login, senha);
+      if (rememberUser) saveRememberedLogin(login);
+    } catch (error) {
+      // [ERRO] 429: muitas tentativas. A API informa em quantos segundos libera; a tela conta.
+      const segundos = Number(error.response?.data?.tentarNovamenteEm);
+      if (error.response?.status === 429 && segundos > 0) {
+        const instante = Date.now();
+        setAgora(instante);
+        setLiberaEm(instante + segundos * 1000);
+      }
+      setError(
+        error.response?.data?.message || "Não foi possível conectar ao servidor. Tente novamente.",
+      );
+    } finally {
+      setBusy(false);
+    }
   }
-  return <main className="login-page"><section className="login-card">
-    <div className="login-brand-row"><div className="brand"><DatabaseZap size={32} /><div><strong>CODE BI</strong><span>Gestão de projetos</span></div></div><ThemeToggle /></div>
-    <h1>Entrar no sistema</h1><p>Use sua conta para acessar os projetos e indicadores.</p>
-    <form onSubmit={submit} className="login-form">
-      <label htmlFor="login">Usuário ou e-mail</label><input id="login" autoComplete="username" required maxLength={254} value={login} onChange={(event) => setLogin(event.target.value)} disabled={busy} autoFocus />
-      <label htmlFor="senha">Senha</label><input id="senha" type="password" autoComplete="current-password" required maxLength={256} value={senha} onChange={(event) => setSenha(event.target.value)} disabled={busy} />
-      {error && <div className="feedback error" role="alert">{error}</div>}
-      <button className="primary-button" type="submit" disabled={busy}>{busy ? "Entrando…" : "Entrar"}</button>
-    </form>
-    <button type="button" className="login-link" aria-expanded={showHelp} onClick={() => setShowHelp((value) => !value)}>Esqueci minha senha</button>
-    {showHelp && <p className="login-help" role="note">Peça ao administrador do sistema um link para redefinir sua senha. O link vale por 30 minutos e só pode ser usado uma vez.</p>}
-  </section></main>;
+  return (
+    <main className="login-page">
+      <section className="login-card">
+        <div className="login-brand-row">
+          <div className="brand">
+            <DatabaseZap size={32} />
+            <div>
+              <strong>CODE BI</strong>
+              <span>Gestão de projetos</span>
+            </div>
+          </div>
+          <div className="login-controls">
+            <ControleTamanhoTexto />
+            <BotaoTema />
+          </div>
+        </div>
+        <h1>Entrar no sistema</h1>
+        <p>Use sua conta para acessar os projetos e indicadores.</p>
+        {auth.sessionMessage && <p role="status">{auth.sessionMessage}</p>}
+        {!auth.sessionMessage && typeof location.state?.aviso === "string" && (
+          <p className="feedback success" role="status">
+            {location.state.aviso}
+          </p>
+        )}
+        <form onSubmit={submit} className="login-form">
+          <label htmlFor="login">Usuário ou e-mail</label>
+          <input
+            id="login"
+            autoComplete="username"
+            required
+            maxLength={254}
+            value={login}
+            onChange={(event) => setLogin(event.target.value)}
+            disabled={busy}
+            autoFocus
+          />
+          <label htmlFor="senha">Senha</label>
+          <input
+            id="senha"
+            type="password"
+            autoComplete="current-password"
+            required
+            maxLength={256}
+            value={senha}
+            onChange={(event) => setSenha(event.target.value)}
+            disabled={busy}
+          />
+          <div className="login-remember">
+            <label htmlFor="remember-user">
+              <input
+                id="remember-user"
+                type="checkbox"
+                checked={rememberUser}
+                disabled={busy}
+                aria-describedby="remember-user-help"
+                onChange={(event) => {
+                  const checked = event.target.checked;
+                  setRememberUser(checked);
+                  if (!checked) forgetRememberedLogin();
+                }}
+              />
+              Lembrar meu usuário neste navegador
+            </label>
+            <small id="remember-user-help">
+              Preenche apenas o usuário ou e-mail no próximo acesso.
+            </small>
+          </div>
+          {espera > 0 ? (
+            <div className="feedback error" role="alert">
+              Muitas tentativas. Tente novamente em {tempoDeEspera(espera)}.
+            </div>
+          ) : (
+            error && (
+              <div className="feedback error" role="alert">
+                {error}
+              </div>
+            )
+          )}
+          <button className="primary-button" type="submit" disabled={busy || espera > 0}>
+            {busy ? "Entrando…" : espera > 0 ? "Aguarde para tentar de novo" : "Entrar"}
+          </button>
+        </form>
+        <Link className="login-link" to="/esqueci-senha">
+          Esqueci minha senha
+        </Link>
+      </section>
+    </main>
+  );
 }

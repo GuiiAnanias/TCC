@@ -1,0 +1,4 @@
+# Quebra de linha padrão (LF) no repositório e no checkout, em Windows e Linux.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

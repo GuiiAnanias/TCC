@@ -1,12 +1,21 @@
-import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./commonSchemas.js";
+/**
+ * [SCHEMA][VALIDACAO] Validação dos dados de projeto: cliente, tipo de contrato, horas contratadas,
+ * valor e datas.
+ */
 
-export const tipoContratoSchema = z.enum(["FIXO", "HORAS", "FECHADO"], {
-  message: "Tipo de contrato invalido."
+import { z } from "zod";
+import { paginationQuerySchema } from "./comunsSchemas.js";
+import { statusProjetoSchema } from "./statusProjetoSchema.js";
+import { equipeInicialSchema } from "./equipeProjetoSchemas.js";
+
+// [REGRA] Tipos de contrato aceitos (o mesmo enum do banco, em prisma/schema.prisma).
+export const tipoContratoSchema = z.enum(["ESCOPO_FECHADO", "POR_HORA", "FEE_MENSAL", "SQUAD"], {
+  message: "Tipo de contrato invalido.",
 });
 
 export const projetoQuerySchema = paginationQuerySchema.extend({
-  clienteId: z.coerce.number().int().positive().optional()
+  status: statusProjetoSchema.optional(),
+  clienteId: z.coerce.number().int().positive().optional(),
 });
 
 export const projetoCreateSchema = z.object({
@@ -16,10 +25,11 @@ export const projetoCreateSchema = z.object({
   horasContratadas: z.coerce.number().positive("Horas contratadas devem ser maiores que zero."),
   valorProjeto: z.coerce.number().positive("Valor do projeto deve ser maior que zero."),
   dataInicio: z.coerce.date(),
-  status: optionalStatusSchema
+  status: z.literal("ATIVO").optional(),
+  equipeInicial: equipeInicialSchema.optional(),
 });
 
-export const projetoUpdateSchema = projetoCreateSchema.partial().refine(
-  (data) => Object.keys(data).length > 0,
-  "Informe ao menos um campo para atualizar."
-);
+export const projetoUpdateSchema = projetoCreateSchema
+  .extend({ status: statusProjetoSchema.optional(), equipeInicial: z.never().optional() })
+  .partial()
+  .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");

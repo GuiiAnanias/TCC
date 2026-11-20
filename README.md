@@ -58,9 +58,9 @@ http://localhost:5173
 
 ### Login e proteção de acesso
 
-Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. Executar o seed novamente não redefine uma conta existente.
+Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. O seed também cria `admin2` (`admin2@sistema.local`, mesma senha), útil para demonstrar o bloqueio por tentativas numa conta e seguir usando a outra. Executar o seed novamente não redefine uma conta existente.
 
-As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há cadastro de usuários nesta etapa.
+As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há tela de cadastro de usuários: as contas vêm do seed. Sessões, limites de tentativas e regras de senha estão em [docs/seguranca.md](docs/seguranca.md).
 
 Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "admin123" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
 
@@ -68,7 +68,11 @@ Para testar a autenticação e a proteção da API com banco simulado, execute `
 
 #### Esqueci minha senha
 
-O sistema não envia e-mail. Para redefinir uma senha, quem administra o servidor gera um link de uso único na pasta `backend`, informando o usuário ou o e-mail:
+Na tela de login, **Esqueci minha senha** abre a tela em que o usuário informa o e-mail da conta. A resposta é sempre a mesma ("Caso o e-mail informado esteja cadastrado, será enviado um link de redefinição de senha."), e o link chega por e-mail apenas se o e-mail pertencer a uma conta ativa.
+
+Em desenvolvimento e na demonstração, os e-mails vão para o **Mailpit**, que sobe junto do banco com `docker compose up -d` e mostra as mensagens em [http://localhost:8025](http://localhost:8025). Nada é enviado para a internet. Para usar um servidor de e-mail real, ajuste `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` e `MAIL_FROM` no `.env` do backend.
+
+Quem administra o servidor também pode gerar o link manualmente na pasta `backend`, informando o usuário ou o e-mail:
 
 ```powershell
 corepack pnpm run senha:link admin
@@ -104,16 +108,20 @@ Se a API responder "Rota não encontrada" em http://localhost:3333: acesse as ro
 
 ## Visão Geral
 
-O Sistema de Indicadores é uma aplicação web para centralizar a gestão operacional de clientes, colaboradores, projetos, equipes e tabelas de remuneração. A base foi estruturada para preservar histórico, reduzir planilhas manuais e preparar o sistema para indicadores financeiros e operacionais.
+O Sistema de Indicadores (CODE BI) é uma aplicação web para empresas de software centralizarem a gestão operacional de clientes, colaboradores, projetos, equipes e tabelas de remuneração. A base foi estruturada para preservar histórico, reduzir planilhas manuais e preparar o sistema para indicadores financeiros e operacionais.
 
 Funcionalidades disponíveis:
 
 - Cadastro, edição, consulta e inativação de clientes.
 - Cadastro, edição, consulta e inativação de colaboradores.
 - Cadastro, edição, consulta e inativação de itens de remuneração.
-- Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios e histórico.
+- Configuração financeira vigente por colaborador, com faixa de remuneração, benefícios informativos (fora do cálculo de custo) e histórico.
 - Cadastro, edição, consulta e inativação de projetos.
 - Vinculação de colaboradores aos projetos, com papel/função e período de participação.
+- Filtros combináveis nos dashboards (período, cliente, vários projetos, colaborador, sprint, equipe e status do projeto), descritos em `docs/filtros.md`.
+- Relatórios com prévia: escolha de projetos ou clientes, período, oito blocos e opções de personalização (título, observações, equipe, colaborador, status do projeto e das horas, ordenação e colunas). A prévia não é gravada; só Salvar no histórico grava a cópia dos dados e libera o download em PDF e Excel. Histórico paginado dos relatórios gerados, descritos em `docs/relatorios.md`.
+- Exportação dos indicadores do dashboard em Excel (.xlsx), no recorte dos filtros e pronta para o Power BI.
+- Importação de apontamentos de horas por planilha Excel, conferida linha a linha antes de gravar, com histórico das importações concluídas e com falha.
 - Consulta visual dos dados do banco pelo Prisma Studio.
 - Collection do Postman para testes da API.
 
@@ -144,6 +152,30 @@ schemas      -> validação dos dados com Zod
 ```
 
 Essa separação facilita manutenção, testes, troca de interface e evolução do produto sem espalhar regra de negócio pela aplicação inteira.
+
+---
+
+## Documentação dos módulos
+
+As regras de cada módulo ficam na pasta `docs/`:
+
+| Documento                                                      | Conteúdo                                                                                                                       |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| [docs/clientes.md](docs/clientes.md)                           | Clientes PF/PJ, validações e consultas de CNPJ e CEP                                                                           |
+| [docs/projetos.md](docs/projetos.md)                           | Tipos de contrato e estados dos projetos                                                                                       |
+| [docs/equipe-projetos.md](docs/equipe-projetos.md)             | Equipe inicial e quando as horas ficam liberadas                                                                               |
+| [docs/exclusao-projetos.md](docs/exclusao-projetos.md)         | Exclusão definitiva condicionada                                                                                               |
+| [docs/tarefas-sprints.md](docs/tarefas-sprints.md)             | Tarefas e sprints manuais                                                                                                      |
+| [docs/apontamentos.md](docs/apontamentos.md)                   | Apontamentos de horas e regras de faturamento                                                                                  |
+| [docs/composicao-financeira.md](docs/composicao-financeira.md) | Remuneração, vigências, papéis, bonificação e custo                                                                            |
+| [docs/indicadores.md](docs/indicadores.md)                     | Fórmulas dos indicadores e da auditoria                                                                                        |
+| [docs/filtros.md](docs/filtros.md)                             | Filtros dos dashboards e da exportação                                                                                         |
+| [docs/dashboards.md](docs/dashboards.md)                       | Visões dos dashboards, ranking de inconsistências, resumo por equipe e evolução do projeto                                     |
+| [docs/premiacao.md](docs/premiacao.md)                         | Avaliação de premiação Dev e PO/SM                                                                                             |
+| [docs/seguranca.md](docs/seguranca.md)                         | Login, sessões, limites e proteção dos dados                                                                                   |
+| [docs/login.md](docs/login.md)                                 | Lembrar usuário e recuperação de senha                                                                                         |
+| [docs/interface.md](docs/interface.md)                         | Menu, telas e elementos comuns                                                                                                 |
+| [docs/guia-do-codigo.md](docs/guia-do-codigo.md)               | Mapa do código: etiquetas dos comentários para busca (Ctrl+F), caminho de uma requisição, migrations e onde mostrar cada parte |
 
 ---
 
@@ -192,25 +224,37 @@ sistema-indicadores/
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   ├── migrations/
-│   │   └── seed.js
+│   │   └── seed.js               # seed-demonstracao, seed-empresas e seed-premiacao
 │   ├── src/
 │   │   ├── app.js
 │   │   ├── server.js
-│   │   ├── config/
-│   │   ├── http/
+│   │   ├── config/               # variáveis de ambiente e Prisma
+│   │   ├── http/                 # routes, controllers e middlewares
 │   │   ├── repositories/
 │   │   ├── schemas/
 │   │   ├── services/
 │   │   └── utils/
+│   ├── test/                     # testes automáticos (sem banco)
+│   ├── integracao/               # testes com o PostgreSQL local (pnpm run test:*-db)
+│   ├── scripts/                  # ferramentas: link de senha, conferência de custos
 │   └── package.json
 ├── frontend/
 │   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── config/
+│   │   ├── api/                  # conexão com a API
+│   │   ├── aparencia/            # tema claro/escuro e tamanho do texto
+│   │   ├── autenticacao/         # login, sessão e regras de senha
+│   │   ├── components/           # comum/, dashboard/, financeiro/, importacao/,
+│   │   │                         # projetos/ e relatorios/
+│   │   ├── config/               # telas de cadastro, opções e blocos de relatório
+│   │   ├── estilos/              # CSS dividido por área (ordem em styles.css)
+│   │   ├── hooks/
 │   │   ├── pages/
+│   │   ├── utils/
 │   │   ├── App.jsx
-│   │   └── main.jsx
+│   │   ├── main.jsx
+│   │   └── styles.css
+│   ├── test/
+│   ├── scripts/testes/           # apoio aos testes (DOM e JSX)
 │   └── package.json
 ├── docs/
 │   └── postman/
@@ -222,44 +266,44 @@ sistema-indicadores/
 
 ## Modelo de Dados
 
-| Tabela | Descrição |
-|---|---|
-| `usuarios` | Contas de acesso e recuperação de senha |
-| `clientes` | Empresas ou contratantes atendidos |
-| `colaboradores` | Profissionais internos ou alocados |
-| `itens_tabela_remuneracao` | Faixas de remuneração e valor/hora |
-| `configuracoes_financeiras` | Configuração financeira vigente por colaborador |
-| `projetos` | Projetos contratados por cliente |
-| `projetos_colaboradores` | Relação entre projeto, colaborador, papel e período |
+| Tabela                      | Descrição                                                                       |
+| --------------------------- | ------------------------------------------------------------------------------- |
+| `usuarios`                  | Contas de acesso e recuperação de senha                                         |
+| `sessoes`                   | Sessões de login, com expiração e revogação                                     |
+| `limites_autenticacao`      | Contadores do limite de tentativas de acesso                                    |
+| `clientes`                  | Clientes pessoa física ou jurídica                                              |
+| `colaboradores`             | Profissionais internos ou alocados                                              |
+| `itens_tabela_remuneracao`  | Faixas de remuneração e valor/hora                                              |
+| `configuracoes_financeiras` | Vigências de valor/hora e benefícios por colaborador                            |
+| `bonificacoes_papeis`       | Percentual de bonificação por papel, com vigência                               |
+| `projetos`                  | Projetos contratados por cliente                                                |
+| `projetos_colaboradores`    | Relação entre projeto, colaborador, papel e período                             |
+| `sprints`                   | Sprints de cada projeto                                                         |
+| `tarefas`                   | Tarefas de cada projeto, com estimativa e status                                |
+| `tarefas_responsaveis`      | Responsáveis de cada tarefa                                                     |
+| `apontamentos_horas`        | Horas trabalhadas, com status e composição do custo faturado                    |
+| `importacoes_apontamentos`  | Histórico das importações de apontamentos por planilha (concluídas e com falha) |
+| `regras_premiacao`          | Versões publicadas das regras de premiação                                      |
+| `avaliacoes_premiacao`      | Avaliações mensais de premiação e suas versões                                  |
+| `projetos_avaliacoes`       | Projetos usados em cada avaliação                                               |
 
 Regras importantes:
 
-- Registros principais são inativados por `status`, sem exclusão física.
+- Clientes, colaboradores e itens de remuneração são inativados por `status`, sem exclusão física. Projetos são encerrados; a exclusão definitiva vale só para projetos sem vínculos. Apontamentos não faturados podem ser excluídos.
 - A bonificação usada nos custos é definida por papel no projeto e por vigência, separadamente da faixa de remuneração.
 - O colaborador recebe a regra financeira ao ser vinculado a uma faixa em `configuracoes_financeiras`.
 - Ao aplicar uma nova configuração financeira, a configuração vigente anterior é encerrada com `dataFim`.
 - A equipe do projeto preserva histórico: encerrar uma participação preenche `dataSaida`.
 - Um colaborador não pode ficar ativo duas vezes no mesmo projeto ao mesmo tempo.
 - Colaboradores inativos não podem ser vinculados a novos projetos.
-- Projetos inativos ficam disponíveis para consulta, mas não permitem alterações na equipe.
+- Projetos pausados, encerrados ou cancelados ficam disponíveis para consulta, mas não permitem alterações na equipe.
 - Apontamentos com status FATURADO não podem ser editados nem excluídos, porque as horas já foram cobradas do cliente. Para corrigir, volte o status para APROVADO, salve e depois edite.
 
 ---
 
-### Clientes como empresas e consulta de CNPJ
+### Clientes PF e PJ
 
-O cadastro de clientes reúne CNPJ, razão social, nome fantasia, pessoa de contato, e-mail, telefone, endereço e informações cadastrais. **Consultar CNPJ** preenche os dados pela ReceitaWS; confira e ajuste antes de salvar. A consulta não salva automaticamente. Se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente.
-
-Novos clientes exigem CNPJ válido e único. Clientes antigos continuam disponíveis, com os novos campos vazios até serem atualizados. O status ativo/inativo no sistema é independente da situação cadastral retornada pela ReceitaWS. CNPJs numéricos e alfanuméricos são aceitos na validação e no cadastro; a consulta depende da disponibilidade do documento no provedor.
-
-A integração reutiliza `https://receitaws.com.br/v1/cnpj/{cnpj}` do GiveHope, com consulta pelo backend em `GET /api/clientes/cnpj/:cnpj` (autenticada após integrar a branch `feature/login`), timeout de 12 segundos e cache local de 10 minutos. A API pública da ReceitaWS não exige chave e permite até 3 consultas por minuto. Referência: https://developers.receitaws.com.br/.
-
-Depois de atualizar esta versão, aplique a migration e gere o cliente Prisma na pasta `backend`:
-
-```powershell
-corepack pnpm exec prisma migrate deploy
-corepack pnpm run prisma:generate
-```
+O cadastro de clientes aceita pessoa jurídica (CNPJ) e pessoa física (CPF). **Consultar CNPJ** preenche os dados pela ReceitaWS, e digitar o CEP preenche o endereço pela ViaCEP. As consultas não salvam nada; se o serviço estiver indisponível ou atingir seu limite, os dados podem ser preenchidos manualmente. O status ativo/inativo no sistema é independente da situação cadastral da ReceitaWS. Validações, limites das consultas e API estão em [docs/clientes.md](docs/clientes.md).
 
 ## Configuração Financeira do Colaborador
 
@@ -278,12 +322,14 @@ O colaborador é vinculado a uma faixa por meio da configuração financeira:
 ```txt
 Colaborador
 Faixa de remuneração
-Benefícios
+Benefícios (informativo, não entra no custo)
 Data de início
 Data de fim
 ```
 
 Essa estrutura preserva histórico. Quando uma nova configuração financeira é aplicada para o colaborador, a configuração vigente anterior é encerrada e a nova passa a ser usada como referência.
+
+As regras de datas, as travas do histórico, a bonificação por papel e a fórmula do custo estão em [docs/composicao-financeira.md](docs/composicao-financeira.md).
 
 ---
 
@@ -298,11 +344,15 @@ GET /api/projetos/papeis
 Lista atual:
 
 ```txt
+Dev
 Product Owner
 Scrum Master
-Gerente de Projeto
 Tech Lead
 Líder Técnico
+QA
+UI/UX Designer
+DevOps
+Gerente de Projeto
 Arquiteto de Software
 Analista de Sistemas
 Analista de Negócios
@@ -312,14 +362,13 @@ Desenvolvedor Back-end
 Desenvolvedor Front-end
 Desenvolvedor Mobile
 Programador
-QA
-UI/UX Designer
-DevOps
 Engenheiro de Dados
 DBA
 Especialista em Segurança
 Suporte Técnico
 ```
+
+O papel no projeto é independente do cargo do colaborador e define a bonificação aplicada às horas.
 
 ---
 
@@ -331,6 +380,29 @@ Base URL:
 http://localhost:3333/api
 ```
 
+Exceto `/health`, `/auth/login`, `/auth/esqueci-senha`, `/auth/redefinir-senha/validar` e `/auth/redefinir-senha`, todas as rotas exigem `Authorization: Bearer <token>`. Os documentos em `docs/` detalham parâmetros e regras de cada módulo.
+
+Autenticação:
+
+```txt
+POST   /auth/login
+GET    /auth/me
+POST   /auth/logout
+POST   /auth/esqueci-senha
+POST   /auth/redefinir-senha/validar
+POST   /auth/redefinir-senha
+```
+
+Opções e dashboards:
+
+```txt
+GET    /opcoes-cadastro
+GET    /dashboard
+GET    /dashboard/opcoes
+GET    /dashboard/projetos/:id
+GET    /dashboard/colaboradores/:id
+```
+
 Clientes:
 
 ```txt
@@ -339,6 +411,8 @@ POST   /clientes
 GET    /clientes/:id
 PUT    /clientes/:id
 DELETE /clientes/:id
+GET    /clientes/cnpj/:cnpj
+GET    /clientes/cep/:cep
 ```
 
 Colaboradores:
@@ -374,6 +448,8 @@ POST   /projetos
 GET    /projetos/:id
 PUT    /projetos/:id
 DELETE /projetos/:id
+GET    /projetos/:id/exclusao
+DELETE /projetos/:id/permanente
 ```
 
 Equipe do projeto:
@@ -384,6 +460,47 @@ GET    /projetos/:id/equipe
 POST   /projetos/:id/equipe
 PUT    /projetos/:id/equipe/:vinculoId
 DELETE /projetos/:id/equipe/:vinculoId
+```
+
+Bonificação por papel:
+
+```txt
+GET    /bonificacoes-papeis
+POST   /bonificacoes-papeis
+```
+
+Apontamentos de horas:
+
+```txt
+GET    /apontamentos
+POST   /apontamentos
+GET    /apontamentos/:id
+PUT    /apontamentos/:id
+DELETE /apontamentos/:id
+```
+
+Tarefas e sprints:
+
+```txt
+GET    /tarefas
+POST   /tarefas
+PUT    /tarefas/:id
+GET    /sprints
+POST   /sprints
+PUT    /sprints/:id
+```
+
+Premiação:
+
+```txt
+GET    /premiacoes/modelos
+GET    /premiacoes/regras
+POST   /premiacoes/regras
+GET    /premiacoes
+POST   /premiacoes
+GET    /premiacoes/:id
+PUT    /premiacoes/:id
+POST   /premiacoes/:id/concluir
 ```
 
 Exemplo para vincular colaborador a um projeto:
@@ -405,6 +522,60 @@ Exemplo para aplicar uma configuração financeira ao colaborador:
   "dataInicio": "2026-09-04"
 }
 ```
+
+Relatórios e importação em Excel:
+
+```txt
+GET    /relatorios/indicadores.xlsx          aceita os mesmos filtros de GET /dashboard (docs/filtros.md)
+GET    /importacoes/apontamentos/modelo      modelo .xlsx com listas dos cadastros ativos
+POST   /importacoes/apontamentos/validacao   corpo = arquivo .xlsx; confere sem gravar
+POST   /importacoes/apontamentos             corpo = arquivo .xlsx; grava tudo ou nada
+GET    /importacoes/apontamentos/historico   pagina, porPagina (1 a 50, padrão 10)
+```
+
+---
+
+## Importação e exportação em Excel
+
+**Exportar.** No Dashboard Geral, aplique os filtros e clique em **Exportar Excel**. A planilha
+sai com o mesmo recorte da tela, em seis abas:
+
+| Aba           | Conteúdo                                                                          |
+| ------------- | --------------------------------------------------------------------------------- |
+| Resumo        | Filtros aplicados e os indicadores do topo do dashboard                           |
+| Projetos      | Orçamento, custo, horas, assertividade e inconsistências por projeto              |
+| Clientes      | Horas e custo por cliente                                                         |
+| Colaboradores | Horas e custo por colaborador                                                     |
+| Apontamentos  | Uma linha por apontamento, com valor/hora, bonificação e custo (base do Power BI) |
+| Ocorrências   | Pendências da auditoria (sem valor/hora, sem equipe, sem tarefa etc.)             |
+
+As abas de dados são Tabelas do Excel, que o Power BI reconhece direto em
+_Obter dados > Excel_. A planilha contém custos internos e valor/hora: é para uso interno da
+empresa, não para enviar ao cliente.
+
+**Importar.** Em **Importar horas**, baixe o modelo, preencha uma linha por apontamento e
+envie o arquivo. O modelo abre na aba **Como usar** (passo a passo curto), marca em vermelho
+o que estiver faltando ou errado enquanto você preenche, mostra um resumo ao lado da tabela e
+já traz os colaboradores, projetos e tarefas ativos na aba Listas, com a lista de tarefas
+filtrada pelo projeto escolhido.
+
+- Colunas: Data, E-mail do colaborador, Projeto, Tarefa (opcional), Horas, Status (opcional) e
+  Descrição. Horas aceitam `7,5` ou `07:30`; status em branco entra como Pendente.
+- O sistema confere todas as linhas antes de gravar e mostra o erro de cada uma, com o número
+  da linha do Excel. Valem as regras do cadastro manual: data até hoje, até 24 h por
+  colaborador no dia (somando o que já está gravado) e tarefa ativa do mesmo projeto.
+- A importação é tudo ou nada e roda numa transação serializável. Linhas iguais a
+  apontamentos já gravados são recusadas, o que evita importar a mesma planilha duas vezes.
+- Avisos não bloqueiam: indicam horas que entram com custo incompleto (colaborador fora da
+  equipe do projeto na data ou sem valor/hora vigente).
+- Limite de 2.000 linhas e 5 MB por arquivo.
+- Ao importar, a tela confirma com "Importação realizada com sucesso" e o resumo; se a importação for recusada, mostra "Falha ao importar arquivo" com o motivo.
+- **Histórico de Importações**, no fim da tela: cada importação confirmada fica registrada
+  com data e hora, quem importou, nome do arquivo, projetos, status (Concluída ou Falhou) e
+  resultado (apontamentos e horas, ou linhas com erro e o motivo da falha, com as primeiras
+  20 linhas com erro). A lista vai da mais recente para a mais antiga, 10 por página, e é
+  atualizada a cada importação. Conferir sem importar não entra no histórico; o arquivo em si
+  não é guardado. O registro é imutável: um gatilho do banco impede alterar ou excluir.
 
 ---
 
@@ -502,6 +673,9 @@ corepack pnpm run prisma:migrate
 corepack pnpm run prisma:studio
 corepack pnpm run seed
 corepack pnpm run senha:link admin
+corepack pnpm test
+corepack pnpm run format
+corepack pnpm run lint
 ```
 
 Front-end:
@@ -510,21 +684,23 @@ Front-end:
 corepack pnpm run dev
 corepack pnpm run build
 corepack pnpm run preview
+corepack pnpm run format
+corepack pnpm run lint
 ```
 
 ---
 
 ## Cronograma
 
-| Data | Entrega |
-|---|---|
-| 05/09 | 1ª orientação |
-| 11/09 | Especificação do MVP |
-| 14/09 e 21/09 | Apresentação para avaliação dos CRUDs |
-| 28/09 a 02/10 | 2ª orientação |
-| 30/10 a 06/11 | 3ª orientação |
-| 13/11 | Entrega do relatório do projeto de TCC |
-| 23 a 25/11 | Banca examinadora |
+| Data          | Entrega                                |
+| ------------- | -------------------------------------- |
+| 05/09         | 1ª orientação                          |
+| 11/09         | Especificação do MVP                   |
+| 14/09 e 21/09 | Apresentação para avaliação dos CRUDs  |
+| 28/09 a 02/10 | 2ª orientação                          |
+| 30/10 a 06/11 | 3ª orientação                          |
+| 13/11         | Entrega do relatório do projeto de TCC |
+| 23 a 25/11    | Banca examinadora                      |
 
 ---
 
@@ -550,12 +726,27 @@ git switch -c feature/nome-da-funcionalidade
 git push -u origin feature/nome-da-funcionalidade
 ```
 
-Ao abrir o Pull Request, confira se a base é `develop`. O GitHub sugere `main` por padrão.
+A `develop` é a branch padrão do GitHub, então o Pull Request já abre com base nela. Confira mesmo assim antes de criar.
 
 Recomendações:
 
 - Rodar migrations, API e build do front-end antes de integrar alterações.
 - Não editar migrations já compartilhadas com o time.
+
+### Padrão de código e CI
+
+O código segue o Prettier (formatação) e o ESLint (erros comuns). Antes de commitar, rode na pasta que você alterou (`backend` ou `frontend`):
+
+```powershell
+corepack pnpm run format
+corepack pnpm run lint
+```
+
+O `format` arruma a formatação sozinho. O `lint` lista o que precisa de correção: erro bloqueia, aviso não. No VS Code, a extensão Prettier com "Format On Save" faz o `format` a cada salvamento.
+
+A cada Pull Request e a cada push na `develop` ou na `main`, o GitHub Actions confere a formatação, o lint, os testes, as migrations num banco limpo e o build do front-end. Se algum passo falhar, o PR fica com X vermelho e não deve ser mergeado.
+
+O `.gitattributes` mantém a quebra de linha em LF para todo o time, inclusive no Windows.
 
 Padrão sugerido de commits:
 
@@ -584,7 +775,7 @@ ou sobrescrever registros já encontrados. Em uma base nova, o acesso inicial é
 2026 e valores financeiros fictícios, sem depender do dia da execução.
 
 Os clientes com CNPJ usam os dados públicos preservados em
-`backend/prisma/seed-companies.js`, consultados na ReceitaWS em 17/10/2026:
+`backend/prisma/seed-empresas.js`, consultados na ReceitaWS em 17/10/2026:
 CAIXA ESCOLAR DA ESCOLA ESTADUAL DE ENSINO FUNDAMENTAL JOSEFINA JACQUES NORONHA
 (11.222.333/0001-81) e Z R DE BRITO EMPREITEIRA (11.444.777/0001-61).
 O seed utiliza esse snapshot sem consultar a internet. Projetos, pessoas, valores,
@@ -592,22 +783,22 @@ horas e vínculos são exemplos fictícios; não representam relações reais de
 
 ### Conteúdo inicial
 
-| Cadastro | Quantidade |
-| --- | ---: |
-| Usuário administrador | 1 |
-| Clientes PF/PJ | 4 |
-| Colaboradores | 9 |
-| Faixas de remuneração | 9 |
-| Configurações financeiras | 10 |
-| Bonificações por papel e vigência | 5 |
-| Projetos | 6 |
-| Participações de equipe | 12 |
-| Sprints | 7 |
-| Tarefas | 17 |
-| Associações de responsáveis | 18 |
-| Apontamentos de horas | 16 |
-| Regras de premiação sem faixas presumidas | 2 |
-| Avaliações de premiação | 2 |
+| Cadastro                                  | Quantidade |
+| ----------------------------------------- | ---------: |
+| Usuário administrador                     |          1 |
+| Clientes PF/PJ                            |          4 |
+| Colaboradores                             |          9 |
+| Faixas de remuneração                     |          9 |
+| Configurações financeiras                 |         10 |
+| Bonificações por papel e vigência         |          5 |
+| Projetos                                  |          6 |
+| Participações de equipe                   |         12 |
+| Sprints                                   |          7 |
+| Tarefas                                   |         17 |
+| Associações de responsáveis               |         18 |
+| Apontamentos de horas                     |         16 |
+| Regras de premiação sem faixas presumidas |          2 |
+| Avaliações de premiação                   |          2 |
 
 Há reajustes financeiros, troca de papel, bônus com vigências, uma configuração
 futura, pessoas e projetos inativos, tarefas compartilhadas, correções, tarefas sem
@@ -619,14 +810,14 @@ multiplicadas pela quantidade de responsáveis. O seed também inclui os exemplo
 Os números abaixo pressupõem uma base inicialmente vazia, sem edições manuais,
 e o dashboard sem filtros, incluindo projetos ativos e inativos.
 
-| Projeto | Orçamento | Horas | Custo | Assertividade do orçamento |
-| --- | ---: | ---: | ---: | ---: |
-| Portal do Cliente (demo) | R$ 2.424,00 | 22 | R$ 1.212,00 | 200% |
-| Aplicativo Mobile (demo) | R$ 539,50 | 14 | R$ 1.079,00 | 50% |
-| Integração de Dados (demo) | R$ 560,00 | 14 | R$ 560,00 | 100% |
-| Projeto com pendências (demo) | R$ 1.000,00 | 15 | R$ 300,00 parcial | Indisponível |
-| Projeto em planejamento (demo) | R$ 5.000,00 | 0 | R$ 0,00 | Indisponível |
-| Projeto encerrado (demo) | R$ 680,00 | 4 | R$ 340,00 | 200% |
+| Projeto                        |   Orçamento | Horas |             Custo | Assertividade do orçamento |
+| ------------------------------ | ----------: | ----: | ----------------: | -------------------------: |
+| Portal do Cliente (demo)       | R$ 2.424,00 |    22 |       R$ 1.212,00 |                       200% |
+| Aplicativo Mobile (demo)       |   R$ 539,50 |    14 |       R$ 1.079,00 |                        50% |
+| Integração de Dados (demo)     |   R$ 560,00 |    14 |         R$ 560,00 |                       100% |
+| Projeto com pendências (demo)  | R$ 1.000,00 |    15 | R$ 300,00 parcial |               Indisponível |
+| Projeto em planejamento (demo) | R$ 5.000,00 |     0 |           R$ 0,00 |               Indisponível |
+| Projeto encerrado (demo)       |   R$ 680,00 |     4 |         R$ 340,00 |                       200% |
 
 Totais: **69 horas**, **R$ 3.491,00 de custo parcial**, incluindo R$ 281,00 de
 bonificação. Há 5 horas sem remuneração e um apontamento sem vínculo de equipe.
@@ -676,6 +867,14 @@ corepack pnpm test
 corepack pnpm run test:seed-db
 corepack pnpm run test:dashboard-db
 corepack pnpm run test:tasks-db
+corepack pnpm run test:hours-db
+corepack pnpm run test:excel-db
+corepack pnpm run test:auth-db
+corepack pnpm run test:team-db
+corepack pnpm run test:finance-db
+corepack pnpm run test:invoiced-costs-db
+corepack pnpm run test:project-deletion-db
+corepack pnpm run test:awards-db
 ```
 
 As verificações de integração exigem PostgreSQL local em execução e `DATABASE_URL`
@@ -688,12 +887,12 @@ os dados. O seed também não realiza essa limpeza.
 ## Avaliação de premiação e exemplos do seed
 
 A tela **Premiação** permite publicar regras e avaliar uma pessoa por competência
-mensal e categoria Dev ou PO/SM. A pontuação começa em 10 nos modelos da planilha;
+mensal e categoria Dev ou PO/SM. A pontuação começa em 10 nos modelos de exemplo;
 cada critério com ocorrência desconta sua dedução uma vez no período. Ocorrência e
 Não aplicável exigem evidência/justificativa. Os indicadores servem para conferência,
 sem inferir automaticamente notificações, atrasos ou responsabilidade por erro.
 
-As faixas de nota não estão disponíveis na planilha fornecida e começam vazias.
+As faixas de nota começam vazias: cada empresa define as suas ao publicar uma versão.
 Configure faixas sem sobreposição ou informe elegibilidade manual com justificativa.
 O percentual final é `percentual-base × elegibilidade / 100`: base 5% e elegibilidade
 80% resultam em 4%. Não há cálculo em reais nem inclusão automática no custo por papel.
@@ -710,11 +909,9 @@ API autenticada: `GET /api/premiacoes/modelos`, `GET/POST /api/premiacoes/regras
 (AAAA-MM), categoria (DEV/PO_SM) e status (RASCUNHO/CONCLUIDA).
 
 Depois de aplicar as migrações, o seed completo inclui os exemplos de avaliação.
-Em uma base demo já existente, `node scripts/seed-awards-local.mjs` acrescenta apenas
-os exemplos do passo 6. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
+Em uma base demo já existente, `node scripts/seed-premiacao-local.mjs` acrescenta apenas
+os exemplos de premiação. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
 `corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
 As integrações criam e removem somente schemas temporários no PostgreSQL local.
 
-Próximas etapas: importação ClickUp e histórico (7), depois relatórios (8).
-A integração utiliza apenas um schema temporário local e testa as alterações manuais
-sem modificar a base utilizada pela interface.
+Critérios, cálculo e fluxo completos estão em [docs/premiacao.md](docs/premiacao.md).
