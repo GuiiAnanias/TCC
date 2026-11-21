@@ -516,7 +516,7 @@ export function TarefasPage() {
                               step="1"
                               value={form.horasEstimadas}
                               onChange={update}
-                              placeholder="Horas"
+                              placeholder="Ex.: 8 h"
                             />
                           </label>
                           <label className="field">
@@ -530,7 +530,7 @@ export function TarefasPage() {
                               step="1"
                               value={form.minutosExtras}
                               onChange={update}
-                              placeholder="Minutos"
+                              placeholder="Ex.: 30 min"
                             />
                           </label>
                         </div>

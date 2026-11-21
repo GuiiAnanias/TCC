@@ -15,6 +15,7 @@ import { EtiquetaStatus } from "../comum/EtiquetaStatus.jsx";
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 import { dataBr } from "../../utils/pendencias.js";
 import { contemBusca } from "../../utils/textoBusca.js";
+import { formatMoeda, formatMoedaValor, parseMoeda } from "../../utils/formatosCadastro.js";
 
 const inputDate = (value) => (value ? String(value).slice(0, 10) : "");
 const formatDate = (value) =>
@@ -36,7 +37,7 @@ const minimumStart = (rows) =>
     : "";
 const initialForm = (rows = []) => ({
   itemTabelaId: "",
-  beneficios: 0,
+  beneficios: "",
   dataInicio: [today(), minimumStart(rows)].sort().at(-1),
   motivo: "",
 });
@@ -148,7 +149,9 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
 
   function update(event) {
     if (event.target.name === "itemTabelaId") setSelectionError("");
-    setFormData((current) => ({ ...current, [event.target.name]: event.target.value }));
+    const value =
+      event.target.name === "beneficios" ? formatMoeda(event.target.value) : event.target.value;
+    setFormData((current) => ({ ...current, [event.target.name]: value }));
   }
 
   // [REQUISICAO] Cria a nova vigência (POST). A anterior é encerrada pela API.
@@ -166,7 +169,11 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
     setMessage("");
     setError("");
     try {
-      await api.post(`/colaboradores/${collaborator.id}/configuracoes-financeiras`, formData);
+      const parsedBenefits = parseMoeda(formData.beneficios);
+      await api.post(`/colaboradores/${collaborator.id}/configuracoes-financeiras`, {
+        ...formData,
+        beneficios: parsedBenefits === "" ? 0 : parsedBenefits,
+      });
       if (!request.isCurrent()) return;
       await loadConfigs();
       if (!request.isCurrent()) return;
@@ -227,7 +234,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
     setFormData({
       ...initialForm(configs),
       itemTabelaId: String(config.itemTabelaId),
-      beneficios: config.beneficios,
+      beneficios: formatMoedaValor(config.beneficios),
       motivo: "Atualização de configuração financeira",
     });
     setError("");
@@ -413,11 +420,9 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
           <input
             name="beneficios"
             aria-describedby="finance-benefits-hint"
-            type="number"
-            min="0"
-            max="99999999.99"
-            step="0.01"
-            required
+            type="text"
+            inputMode="numeric"
+            placeholder="Ex.: R$ 500,00"
             value={formData.beneficios}
             onChange={update}
             disabled={isInactive || loading || saving || Boolean(loadError)}

@@ -95,14 +95,20 @@ function buildPayload(fields, formData, isEditing, originalRecord) {
     }
 
     if (value !== "" && value !== null && value !== undefined) {
+      const parsedValue = field.parse ? field.parse(value) : value;
       if (isEditing && originalRecord) {
         const previous =
           field.type === "date"
             ? toInputDate(originalRecord[field.name])
             : originalRecord[field.name];
-        if (String(value) === String(previous ?? "")) return payload;
+        if (
+          field.parse
+            ? Number(parsedValue) === Number(previous ?? NaN)
+            : String(parsedValue) === String(previous ?? "")
+        )
+          return payload;
       }
-      payload[field.name] = value;
+      payload[field.name] = parsedValue;
     }
 
     return payload;
@@ -535,7 +541,8 @@ export function CadastroPage({ config }) {
       }
 
       const value = record[field.name] ?? field.defaultValue ?? "";
-      nextForm[field.name] = field.format ? field.format(value) : value;
+      const formatter = field.formatInitial || field.format;
+      nextForm[field.name] = formatter ? formatter(value) : value;
     });
 
     setFormData(nextForm);
@@ -562,13 +569,21 @@ export function CadastroPage({ config }) {
     )
       return;
     const missing = {};
-    for (const field of formFields) {
+    for (const field of visibleFields) {
       if (
         (field.required || (field.requiredOnCreate && !isEditing)) &&
-        ["cliente", "projeto", "colaborador", "catalog-select", "select"].includes(field.type) &&
         !String(formData[field.name] ?? "").trim()
-      )
-        missing[field.name] = `Selecione ${field.label.toLocaleLowerCase("pt-BR")}.`;
+      ) {
+        const isSelectField = [
+          "cliente",
+          "projeto",
+          "colaborador",
+          "catalog-select",
+          "select",
+        ].includes(field.type);
+        missing[field.name] =
+          `${isSelectField ? "Selecione" : "Informe"} ${field.label.toLocaleLowerCase("pt-BR")}.`;
+      }
     }
     setFieldErrors(missing);
     if (Object.keys(missing).length) {
@@ -626,6 +641,16 @@ export function CadastroPage({ config }) {
       if (response?.details?.codigo === "REATIVACAO_SEM_CONFIRMACAO") {
         setReativacaoPendente(response.details.statusAnterior);
         return;
+      }
+      if (Array.isArray(response?.errors)) {
+        const apiFieldErrors = {};
+        for (const issue of response.errors) {
+          const fieldName = String(issue.path || "").split(".")[0];
+          if (fieldName && !apiFieldErrors[fieldName]) {
+            apiFieldErrors[fieldName] = issue.message;
+          }
+        }
+        if (Object.keys(apiFieldErrors).length) setFieldErrors(apiFieldErrors);
       }
       const validationMessage = response?.errors?.[0]?.message;
       setError(validationMessage || response?.message || "Não foi possível salvar o registro.");
@@ -1196,7 +1221,7 @@ export function CadastroPage({ config }) {
             aria-hidden={isClient && !formOpen ? true : undefined}
           >
             <div className={isClient ? "client-form-inner" : undefined}>
-              <form className="form-panel" onSubmit={handleSubmit}>
+              <form className="form-panel" onSubmit={handleSubmit} noValidate>
                 <div className="form-title">
                   <Plus size={18} />
                   <strong>

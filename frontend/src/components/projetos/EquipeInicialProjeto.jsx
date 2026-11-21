@@ -4,6 +4,7 @@
  */
 
 import React, { useEffect, useState } from "react";
+import { ChevronDown, Search, UsersRound } from "lucide-react";
 import { api } from "../../api/conexao.js";
 import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 
@@ -78,47 +79,64 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
           </button>
         </div>
       )}
-      <details>
-        <summary>Selecionar colaboradores ({members.length})</summary>
-        <label className="field">
-          <span>Buscar colaborador</span>
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            disabled={loading || Boolean(error)}
+      <details className="initial-team-picker">
+        <summary className="initial-team-summary">
+          <span className="initial-team-summary__title">
+            <UsersRound size={17} aria-hidden="true" />
+            <span>Selecionar colaboradores</span>
+          </span>
+          <span className="initial-team-summary__meta">
+            <span className="team-count">
+              {members.length} selecionado{members.length === 1 ? "" : "s"}
+            </span>
+            <ChevronDown className="initial-team-summary__chevron" size={18} aria-hidden="true" />
+          </span>
+        </summary>
+        <div className="initial-team-picker__body">
+          <label className="search-field initial-team-search">
+            <Search size={17} aria-hidden="true" />
+            <input
+              type="search"
+              value={search}
+              placeholder="Buscar colaborador por nome ou e-mail..."
+              aria-label="Buscar colaborador"
+              onChange={(event) => setSearch(event.target.value)}
+              disabled={loading || Boolean(error)}
+            />
+          </label>
+          <div className="initial-team-choices">
+            {paginacaoVisiveis.itensPaginados.map((person) => (
+              <label
+                key={person.id}
+                className="initial-team-choice"
+                title={`${person.nomeCompleto} (${person.email})`}
+              >
+                <input
+                  type="checkbox"
+                  checked={members.some((member) => member.colaboradorId === person.id)}
+                  onChange={(event) => toggle(person, event.target.checked)}
+                  disabled={loading || Boolean(error)}
+                />
+                <span>
+                  <strong>{person.nomeCompleto}</strong>
+                  <small>{person.email}</small>
+                </span>
+              </label>
+            ))}
+            {!loading && !error && !visible.length && (
+              <p className="initial-team-empty">Nenhum colaborador ativo encontrado.</p>
+            )}
+          </div>
+          <PaginacaoTabela
+            pagina={paginacaoVisiveis.pagina}
+            totalPaginas={paginacaoVisiveis.totalPaginas}
+            totalItens={paginacaoVisiveis.totalItens}
+            inicio={paginacaoVisiveis.inicio}
+            fim={paginacaoVisiveis.fim}
+            onPageChange={paginacaoVisiveis.setPagina}
+            rotulo="Páginas de colaboradores da equipe inicial"
           />
-        </label>
-        <div className="initial-team-choices">
-          {paginacaoVisiveis.itensPaginados.map((person) => (
-            <label
-              key={person.id}
-              className="initial-team-choice"
-              title={`${person.nomeCompleto} (${person.email})`}
-            >
-              <input
-                type="checkbox"
-                checked={members.some((member) => member.colaboradorId === person.id)}
-                onChange={(event) => toggle(person, event.target.checked)}
-                disabled={loading || Boolean(error)}
-              />
-              <span>
-                {person.nomeCompleto}
-                <small>{person.email}</small>
-              </span>
-            </label>
-          ))}
-          {!loading && !error && !visible.length && <p>Nenhum colaborador ativo encontrado.</p>}
         </div>
-        <PaginacaoTabela
-          pagina={paginacaoVisiveis.pagina}
-          totalPaginas={paginacaoVisiveis.totalPaginas}
-          totalItens={paginacaoVisiveis.totalItens}
-          inicio={paginacaoVisiveis.inicio}
-          fim={paginacaoVisiveis.fim}
-          onPageChange={paginacaoVisiveis.setPagina}
-          rotulo="Páginas de colaboradores da equipe inicial"
-        />
       </details>
       <div className="initial-team-members">
         {members.map((member) => {
