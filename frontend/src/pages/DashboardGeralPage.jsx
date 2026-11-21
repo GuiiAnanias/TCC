@@ -25,6 +25,7 @@ import { Link } from "react-router-dom";
 import { mensagemDeErro, salvarArquivo } from "../utils/baixarArquivos.js";
 import { projectStatusOptions, projectStatusLabel } from "../config/opcoesProjeto.js";
 import { SelecaoMultipla } from "../components/comum/SelecaoMultipla.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { PendenciasCusto } from "../components/dashboard/PendenciasCusto.jsx";
 import {
   ajustarRecorte,
@@ -365,22 +366,22 @@ export function DashboardGeralPage() {
           >
             <div className="client-form-inner">
               <div className="dashboard-filters dashboard-filters-general">
-                <label className="field">
+                <div className="field">
                   <span>Cliente</span>
-                  <select
+                  <SelecaoComBusca
                     name="clienteId"
                     value={filters.clienteId}
                     onChange={updateFilter}
                     disabled={loading || Boolean(optionsError)}
-                  >
-                    <option value="">Todos os clientes</option>
-                    {options.clientes.map((client) => (
-                      <option key={client.id} value={client.id}>
-                        {client.nome}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    options={[
+                      { value: "", label: "Todos os clientes" },
+                      ...options.clientes.map((client) => ({
+                        value: String(client.id),
+                        label: client.nome,
+                      })),
+                    ]}
+                  />
+                </div>
                 <div className="field">
                   <span id="filtro-projetos-rotulo">Projetos</span>
                   <SelecaoMultipla
@@ -395,23 +396,22 @@ export function DashboardGeralPage() {
                     disabled={loading || Boolean(optionsError)}
                   />
                 </div>
-                <label className="field">
+                <div className="field">
                   <span>Colaborador</span>
-                  <select
+                  <SelecaoComBusca
                     name="colaboradorId"
                     value={filters.colaboradorId}
                     onChange={updateFilter}
                     disabled={loading || Boolean(optionsError)}
-                  >
-                    <option value="">Todos os colaboradores</option>
-                    {options.colaboradores.map((person) => (
-                      <option key={person.id} value={person.id}>
-                        {person.nomeCompleto}
-                        {person.status === "INATIVO" ? " (inativo)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                    options={[
+                      { value: "", label: "Todos os colaboradores" },
+                      ...options.colaboradores.map((person) => ({
+                        value: String(person.id),
+                        label: `${person.nomeCompleto}${person.status === "INATIVO" ? " (inativo)" : ""}`,
+                      })),
+                    ]}
+                  />
+                </div>
                 <label className="field">
                   <span>Sprint</span>
                   <select

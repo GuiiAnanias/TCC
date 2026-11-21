@@ -62,13 +62,35 @@ test("encerrar e reativar projetos altera apenas o estado, sem remover históric
     return record;
   };
   assert.equal((await projetosService.close(1)).status, "ENCERRADO");
-  for (const status of ["PAUSADO", "ENCERRADO", "CANCELADO"]) {
+  // Pausado volta direto; cancelado e encerrado precisam da confirmação explícita.
+  record.status = "PAUSADO";
+  assert.equal((await projetosService.update(1, { status: "ATIVO" })).status, "ATIVO");
+  for (const status of ["ENCERRADO", "CANCELADO"]) {
     record.status = status;
-    const active = await projetosService.update(1, { status: "ATIVO" });
+    await assert.rejects(projetosService.update(1, { status: "ATIVO" }), {
+      statusCode: 409,
+      details: { codigo: "REATIVACAO_SEM_CONFIRMACAO", statusAnterior: status },
+    });
+    assert.equal(record.status, status, "Sem confirmação, nada muda.");
+    const active = await projetosService.update(1, {
+      status: "ATIVO",
+      confirmarReativacao: true,
+    });
     assert.equal(active.status, "ATIVO");
     assert.deepEqual(active.apontamentos, [{ id: 3 }]);
     assert.deepEqual(active.equipe, [{ id: 2 }]);
   }
+});
+
+test("a confirmação de reativação é aceita na edição e não vira campo do projeto", () => {
+  assert.equal(
+    projetoUpdateSchema.parse({ status: "ATIVO", confirmarReativacao: true }).confirmarReativacao,
+    true,
+  );
+  assert.equal(
+    projetoUpdateSchema.safeParse({ status: "ATIVO", confirmarReativacao: "sim" }).success,
+    false,
+  );
 });
 
 test("os três estados não ativos impedem alterações da equipe", async (t) => {

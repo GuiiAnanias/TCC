@@ -41,6 +41,23 @@ export function ranking(lista, { valor, nome, limite = 8 }) {
   ];
 }
 
+/**
+ * Separa um ranking completo (já ordenado) em barras principais e um resumo do resto. O resto
+ * não vira barra: somado, ficaria maior que todas e achataria a escala do gráfico.
+ * Sobrando um item só, ele entra como barra em vez de virar "Outros (1)".
+ */
+export function principaisEOutros(itens, limite = 7) {
+  if (itens.length <= limite + 1) return { principais: itens, outros: null };
+  const resto = itens.slice(limite);
+  return {
+    principais: itens.slice(0, limite),
+    outros: {
+      quantidade: resto.length,
+      valor: Math.round(resto.reduce((soma, item) => soma + item.valor, 0) * 100) / 100,
+    },
+  };
+}
+
 /** Fatias com o percentual de cada uma, na ordem fixa das categorias (a cor segue a categoria). */
 export function fatias(categorias, valorDe) {
   const itens = categorias.map(({ chave, rotulo }) => ({

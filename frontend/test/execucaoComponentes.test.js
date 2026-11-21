@@ -3,6 +3,31 @@ import assert from "node:assert/strict";
 import React from "react";
 import { installDom, mount, click, change } from "../scripts/testes/dom.mjs";
 import { SelecaoComBusca } from "../src/components/comum/SelecaoComBusca.jsx";
+import {
+  formatMoeda,
+  formatMoedaValor,
+  parseMoeda,
+  formatHoras,
+  formatHorasValor,
+  parseHoras,
+} from "../src/utils/formatosCadastro.js";
+
+test("máscaras de moeda e horas formatam na digitação, no carregamento e convertem para número", () => {
+  assert.equal(formatMoeda("6000"), "R$ 60,00");
+  assert.equal(formatMoeda("500000"), "R$ 5.000,00");
+  assert.equal(formatMoedaValor(60), "R$ 60,00");
+  assert.equal(formatMoedaValor("5000"), "R$ 5.000,00");
+  assert.equal(parseMoeda("R$ 60,00"), 60);
+  assert.equal(parseMoeda("R$ 5.000,00"), 5000);
+
+  assert.equal(formatHoras("800"), "8,00 h");
+  assert.equal(formatHoras("16050"), "160,50 h");
+  assert.equal(formatHoras("8,00 "), "0,80 h", "Apagar o sufixo h remove o último dígito");
+  assert.equal(formatHorasValor(8), "8,00 h");
+  assert.equal(formatHorasValor("160.5"), "160,50 h");
+  assert.equal(parseHoras("8,00 h"), 8);
+  assert.equal(parseHoras("160,50 h"), 160.5);
+});
 
 test("os componentes reais podem ser montados com seus efeitos e desmontados", async () => {
   const cleanup = installDom();

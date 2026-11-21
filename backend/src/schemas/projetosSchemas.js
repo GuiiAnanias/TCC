@@ -30,6 +30,11 @@ export const projetoCreateSchema = z.object({
 });
 
 export const projetoUpdateSchema = projetoCreateSchema
-  .extend({ status: statusProjetoSchema.optional(), equipeInicial: z.never().optional() })
+  .extend({
+    status: statusProjetoSchema.optional(),
+    equipeInicial: z.never().optional(),
+    // Confirmação explícita para reativar um projeto cancelado ou encerrado (não é gravada).
+    confirmarReativacao: z.boolean().optional(),
+  })
   .partial()
   .refine((data) => Object.keys(data).length > 0, "Informe ao menos um campo para atualizar.");

@@ -508,6 +508,32 @@ select:focus {
   box-shadow: 0 0 0 3px var(--focus-ring);
 }
 
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"],
+.searchable-select__control[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+input[aria-invalid="true"]:focus,
+select[aria-invalid="true"]:focus,
+textarea[aria-invalid="true"]:focus,
+.searchable-select__control[aria-invalid="true"]:focus-visible,
+.searchable-select.is-open .searchable-select__control[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-line);
+}
+
+.field small[role="alert"] {
+  display: block;
+  margin-top: 2px;
+  color: var(--danger);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 input:disabled,
 select:disabled {
   cursor: not-allowed;

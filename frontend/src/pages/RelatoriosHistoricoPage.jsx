@@ -10,6 +10,7 @@ import { api } from "../api/conexao.js";
 import { useAutenticacao } from "../autenticacao/AutenticacaoContext.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { AbasRelatorios } from "../components/relatorios/AbasRelatorios.jsx";
 import { BLOCOS } from "../config/blocosRelatorio.js";
 import { mensagemDeErro, salvarArquivo } from "../utils/baixarArquivos.js";
@@ -174,17 +175,18 @@ export function RelatoriosHistoricoPage() {
 
       <form className="dashboard-overview report-history-filters" onSubmit={aplicar} noValidate>
         <div className="dashboard-filters">
-          <label className="field">
+          <div className="field">
             <span>Projeto</span>
-            <select name="projetoId" value={filtros.projetoId} onChange={atualizar}>
-              <option value="">Todos os projetos</option>
-              {projetos.map((row) => (
-                <option key={row.id} value={row.id}>
-                  {row.nome}
-                </option>
-              ))}
-            </select>
-          </label>
+            <SelecaoComBusca
+              name="projetoId"
+              value={filtros.projetoId}
+              onChange={atualizar}
+              options={[
+                { value: "", label: "Todos os projetos" },
+                ...projetos.map((row) => ({ value: String(row.id), label: row.nome })),
+              ]}
+            />
+          </div>
           <fieldset className="dashboard-period">
             <legend>Gerados entre</legend>
             <div>

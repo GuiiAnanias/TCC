@@ -284,18 +284,22 @@ export function DashboardEntidadePage({ type }) {
               />
             </div>
           ) : (
-            <label className="field">
+            <div className="field">
               <span>Sprint</span>
-              <select name="sprintId" value={filters.sprintId} onChange={update} disabled={loading}>
-                <option value="">Todas as sprints</option>
-                {entity?.sprints.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.nome}
-                    {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <SelecaoComBusca
+                name="sprintId"
+                value={filters.sprintId}
+                onChange={update}
+                disabled={loading}
+                options={[
+                  { value: "", label: "Todas as sprints" },
+                  ...(entity?.sprints ?? []).map((row) => ({
+                    value: String(row.id),
+                    label: `${row.nome}${row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}`,
+                  })),
+                ]}
+              />
+            </div>
           )}
           <div className="dashboard-filter-actions">
             <button className="primary-button" type="submit" disabled={loading}>

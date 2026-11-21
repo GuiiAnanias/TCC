@@ -304,7 +304,8 @@ export const dashboardService = {
   async get(filters) {
     await conferirRecorte(filters);
     const [projects, bonuses] = await Promise.all([
-      dashboardRepository.load(filters),
+      // O resumo geral não usa a descrição das horas.
+      dashboardRepository.load(filters, { descricoes: false }),
       bonificacoesPapeisRepository.findAll(),
     ]);
     return summarizeDashboard(projects, filters, bonuses);

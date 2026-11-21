@@ -66,11 +66,26 @@ export const importacaoApontamentosRepository = {
     return db.importacaoApontamentos.create({ data: dados, select: { id: true } });
   },
 
-  // [BANCO] Histórico paginado, da importação mais recente para a mais antiga.
-  async historico({ pagina, porPagina }, db = prisma) {
+  // [BANCO] Histórico paginado, da importação mais recente para a mais antiga, com busca e
+  // filtro de status opcionais.
+  async historico({ pagina, porPagina, busca, status }, db = prisma) {
+    const where = { ...(status ? { status } : {}) };
+    if (busca) {
+      // Os projetos ficam numa cópia em JSON: a busca pelo nome deles é feita no texto do JSON.
+      const padrao = `%${busca.replace(/[\\%_]/g, "\\$&")}%`;
+      const comProjeto = await db.$queryRaw`
+        SELECT id FROM importacoes_apontamentos WHERE projetos::text ILIKE ${padrao}`;
+      where.OR = [
+        { arquivo: { contains: busca, mode: "insensitive" } },
+        { mensagem: { contains: busca, mode: "insensitive" } },
+        { usuario: { nomeUsuario: { contains: busca, mode: "insensitive" } } },
+        { id: { in: comProjeto.map((linha) => linha.id) } },
+      ];
+    }
     const [total, itens] = await Promise.all([
-      db.importacaoApontamentos.count(),
+      db.importacaoApontamentos.count({ where }),
       db.importacaoApontamentos.findMany({
+        where,
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (pagina - 1) * porPagina,
         take: porPagina,

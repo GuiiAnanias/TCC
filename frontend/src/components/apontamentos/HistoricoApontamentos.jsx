@@ -187,23 +187,9 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
               />
             </label>
 
-            <select
-              value={filters.situacao}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, situacao: event.target.value }))
-              }
-              aria-label="Situação no histórico"
-              title="Filtrar por situação"
-            >
-              {SITUACOES.map((opcao) => (
-                <option key={opcao.value || "TODAS"} value={opcao.value}>
-                  {opcao.label}
-                </option>
-              ))}
-            </select>
-
             <SelecaoComBusca
               id="historico-colaborador"
+              ariaLabel="Filtrar por colaborador"
               name="colaboradorId"
               options={[
                 { value: "", label: "Todos os colaboradores" },
@@ -221,6 +207,7 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
 
             <SelecaoComBusca
               id="historico-projeto"
+              ariaLabel="Filtrar por projeto"
               name="projetoId"
               options={[
                 { value: "", label: "Todos os projetos" },

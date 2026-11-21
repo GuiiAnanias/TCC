@@ -4,7 +4,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, History } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, Search } from "lucide-react";
 import { api } from "../../api/conexao.js";
 import { date, number } from "../dashboard/DashboardOperacional.jsx";
 import { mensagemDeErro } from "../../utils/baixarArquivos.js";
@@ -46,26 +46,46 @@ export function HistoricoImportacoes({ versao = 0 }) {
   const [dados, setDados] = useState(null);
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState("");
+  const [texto, setTexto] = useState("");
+  // A busca vai para a API um instante depois da última tecla, não a cada letra.
+  const [busca, setBusca] = useState("");
+  const [status, setStatus] = useState("");
   const pedido = useRef(0);
+
+  useEffect(() => {
+    const espera = setTimeout(() => {
+      setBusca(texto.trim());
+      setPagina(1);
+    }, 350);
+    return () => clearTimeout(espera);
+  }, [texto]);
 
   // [REQUISICAO] Busca uma página do histórico; recarrega quando uma importação termina (prop
   // versao).
-  const carregar = useCallback(async (paginaPedida) => {
-    const atual = ++pedido.current;
-    setCarregando(true);
-    setErro("");
-    try {
-      const { data } = await api.get("/importacoes/apontamentos/historico", {
-        params: { pagina: paginaPedida, porPagina: POR_PAGINA },
-      });
-      if (atual === pedido.current) setDados(data);
-    } catch (error) {
-      if (atual === pedido.current)
-        setErro(await mensagemDeErro(error, "Não foi possível carregar o histórico."));
-    } finally {
-      if (atual === pedido.current) setCarregando(false);
-    }
-  }, []);
+  const carregar = useCallback(
+    async (paginaPedida) => {
+      const atual = ++pedido.current;
+      setCarregando(true);
+      setErro("");
+      try {
+        const { data } = await api.get("/importacoes/apontamentos/historico", {
+          params: {
+            pagina: paginaPedida,
+            porPagina: POR_PAGINA,
+            ...(busca ? { busca } : {}),
+            ...(status ? { status } : {}),
+          },
+        });
+        if (atual === pedido.current) setDados(data);
+      } catch (error) {
+        if (atual === pedido.current)
+          setErro(await mensagemDeErro(error, "Não foi possível carregar o histórico."));
+      } finally {
+        if (atual === pedido.current) setCarregando(false);
+      }
+    },
+    [busca, status],
+  );
 
   // Nova importação: volta para a primeira página, onde ela aparece.
   useEffect(() => {
@@ -75,6 +95,8 @@ export function HistoricoImportacoes({ versao = 0 }) {
   useEffect(() => {
     carregar(pagina);
   }, [carregar, pagina, versao]);
+
+  const filtrando = Boolean(busca || status);
 
   const itens = dados?.itens ?? [];
 
@@ -94,9 +116,39 @@ export function HistoricoImportacoes({ versao = 0 }) {
         </div>
       )}
 
+      <div className="table-toolbar">
+        <label className="search-field">
+          <Search size={18} aria-hidden="true" />
+          <input
+            value={texto}
+            onChange={(event) => setTexto(event.target.value)}
+            placeholder="Buscar por arquivo, usuário, projeto ou mensagem"
+            aria-label="Buscar no histórico de importações"
+          />
+        </label>
+        <select
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setPagina(1);
+          }}
+          aria-label="Filtrar importações por status"
+        >
+          <option value="">Todos os status</option>
+          <option value="CONCLUIDA">Concluídas</option>
+          <option value="FALHOU">Com falha</option>
+        </select>
+      </div>
+
       {!dados && carregando && <p className="dashboard-empty">Carregando histórico…</p>}
 
-      {dados && !itens.length && <p className="dashboard-empty">Nenhuma importação registrada</p>}
+      {dados && !itens.length && (
+        <p className="dashboard-empty">
+          {filtrando
+            ? "Nenhuma importação encontrada com esses filtros"
+            : "Nenhuma importação registrada"}
+        </p>
+      )}
 
       {itens.length > 0 && (
         <div className="dashboard-table">

@@ -8,12 +8,16 @@ import { z } from "zod";
 import { paginationQuerySchema } from "./comunsSchemas.js";
 // [REGRA] Pendente, Aprovado ou Faturado.
 const statusApontamentoSchema = z.enum(["PENDENTE", "APROVADO", "FATURADO"]);
+export const LIMITE_POR_PAGINA_APONTAMENTOS = 100;
+// Com "pagina", a listagem devolve só aquela página e o total; sem ela, a lista inteira.
 export const apontamentoQuerySchema = paginationQuerySchema.extend({
   status: statusApontamentoSchema.optional(),
   colaboradorId: z.coerce.number().int().positive().optional(),
   projetoId: z.coerce.number().int().positive().optional(),
   dataInicio: z.coerce.date().optional(),
   dataFim: z.coerce.date().optional(),
+  pagina: z.coerce.number().int().min(1).optional(),
+  porPagina: z.coerce.number().int().min(1).max(LIMITE_POR_PAGINA_APONTAMENTOS).optional(),
 });
 export const apontamentoCreateSchema = z.object({
   colaboradorId: z.coerce.number().int().positive(),
