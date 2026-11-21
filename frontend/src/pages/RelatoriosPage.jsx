@@ -528,7 +528,7 @@ export function RelatoriosPage() {
                   ))}
                 </select>
               </label>
-              <label className="field">
+              <div className="field">
                 <span>Colaborador</span>
                 <SelecaoComBusca
                   name="colaboradorId"
@@ -542,7 +542,7 @@ export function RelatoriosPage() {
                     })),
                   ]}
                 />
-              </label>
+              </div>
               <label className="field">
                 <span>Status do projeto</span>
                 <select name="statusProjeto" value={form.statusProjeto} onChange={atualizar}>

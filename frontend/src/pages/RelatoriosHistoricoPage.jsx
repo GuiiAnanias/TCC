@@ -175,7 +175,7 @@ export function RelatoriosHistoricoPage() {
 
       <form className="dashboard-overview report-history-filters" onSubmit={aplicar} noValidate>
         <div className="dashboard-filters">
-          <label className="field">
+          <div className="field">
             <span>Projeto</span>
             <SelecaoComBusca
               name="projetoId"
@@ -186,7 +186,7 @@ export function RelatoriosHistoricoPage() {
                 ...projetos.map((row) => ({ value: String(row.id), label: row.nome })),
               ]}
             />
-          </label>
+          </div>
           <fieldset className="dashboard-period">
             <legend>Gerados entre</legend>
             <div>

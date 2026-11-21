@@ -391,7 +391,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
       </div>
 
       <form className="team-form" onSubmit={handleSubmit}>
-        <label className="field">
+        <div className="field">
           <span>Colaborador</span>
           <SelecaoComBusca
             id="team-colaboradorId"
@@ -415,7 +415,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
               {selectionErrors.colaboradorId}
             </small>
           )}
-        </label>
+        </div>
 
         <label className="field">
           <span>Papel no projeto</span>

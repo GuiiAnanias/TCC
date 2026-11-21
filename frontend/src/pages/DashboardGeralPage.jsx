@@ -366,7 +366,7 @@ export function DashboardGeralPage() {
           >
             <div className="client-form-inner">
               <div className="dashboard-filters dashboard-filters-general">
-                <label className="field">
+                <div className="field">
                   <span>Cliente</span>
                   <SelecaoComBusca
                     name="clienteId"
@@ -381,7 +381,7 @@ export function DashboardGeralPage() {
                       })),
                     ]}
                   />
-                </label>
+                </div>
                 <div className="field">
                   <span id="filtro-projetos-rotulo">Projetos</span>
                   <SelecaoMultipla
@@ -396,7 +396,7 @@ export function DashboardGeralPage() {
                     disabled={loading || Boolean(optionsError)}
                   />
                 </div>
-                <label className="field">
+                <div className="field">
                   <span>Colaborador</span>
                   <SelecaoComBusca
                     name="colaboradorId"
@@ -411,7 +411,7 @@ export function DashboardGeralPage() {
                       })),
                     ]}
                   />
-                </label>
+                </div>
                 <label className="field">
                   <span>Sprint</span>
                   <select
