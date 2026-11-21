@@ -8,6 +8,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { RotateCcw, Search } from "lucide-react";
 import { api } from "../../api/conexao.js";
 import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
+import { SelecaoComBusca } from "../comum/SelecaoComBusca.jsx";
 
 const ROTULO_STATUS = {
   PENDENTE: "Pendente",
@@ -201,35 +202,39 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
               ))}
             </select>
 
-            <select
+            <SelecaoComBusca
+              id="historico-colaborador"
+              name="colaboradorId"
+              options={[
+                { value: "", label: "Todos os colaboradores" },
+                ...colaboradores.map((colaborador) => ({
+                  value: String(colaborador.id),
+                  label: colaborador.nomeCompleto,
+                })),
+              ]}
               value={filters.colaboradorId}
+              placeholder="Todos os colaboradores"
               onChange={(event) =>
                 setFilters((current) => ({ ...current, colaboradorId: event.target.value }))
               }
-              aria-label="Filtrar por colaborador"
-            >
-              <option value="">Todos os colaboradores</option>
-              {colaboradores.map((colaborador) => (
-                <option key={colaborador.id} value={String(colaborador.id)}>
-                  {colaborador.nomeCompleto}
-                </option>
-              ))}
-            </select>
+            />
 
-            <select
+            <SelecaoComBusca
+              id="historico-projeto"
+              name="projetoId"
+              options={[
+                { value: "", label: "Todos os projetos" },
+                ...projetos.map((projeto) => ({
+                  value: String(projeto.id),
+                  label: projeto.nome,
+                })),
+              ]}
               value={filters.projetoId}
+              placeholder="Todos os projetos"
               onChange={(event) =>
                 setFilters((current) => ({ ...current, projetoId: event.target.value }))
               }
-              aria-label="Filtrar por projeto"
-            >
-              <option value="">Todos os projetos</option>
-              {projetos.map((projeto) => (
-                <option key={projeto.id} value={String(projeto.id)}>
-                  {projeto.nome}
-                </option>
-              ))}
-            </select>
+            />
 
             {temFiltro && (
               <button

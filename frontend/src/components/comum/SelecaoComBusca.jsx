@@ -1,10 +1,12 @@
 /**
  * [COMPONENTE] Seleção com busca (colaborador, projeto, cliente): lista filtrada pelo texto
- * digitado, navegável pelo teclado.
+ * digitado, limitada aos 20 primeiros resultados para evitar travamentos, navegável pelo teclado.
  */
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+
+export const LIMITE_OPCOES_BUSCA = 20;
 
 export function SelecaoComBusca({
   id,
@@ -16,6 +18,7 @@ export function SelecaoComBusca({
   required = false,
   disabled = false,
   error = "",
+  maxResults = LIMITE_OPCOES_BUSCA,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -23,7 +26,10 @@ export function SelecaoComBusca({
   const searchRef = useRef(null);
 
   const selectedOption = useMemo(
-    () => options.find((option) => String(option.value) === String(value)),
+    () =>
+      options.find(
+        (option) => String(option.value) === String(value) && String(option.value) !== "",
+      ) || options.find((option) => String(option.value) === String(value)),
     [options, value],
   );
 
@@ -38,6 +44,11 @@ export function SelecaoComBusca({
       String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery),
     );
   }, [options, query]);
+
+  const visibleOptions = useMemo(
+    () => filteredOptions.slice(0, maxResults),
+    [filteredOptions, maxResults],
+  );
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -119,24 +130,32 @@ export function SelecaoComBusca({
           </div>
 
           <div className="searchable-select__options" role="listbox" aria-labelledby={id || name}>
-            {filteredOptions.length ? (
-              filteredOptions.map((option) => {
-                const selected = String(option.value) === String(value);
+            {visibleOptions.length ? (
+              <>
+                {visibleOptions.map((option) => {
+                  const selected = String(option.value) === String(value);
 
-                return (
-                  <button
-                    key={option.value}
-                    className={`searchable-select__option${selected ? " is-selected" : ""}`}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => selectOption(option)}
-                  >
-                    <span>{option.label}</span>
-                    {selected ? <Check size={17} aria-hidden="true" /> : null}
-                  </button>
-                );
-              })
+                  return (
+                    <button
+                      key={option.value}
+                      className={`searchable-select__option${selected ? " is-selected" : ""}`}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      onClick={() => selectOption(option)}
+                    >
+                      <span>{option.label}</span>
+                      {selected ? <Check size={17} aria-hidden="true" /> : null}
+                    </button>
+                  );
+                })}
+                {filteredOptions.length > visibleOptions.length ? (
+                  <div className="searchable-select__empty">
+                    Mostrando {visibleOptions.length} de {filteredOptions.length} resultados. Digite
+                    para refinar a busca.
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="searchable-select__empty">Nenhum resultado encontrado.</div>
             )}
