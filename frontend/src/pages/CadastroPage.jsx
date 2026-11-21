@@ -7,7 +7,11 @@
 import { DialogoExclusaoProjeto } from "../components/projetos/DialogoExclusaoProjeto.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
-import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
+import {
+  ITENS_POR_PAGINA,
+  PaginacaoTabela,
+  usePaginacao,
+} from "../components/comum/PaginacaoTabela.jsx";
 import { HistoricoApontamentos } from "../components/apontamentos/HistoricoApontamentos.jsx";
 import { Link, useSearchParams } from "react-router-dom";
 import React from "react";
@@ -127,7 +131,22 @@ export function CadastroPage({ config }) {
       ? ["Dados pessoais", "Contato", "Endereço"]
       : config.formSections;
   const [records, setRecords] = useState([]);
-  const paginacaoRegistros = usePaginacao(records);
+  const paginacaoLocal = usePaginacao(records);
+  // Com config.paginacaoServidor, records guarda só a página atual e o total vem da API.
+  const [paginaServidor, setPaginaServidor] = useState(1);
+  const [totalServidor, setTotalServidor] = useState(0);
+  const paginaServidorAtual = useValorMaisRecente(paginaServidor);
+  const paginacaoRegistros = config.paginacaoServidor
+    ? {
+        pagina: paginaServidor,
+        setPagina: setPaginaServidor,
+        totalItens: totalServidor,
+        totalPaginas: Math.max(1, Math.ceil(totalServidor / ITENS_POR_PAGINA)),
+        itensPaginados: records,
+        inicio: totalServidor ? (paginaServidor - 1) * ITENS_POR_PAGINA + 1 : 0,
+        fim: (paginaServidor - 1) * ITENS_POR_PAGINA + records.length,
+      }
+    : paginacaoLocal;
   const [clientes, setClientes] = useState([]);
   const [projetos, setProjetos] = useState([]);
   const [tarefas, setTarefas] = useState([]);
@@ -140,6 +159,11 @@ export function CadastroPage({ config }) {
   const [loadingOptions, setLoadingOptions] = useState({});
   const [filters, setFilters] = useState({ busca: "", status: "" });
   const currentFilters = useValorMaisRecente(filters);
+  // Trocar a busca ou o status volta para a primeira página.
+  const mudarFiltro = (campo, valor) => {
+    setPaginaServidor(1);
+    setFilters((current) => ({ ...current, [campo]: valor }));
+  };
   const [formData, setFormData] = useState(() => getInitialForm(config.fields));
   const [editingId, setEditingId] = useState(null);
   const [originalRecord, setOriginalRecord] = useState(null);
@@ -203,15 +227,25 @@ export function CadastroPage({ config }) {
     setError("");
 
     try {
-      const { data } = await api.get(config.endpoint, {
+      const { data: resposta } = await api.get(config.endpoint, {
         signal: request.signal,
         params: {
           busca: currentFilters.current.busca || undefined,
           status: currentFilters.current.status || undefined,
+          ...(config.paginacaoServidor
+            ? { pagina: paginaServidorAtual.current, porPagina: ITENS_POR_PAGINA }
+            : {}),
         },
       });
 
       if (!request.isCurrent()) return;
+      const data = config.paginacaoServidor ? resposta.itens : resposta;
+      if (config.paginacaoServidor) {
+        setTotalServidor(resposta.total);
+        // Página que deixou de existir (ex.: excluído o último item dela): vai para a última.
+        const ultima = Math.max(1, Math.ceil(resposta.total / ITENS_POR_PAGINA));
+        if (resposta.pagina > ultima) setPaginaServidor(ultima);
+      }
       setRecords(data);
       setSelectedRecord((current) => {
         if (!current || (!config.teamManager && !config.financeManager)) {
@@ -226,7 +260,15 @@ export function CadastroPage({ config }) {
     } finally {
       if (request.isCurrent()) setLoading(false);
     }
-  }, [config.endpoint, config.teamManager, config.financeManager, currentFilters, requestScope]);
+  }, [
+    config.endpoint,
+    config.teamManager,
+    config.financeManager,
+    config.paginacaoServidor,
+    currentFilters,
+    paginaServidorAtual,
+    requestScope,
+  ]);
 
   // [REQUISICAO] Listas para os campos de seleção (clientes, projetos, colaboradores e opções de
   // cadastro).
@@ -351,6 +393,8 @@ export function CadastroPage({ config }) {
     setSelectedRecord(null);
     setSaving(false);
     setRecords([]);
+    setPaginaServidor(1);
+    setTotalServidor(0);
     setClientes([]);
     setProjetos([]);
     setColaboradores([]);
@@ -365,7 +409,7 @@ export function CadastroPage({ config }) {
 
   useEffect(() => {
     loadRecords();
-  }, [loadRecords, filters.busca, filters.status]);
+  }, [loadRecords, filters.busca, filters.status, paginaServidor]);
 
   useEffect(() => {
     loadClientes();
@@ -907,6 +951,19 @@ export function CadastroPage({ config }) {
     const key = `${config.key}:${action}:${target}`;
     if (handledNavigation.current === key) return;
     const record = records.find((row) => String(row.id) === target);
+    if (!record && config.paginacaoServidor && action === "editar") {
+      // O registro pode estar em outra página: busca direto pelo id.
+      handledNavigation.current = key;
+      api
+        .get(`${config.endpoint}/${encodeURIComponent(target)}`)
+        .then(({ data }) => handleEdit(data))
+        .catch((requestError) =>
+          setError(
+            requestError.response?.data?.message || "Não foi possível abrir o registro indicado.",
+          ),
+        );
+      return;
+    }
     if (!record) return;
     handledNavigation.current = key;
     if (action === "editar") handleEdit(record);
@@ -1237,18 +1294,14 @@ export function CadastroPage({ config }) {
                 <Search size={18} />
                 <input
                   value={filters.busca}
-                  onChange={(event) =>
-                    setFilters((current) => ({ ...current, busca: event.target.value }))
-                  }
+                  onChange={(event) => mudarFiltro("busca", event.target.value)}
                   placeholder="Buscar"
                 />
               </label>
 
               <select
                 value={filters.status}
-                onChange={(event) =>
-                  setFilters((current) => ({ ...current, status: event.target.value }))
-                }
+                onChange={(event) => mudarFiltro("status", event.target.value)}
                 title="Filtrar por status"
               >
                 <option value="">Todos</option>
