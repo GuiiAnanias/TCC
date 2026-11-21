@@ -4,6 +4,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { LIMITE_OPCOES_BUSCA } from "./SelecaoComBusca.jsx";
 
 /**
  * Seleção de vários itens com busca, no mesmo visual do SelecaoComBusca.
@@ -19,6 +20,7 @@ export function SelecaoMultipla({
   plural = "itens",
   disabled = false,
   labelledBy,
+  maxResults = LIMITE_OPCOES_BUSCA,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -33,6 +35,11 @@ export function SelecaoMultipla({
       String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery),
     );
   }, [options, query]);
+
+  const visibleOptions = useMemo(
+    () => filteredOptions.slice(0, maxResults),
+    [filteredOptions, maxResults],
+  );
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -122,25 +129,33 @@ export function SelecaoMultipla({
             aria-multiselectable="true"
             aria-labelledby={id || name}
           >
-            {filteredOptions.length ? (
-              filteredOptions.map((option) => {
-                const isSelected = selected.has(String(option.value));
-                return (
-                  <button
-                    key={option.value}
-                    className={`searchable-select__option${isSelected ? " is-selected" : ""}`}
-                    type="button"
-                    role="option"
-                    aria-selected={isSelected}
-                    onClick={() => toggle(option)}
-                  >
-                    <span className="multi-select__box" aria-hidden="true">
-                      {isSelected ? <Check size={14} /> : null}
-                    </span>
-                    <span>{option.label}</span>
-                  </button>
-                );
-              })
+            {visibleOptions.length ? (
+              <>
+                {visibleOptions.map((option) => {
+                  const isSelected = selected.has(String(option.value));
+                  return (
+                    <button
+                      key={option.value}
+                      className={`searchable-select__option${isSelected ? " is-selected" : ""}`}
+                      type="button"
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => toggle(option)}
+                    >
+                      <span className="multi-select__box" aria-hidden="true">
+                        {isSelected ? <Check size={14} /> : null}
+                      </span>
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+                {filteredOptions.length > visibleOptions.length ? (
+                  <div className="searchable-select__empty">
+                    Mostrando {visibleOptions.length} de {filteredOptions.length} resultados. Digite
+                    para refinar a busca.
+                  </div>
+                ) : null}
+              </>
             ) : (
               <div className="searchable-select__empty">Nenhum resultado encontrado.</div>
             )}

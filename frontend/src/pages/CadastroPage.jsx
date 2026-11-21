@@ -892,23 +892,28 @@ export function CadastroPage({ config }) {
     }
 
     if (field.type === "tarefa") {
+      const tarefaOptions = [
+        { value: "", label: "Sem tarefa" },
+        ...tarefas
+          .filter((task) => task.statusRegistro === "ATIVO" || task.id === originalRecord?.tarefaId)
+          .map((task) => ({
+            value: String(task.id),
+            label: `${task.titulo}${task.statusRegistro === "INATIVO" ? " (arquivada)" : ""}`,
+          })),
+      ];
+
       return (
-        <select
-          {...commonProps}
+        <SelecaoComBusca
+          id={field.name}
+          name={field.name}
+          options={tarefaOptions}
+          value={formData[field.name] ?? ""}
+          onChange={commonProps.onChange}
+          placeholder={loadingTarefas ? "Carregando tarefas…" : "Sem tarefa"}
+          required={field.required}
+          error={fieldErrors[field.name]}
           disabled={saving || loadingTarefas || !formData.projetoId || Boolean(taskLoadError)}
-        >
-          <option value="">{loadingTarefas ? "Carregando tarefas…" : "Sem tarefa"}</option>
-          {tarefas
-            .filter(
-              (task) => task.statusRegistro === "ATIVO" || task.id === originalRecord?.tarefaId,
-            )
-            .map((task) => (
-              <option key={task.id} value={task.id}>
-                {task.titulo}
-                {task.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
-              </option>
-            ))}
-        </select>
+        />
       );
     }
 

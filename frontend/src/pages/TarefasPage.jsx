@@ -403,14 +403,11 @@ export function TarefasPage() {
         )}
       </div>
       <div className="form-panel">
-        <label className="field">
+        <div className="field">
           <span>Projeto</span>
           <SelecaoComBusca
+            id="tarefas-projeto"
             name="projetoId"
-            value={projectId}
-            placeholder="Selecione um projeto"
-            onChange={(event) => changeProject(event.target.value)}
-            disabled={saving}
             options={projects.map((project) => ({
               value: String(project.id),
               label: `${project.nome}${
@@ -419,8 +416,12 @@ export function TarefasPage() {
                   : ""
               }`,
             }))}
+            value={String(projectId)}
+            placeholder="Selecione um projeto"
+            disabled={saving}
+            onChange={(event) => changeProject(event.target.value)}
           />
-        </label>
+        </div>
       </div>
       <div className="tasks-tabs" role="group" aria-label="Tipo de cadastro">
         {[

@@ -158,14 +158,19 @@ test("pelo menu, o dashboard individual começa pela escolha e abre o escolhido"
     assert.equal(raiz.querySelector("h1").textContent, "Escolha um projeto");
     assert.deepEqual(api.chamadas, ["/dashboard/opcoes"], "Sem projeto, nada além das opções.");
     const seletor = raiz.querySelector(".entity-picker .searchable-select__control");
-    assert.equal(seletor.textContent, "Selecione um projeto");
+    assert.equal(seletor.textContent.trim(), "Selecione um projeto");
     await click(seletor);
-    const opcoes = [...raiz.querySelectorAll('.entity-picker [role="option"]')];
     assert.deepEqual(
-      opcoes.map((item) => item.textContent),
+      [...raiz.querySelectorAll('.entity-picker [role="option"]')].map((item) =>
+        item.textContent.trim(),
+      ),
       ["Portal (Ativo)", "Mobile (Pausado)"],
     );
-    await click(opcoes[1]);
+    await click(
+      [...raiz.querySelectorAll('.entity-picker [role="option"]')].find((item) =>
+        item.textContent.includes("Mobile"),
+      ),
+    );
     assert.equal(raiz.textContent, "Dashboard aberto");
   } finally {
     api.restaurar();

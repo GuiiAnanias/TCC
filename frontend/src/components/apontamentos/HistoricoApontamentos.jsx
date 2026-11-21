@@ -203,12 +203,9 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
             </select>
 
             <SelecaoComBusca
-              name="historicoColaboradorId"
+              id="historico-colaborador"
               ariaLabel="Filtrar por colaborador"
-              value={filters.colaboradorId}
-              onChange={(event) =>
-                setFilters((current) => ({ ...current, colaboradorId: event.target.value }))
-              }
+              name="colaboradorId"
               options={[
                 { value: "", label: "Todos os colaboradores" },
                 ...colaboradores.map((colaborador) => ({
@@ -216,19 +213,29 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
                   label: colaborador.nomeCompleto,
                 })),
               ]}
+              value={filters.colaboradorId}
+              placeholder="Todos os colaboradores"
+              onChange={(event) =>
+                setFilters((current) => ({ ...current, colaboradorId: event.target.value }))
+              }
             />
 
             <SelecaoComBusca
-              name="historicoProjetoId"
+              id="historico-projeto"
               ariaLabel="Filtrar por projeto"
+              name="projetoId"
+              options={[
+                { value: "", label: "Todos os projetos" },
+                ...projetos.map((projeto) => ({
+                  value: String(projeto.id),
+                  label: projeto.nome,
+                })),
+              ]}
               value={filters.projetoId}
+              placeholder="Todos os projetos"
               onChange={(event) =>
                 setFilters((current) => ({ ...current, projetoId: event.target.value }))
               }
-              options={[
-                { value: "", label: "Todos os projetos" },
-                ...projetos.map((projeto) => ({ value: String(projeto.id), label: projeto.nome })),
-              ]}
             />
 
             {temFiltro && (

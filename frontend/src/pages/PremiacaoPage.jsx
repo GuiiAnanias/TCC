@@ -286,9 +286,9 @@ export function PremiacaoPage() {
   // sessão).
   async function save(event) {
     event.preventDefault();
-    // A seleção com busca não é um campo nativo: o "obrigatório" é conferido aqui.
     if (!editor && !form.colaboradorId) {
-      setError("Selecione o colaborador da avaliação.");
+      setError("Selecione um colaborador para a avaliação.");
+      document.getElementById("premiacao-colaborador")?.focus();
       return;
     }
     setBusy(true);
@@ -487,21 +487,22 @@ export function PremiacaoPage() {
                 <form onSubmit={save}>
                   <fieldset disabled={busy || loading || readOnly} className="tasks-form-fields">
                     <div className="form-grid">
-                      <label className="field">
+                      <div className="field">
                         <span>Colaborador</span>
                         <SelecaoComBusca
+                          id="premiacao-colaborador"
                           name="colaboradorId"
-                          placeholder="Selecione"
-                          required
-                          disabled={Boolean(editor || form.anteriorId)}
-                          value={form.colaboradorId}
-                          onChange={(e) => change("colaboradorId", e.target.value)}
                           options={people.map((row) => ({
                             value: String(row.id),
                             label: `${row.nomeCompleto}${row.status === "INATIVO" ? " (inativo)" : ""}`,
                           }))}
+                          value={String(form.colaboradorId || "")}
+                          placeholder="Selecione"
+                          required
+                          disabled={Boolean(editor || form.anteriorId)}
+                          onChange={(e) => change("colaboradorId", e.target.value)}
                         />
-                      </label>
+                      </div>
                       <label className="field">
                         <span>Competência</span>
                         <input
