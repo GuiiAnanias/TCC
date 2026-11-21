@@ -613,32 +613,44 @@ export function CadastroPage({ config }) {
     setConfirmingRecord(record);
   }
 
-  // [REQUISICAO] Excluir/Inativar após confirmação no modal (DELETE na API).
+  // [REQUISICAO] Excluir/Inativar/Ativar após confirmação no modal (DELETE ou PUT na API).
   async function executeInactivate() {
     const record = confirmingRecord;
     if (!record) return;
     setConfirmingRecord(null);
     const deleting = config.deleteMode === "delete";
+    const reactivating = !deleting && !config.teamManager && record.status === "INATIVO";
 
     const request = requestScope.begin("mutation");
     setError("");
     setMessage("");
 
     try {
-      await api.delete(`${config.endpoint}/${record.id}`);
+      if (reactivating) {
+        await api.put(`${config.endpoint}/${record.id}`, { status: "ATIVO" });
+      } else {
+        await api.delete(`${config.endpoint}/${record.id}`);
+      }
       if (!request.isCurrent()) return;
       if (editingId === record.id) resetForm();
       if (isApontamentos) {
         setHistoryVersion((value) => value + 1);
       }
       setMessage(
-        `${config.singular} ${deleting ? "excluído" : config.inactivatedLabel || "inativado"} com sucesso.`,
+        `${config.singular} ${
+          deleting ? "excluído" : reactivating ? "ativado" : config.inactivatedLabel || "inativado"
+        } com sucesso.`,
       );
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
       if (request.isCurrent())
-        setError(requestError.response?.data?.message || "Não foi possível remover o registro.");
+        setError(
+          requestError.response?.data?.message ||
+            (reactivating
+              ? "Não foi possível ativar o registro."
+              : "Não foi possível remover o registro."),
+        );
     }
   }
 
@@ -1326,19 +1338,34 @@ export function CadastroPage({ config }) {
                                 <WalletCards size={17} />
                               </button>
                             ) : null}
-                            <button
-                              type="button"
-                              className="icon-button danger"
-                              onClick={() => handleInactivate(record)}
-                              title={
-                                config.deleteMode === "delete"
-                                  ? "Excluir"
-                                  : config.inactivateLabel || "Inativar"
-                              }
-                              disabled={config.teamManager && record.status === "ENCERRADO"}
-                            >
-                              {config.teamManager ? <Archive size={17} /> : <Trash2 size={17} />}
-                            </button>
+                            {(() => {
+                              const isDeleting = config.deleteMode === "delete";
+                              const isReactivating =
+                                !isDeleting && !config.teamManager && record.status === "INATIVO";
+                              const actionLabel = isDeleting
+                                ? "Excluir"
+                                : isReactivating
+                                  ? "Ativar"
+                                  : config.inactivateLabel || "Inativar";
+                              return (
+                                <button
+                                  type="button"
+                                  className={`icon-button${isReactivating ? "" : " danger"}`}
+                                  onClick={() => handleInactivate(record)}
+                                  title={actionLabel}
+                                  aria-label={`${actionLabel} ${record.nome || record.nomeCompleto || record.nivel || record.descricao || config.singular}`}
+                                  disabled={config.teamManager && record.status === "ENCERRADO"}
+                                >
+                                  {config.teamManager ? (
+                                    <Archive size={17} />
+                                  ) : isReactivating ? (
+                                    <RotateCcw size={17} />
+                                  ) : (
+                                    <Trash2 size={17} />
+                                  )}
+                                </button>
+                              );
+                            })()}
                             {config.key === "projetos" && (
                               <button
                                 type="button"
@@ -1371,24 +1398,28 @@ export function CadastroPage({ config }) {
         </>
       )}
 
-      {confirmingRecord && (
-        <DialogoConfirmacao
-          title={
-            config.deleteMode === "delete"
-              ? `Excluir ${config.singular}`
-              : `${config.inactivateLabel || "Inativar"} ${config.singular}`
-          }
-          description={`${config.deleteMode === "delete" ? "Excluir definitivamente" : config.inactivateLabel || "Inativar"} ${config.singular} "${confirmingRecord.nome || confirmingRecord.nomeCompleto || confirmingRecord.nivel || confirmingRecord.descricao}"?`}
-          confirmLabel={
-            config.deleteMode === "delete"
-              ? "Excluir definitivamente"
-              : config.inactivateLabel || "Inativar"
-          }
-          danger={config.deleteMode === "delete"}
-          onConfirm={executeInactivate}
-          onCancel={() => setConfirmingRecord(null)}
-        />
-      )}
+      {confirmingRecord &&
+        (() => {
+          const isDeleting = config.deleteMode === "delete";
+          const isReactivating =
+            !isDeleting && !config.teamManager && confirmingRecord.status === "INATIVO";
+          const actionVerb = isDeleting
+            ? "Excluir"
+            : isReactivating
+              ? "Ativar"
+              : config.inactivateLabel || "Inativar";
+          const descriptionVerb = isDeleting ? "Excluir definitivamente" : actionVerb;
+          return (
+            <DialogoConfirmacao
+              title={`${actionVerb} ${config.singular}`}
+              description={`${descriptionVerb} ${config.singular} "${confirmingRecord.nome || confirmingRecord.nomeCompleto || confirmingRecord.nivel || confirmingRecord.descricao}"?`}
+              confirmLabel={descriptionVerb}
+              danger={isDeleting}
+              onConfirm={executeInactivate}
+              onCancel={() => setConfirmingRecord(null)}
+            />
+          );
+        })()}
 
       {config.key === "remuneracoes" && <BonificacaoPapeis />}
       {config.key === "projetos" && deletingProject && (

@@ -146,3 +146,57 @@ test("opções e erros antigos são descartados ao trocar de módulo e desmontar
     cleanup();
   }
 });
+
+test("registros inativos exibem botão Ativar e reativam via PUT com status ATIVO", async () => {
+  const cleanup = installDom(),
+    originalGet = api.get,
+    originalPut = api.put,
+    originalDelete = api.delete;
+  let putCall = null;
+  let deleteCall = null;
+  let rows = [
+    { id: 1, nome: "Cliente Inativo", status: "INATIVO" },
+    { id: 2, nome: "Cliente Ativo", status: "ATIVO" },
+  ];
+  api.get = async () => ({ data: rows });
+  api.put = async (url, data) => {
+    putCall = { url, data };
+    rows = rows.map((row) => (row.id === 1 ? { ...row, status: "ATIVO" } : row));
+    return { data: { id: 1, status: "ATIVO" } };
+  };
+  api.delete = async (url) => {
+    deleteCall = url;
+    return { data: {} };
+  };
+  const clientConfig = {
+    ...config,
+    key: "clientes",
+    endpoint: "/clientes",
+    title: "Clientes",
+    singular: "Cliente",
+  };
+  const view = await mount(React.createElement(CadastroPage, { config: clientConfig }));
+  try {
+    const activateButton = view.container.querySelector('button[title="Ativar"]');
+    const inactivateButton = view.container.querySelector('button[title="Inativar"]');
+    assert.ok(activateButton, "Registro inativo deve exibir botão Ativar");
+    assert.ok(inactivateButton, "Registro ativo deve exibir botão Inativar");
+
+    await click(activateButton);
+    const confirmDialogButton = [...document.querySelectorAll(".confirm-dialog button")].find(
+      (btn) => btn.textContent.trim() === "Ativar",
+    );
+    assert.ok(confirmDialogButton, "Modal de confirmação deve exibir botão Ativar");
+    await click(confirmDialogButton);
+
+    assert.deepEqual(putCall, { url: "/clientes/1", data: { status: "ATIVO" } });
+    assert.equal(deleteCall, null);
+    assert.match(view.container.textContent, /Cliente ativado com sucesso\./);
+  } finally {
+    await view.unmount();
+    api.get = originalGet;
+    api.put = originalPut;
+    api.delete = originalDelete;
+    cleanup();
+  }
+});
