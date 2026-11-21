@@ -73,6 +73,9 @@ function readValue(item, column) {
 
 // [REQUISICAO] Monta o corpo enviado à API: converte números e datas e, na edição, manda só os
 // campos alterados.
+// Projetos finalizados: voltar para Ativo pede confirmação (Pausado volta direto).
+const PROJETO_FINALIZADO = { CANCELADO: "cancelado", ENCERRADO: "encerrado" };
+
 function buildPayload(fields, formData, isEditing, originalRecord) {
   return fields.reduce((payload, field) => {
     if (field.hiddenOnCreate && !isEditing) {
@@ -111,6 +114,8 @@ export function CadastroPage({ config }) {
   const requestScope = useEscopoRequisicao(config);
   const [deletingProject, setDeletingProject] = useState(null);
   const [confirmingRecord, setConfirmingRecord] = useState(null);
+  // Estado anterior do projeto (Cancelado ou Encerrado) enquanto a reativação aguarda confirmação.
+  const [reativacaoPendente, setReativacaoPendente] = useState(null);
   const [activeTab, setActiveTab] = useState("lancamentos");
   const [historyVersion, setHistoryVersion] = useState(0);
   const isClient = config.key === "clientes";
@@ -388,6 +393,7 @@ export function CadastroPage({ config }) {
     setFilters({ busca: "", status: "" });
     setDeletingProject(null);
     setConfirmingRecord(null);
+    setReativacaoPendente(null);
     setActiveTab("lancamentos");
     setHistoryVersion(0);
     setSelectedRecord(null);
@@ -545,8 +551,8 @@ export function CadastroPage({ config }) {
 
   // [VALIDACAO][REQUISICAO] Confere os campos obrigatórios, monta o payload e envia POST (novo) ou
   // PUT (edição). Erros de validação da API aparecem campo a campo; os demais, no topo.
-  async function handleSubmit(event) {
-    event.preventDefault();
+  async function handleSubmit(event, { reativacaoConfirmada = false } = {}) {
+    event?.preventDefault();
     if (
       saving ||
       Object.values(loadingOptions).some(Boolean) ||
@@ -570,6 +576,17 @@ export function CadastroPage({ config }) {
       document.getElementById(Object.keys(missing)[0])?.focus();
       return;
     }
+    // [REGRA] Projeto cancelado ou encerrado só volta para Ativo depois da confirmação.
+    if (
+      config.teamManager &&
+      isEditing &&
+      formData.status === "ATIVO" &&
+      PROJETO_FINALIZADO[originalRecord?.status] &&
+      !reativacaoConfirmada
+    ) {
+      setReativacaoPendente(originalRecord.status);
+      return;
+    }
     const request = requestScope.begin("mutation");
     setSaving(true);
     setError("");
@@ -577,6 +594,7 @@ export function CadastroPage({ config }) {
 
     try {
       const payload = buildPayload(formFields, formData, isEditing, originalRecord);
+      if (reativacaoConfirmada) payload.confirmarReativacao = true;
 
       if (isEditing && Object.keys(payload).length === 0) {
         setMessage("Nenhuma alteração para salvar.");
@@ -603,6 +621,12 @@ export function CadastroPage({ config }) {
     } catch (requestError) {
       if (!request.isCurrent()) return;
       const response = requestError.response?.data;
+      // O projeto foi cancelado ou encerrado por outra pessoa enquanto era editado: pede a
+      // mesma confirmação em vez de só mostrar o erro.
+      if (response?.details?.codigo === "REATIVACAO_SEM_CONFIRMACAO") {
+        setReativacaoPendente(response.details.statusAnterior);
+        return;
+      }
       const validationMessage = response?.errors?.[0]?.message;
       setError(validationMessage || response?.message || "Não foi possível salvar o registro.");
     } finally {
@@ -1473,6 +1497,20 @@ export function CadastroPage({ config }) {
             />
           );
         })()}
+
+      {reativacaoPendente && (
+        <DialogoConfirmacao
+          title={`Reativar projeto ${PROJETO_FINALIZADO[reativacaoPendente]}?`}
+          description={`"${formData.nome || originalRecord?.nome || "Projeto"}" está ${PROJETO_FINALIZADO[reativacaoPendente]}. Ao reativar, ele volta a aceitar horas, tarefas, sprints e alterações na equipe. O histórico não muda.`}
+          confirmLabel="Reativar projeto"
+          danger={false}
+          onConfirm={() => {
+            setReativacaoPendente(null);
+            handleSubmit(null, { reativacaoConfirmada: true });
+          }}
+          onCancel={() => setReativacaoPendente(null)}
+        />
+      )}
 
       {config.key === "remuneracoes" && <BonificacaoPapeis />}
       {config.key === "projetos" && deletingProject && (

@@ -266,7 +266,17 @@ try {
       }),
       { statusCode: 400 },
     );
-    await projetosService.update(portalProject.id, { status: "ATIVO" });
+    // Pausado volta direto; cancelado e encerrado só com a confirmação explícita.
+    if (status !== "PAUSADO") {
+      await assert.rejects(projetosService.update(portalProject.id, { status: "ATIVO" }), {
+        statusCode: 409,
+      });
+      assert.equal((await projetosService.getById(portalProject.id)).status, status);
+    }
+    await projetosService.update(portalProject.id, {
+      status: "ATIVO",
+      ...(status === "PAUSADO" ? {} : { confirmarReativacao: true }),
+    });
     assert.equal((await projetosService.getById(portalProject.id)).status, "ATIVO");
   }
   assert.deepEqual(

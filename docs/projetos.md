@@ -15,14 +15,16 @@ A migração `20261111010000_tipos_contrato_genericos` troca o tipo antigo **Esc
 
 ## Estados e operações
 
-| Estado    | Novas horas, tarefas, sprints e alterações de equipe   | Consulta do histórico | Reativação                   |
-| --------- | ------------------------------------------------------ | --------------------- | ---------------------------- |
-| Ativo     | Permitidas, respeitando as validações de cada operação | Disponível            | Já está ativo                |
-| Pausado   | Bloqueadas                                             | Disponível            | Manual, na edição do projeto |
-| Encerrado | Bloqueadas                                             | Disponível            | Manual, na edição do projeto |
-| Cancelado | Bloqueadas                                             | Disponível            | Manual, na edição do projeto |
+| Estado    | Novas horas, tarefas, sprints e alterações de equipe   | Consulta do histórico | Reativação                                      |
+| --------- | ------------------------------------------------------ | --------------------- | ----------------------------------------------- |
+| Ativo     | Permitidas, respeitando as validações de cada operação | Disponível            | Já está ativo                                   |
+| Pausado   | Bloqueadas                                             | Disponível            | Direta, na edição do projeto                    |
+| Encerrado | Bloqueadas                                             | Disponível            | Na edição do projeto, com confirmação explícita |
+| Cancelado | Bloqueadas                                             | Disponível            | Na edição do projeto, com confirmação explícita |
 
 O cadastro cria o projeto como Ativo. Na edição, é possível mudar o estado, inclusive voltar para Ativo, sem recriar projeto, tarefas ou vínculos. Reativar não reativa automaticamente colaboradores nem vínculos de equipe encerrados.
+
+Pausado é uma interrupção temporária e volta para Ativo direto. Encerrado e Cancelado indicam um projeto finalizado: ao salvar a volta para Ativo, a tela pede confirmação ("Reativar projeto cancelado?") e só então envia `confirmarReativacao: true`. Sem essa confirmação, a API recusa a reativação com 409 (`REATIVACAO_SEM_CONFIRMACAO`); a confirmação não é gravada no projeto.
 
 As correções históricas de apontamentos já existentes mantêm o fluxo anterior e as proteções de custos faturados. Transferir um apontamento para outro projeto exige que o destino esteja Ativo. Alterar o estado do projeto não altera os valores históricos nem remove registros.
 
