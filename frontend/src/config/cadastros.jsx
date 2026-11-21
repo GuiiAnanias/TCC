@@ -477,6 +477,8 @@ export const resources = [
     title: "Apontamento de Horas",
     singular: "Apontamento",
     endpoint: "/apontamentos",
+    // A API devolve uma página por vez: a lista inteira de horas pode ter centenas de milhares.
+    paginacaoServidor: true,
     icon: Clock,
     loadColaboradores: true,
     loadProjetos: true,

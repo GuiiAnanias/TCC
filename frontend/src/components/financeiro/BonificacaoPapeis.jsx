@@ -3,17 +3,37 @@
  * e cadastro de uma nova regra com data de início.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Search } from "lucide-react";
 import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
 import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { api } from "../../api/conexao.js";
+import { contemBusca } from "../../utils/textoBusca.js";
 
 const date = (value) => new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 
+// Situação de cada vigência em relação a hoje (a data final é exclusiva).
+const SITUACOES = { VIGENTE: "Vigentes", FUTURA: "Futuras", ENCERRADA: "Encerradas" };
+function situacaoDa(row, hoje) {
+  if (row.dataInicio.slice(0, 10) > hoje) return "FUTURA";
+  if (row.dataFim && row.dataFim.slice(0, 10) <= hoje) return "ENCERRADA";
+  return "VIGENTE";
+}
+
 export function BonificacaoPapeis() {
   const [rows, setRows] = useState([]);
-  const paginacao = usePaginacao(rows);
+  const [busca, setBusca] = useState("");
+  const [situacao, setSituacao] = useState("");
+  const filtradas = useMemo(() => {
+    const hoje = today();
+    return rows.filter(
+      (row) =>
+        contemBusca(busca, row.papel, `${Number(row.percentual).toLocaleString("pt-BR")}%`) &&
+        (!situacao || situacaoDa(row, hoje) === situacao),
+    );
+  }, [rows, busca, situacao]);
+  const paginacao = usePaginacao(filtradas);
   const [roles, setRoles] = useState([]);
   const [form, setForm] = useState({ papel: "", percentual: "", dataInicio: today() });
   const [loading, setLoading] = useState(true);
@@ -153,6 +173,35 @@ export function BonificacaoPapeis() {
           </button>
         </fieldset>
       </form>
+      <div className="table-toolbar">
+        <label className="search-field">
+          <Search size={18} aria-hidden="true" />
+          <input
+            value={busca}
+            onChange={(event) => {
+              setBusca(event.target.value);
+              paginacao.setPagina(1);
+            }}
+            placeholder="Buscar por papel ou percentual"
+            aria-label="Buscar no histórico de bonificações"
+          />
+        </label>
+        <select
+          value={situacao}
+          onChange={(event) => {
+            setSituacao(event.target.value);
+            paginacao.setPagina(1);
+          }}
+          aria-label="Filtrar vigências"
+        >
+          <option value="">Todas as vigências</option>
+          {Object.entries(SITUACOES).map(([valor, rotulo]) => (
+            <option key={valor} value={valor}>
+              {rotulo}
+            </option>
+          ))}
+        </select>
+      </div>
       <div className="dashboard-table">
         <table>
           <caption>Histórico de bonificações por papel</caption>
@@ -165,10 +214,14 @@ export function BonificacaoPapeis() {
             </tr>
           </thead>
           <tbody>
-            {!rows.length ? (
+            {!filtradas.length ? (
               <tr>
                 <td colSpan="4" className="empty-cell">
-                  {loading ? "Carregando…" : "Nenhuma bonificação por papel cadastrada"}
+                  {loading
+                    ? "Carregando…"
+                    : rows.length
+                      ? "Nenhuma bonificação encontrada com esses filtros"
+                      : "Nenhuma bonificação por papel cadastrada"}
                 </td>
               </tr>
             ) : (

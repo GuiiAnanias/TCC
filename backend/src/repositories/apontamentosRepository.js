@@ -41,29 +41,51 @@ export const apontamentosRepository = {
   },
 
   // [BANCO] Lista com busca na descrição e filtros de colaborador, projeto, status e período.
-  findAll({ busca, colaboradorId, projetoId, dataInicio, dataFim, status } = {}) {
-    return prisma.apontamentoHora.findMany({
-      where: {
-        ...(busca ? { descricao: { contains: busca, mode: "insensitive" } } : {}),
-        ...(colaboradorId ? { colaboradorId } : {}),
-        ...(projetoId ? { projetoId } : {}),
-        ...(status ? { status } : {}),
-        ...(dataInicio || dataFim
-          ? {
-              data: {
-                ...(dataInicio ? { gte: dataInicio } : {}),
-                ...(dataFim ? { lte: dataFim } : {}),
-              },
-            }
-          : {}),
-      },
+  // Com "pagina", devolve { itens, total, pagina, porPagina } com só aquela página (a tela usa
+  // assim; com centenas de milhares de horas, a lista inteira não cabe numa resposta).
+  async findAll({
+    busca,
+    colaboradorId,
+    projetoId,
+    dataInicio,
+    dataFim,
+    status,
+    pagina,
+    porPagina = 20,
+  } = {}) {
+    const where = {
+      ...(busca ? { descricao: { contains: busca, mode: "insensitive" } } : {}),
+      ...(colaboradorId ? { colaboradorId } : {}),
+      ...(projetoId ? { projetoId } : {}),
+      ...(status ? { status } : {}),
+      ...(dataInicio || dataFim
+        ? {
+            data: {
+              ...(dataInicio ? { gte: dataInicio } : {}),
+              ...(dataFim ? { lte: dataFim } : {}),
+            },
+          }
+        : {}),
+    };
+    const consulta = {
+      where,
       include: {
         colaborador: { select: { nomeCompleto: true, cargo: true } },
         projeto: { select: { nome: true } },
         tarefa: { select: { titulo: true } },
       },
-      orderBy: [{ data: "desc" }],
-    });
+      orderBy: [{ data: "desc" }, { id: "desc" }],
+    };
+    if (!pagina) return prisma.apontamentoHora.findMany(consulta);
+    const [total, itens] = await prisma.$transaction([
+      prisma.apontamentoHora.count({ where }),
+      prisma.apontamentoHora.findMany({
+        ...consulta,
+        skip: (pagina - 1) * porPagina,
+        take: porPagina,
+      }),
+    ]);
+    return { itens, total, pagina, porPagina };
   },
 
   findById(id, db = prisma) {

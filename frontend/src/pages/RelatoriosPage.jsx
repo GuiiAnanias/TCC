@@ -20,6 +20,7 @@ import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { SelecaoEscopoRelatorio } from "../components/relatorios/SelecaoEscopoRelatorio.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { DialogoPersonalizacaoRelatorio } from "../components/relatorios/DialogoPersonalizacaoRelatorio.jsx";
 import { AbasRelatorios } from "../components/relatorios/AbasRelatorios.jsx";
 import {
@@ -527,17 +528,21 @@ export function RelatoriosPage() {
                   ))}
                 </select>
               </label>
-              <label className="field">
+              <div className="field">
                 <span>Colaborador</span>
-                <select name="colaboradorId" value={form.colaboradorId} onChange={atualizar}>
-                  <option value="">Todos os colaboradores</option>
-                  {colaboradores.map((colaborador) => (
-                    <option key={colaborador.id} value={String(colaborador.id)}>
-                      {colaborador.nomeCompleto}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <SelecaoComBusca
+                  name="colaboradorId"
+                  value={form.colaboradorId}
+                  onChange={atualizar}
+                  options={[
+                    { value: "", label: "Todos os colaboradores" },
+                    ...colaboradores.map((colaborador) => ({
+                      value: String(colaborador.id),
+                      label: colaborador.nomeCompleto,
+                    })),
+                  ]}
+                />
+              </div>
               <label className="field">
                 <span>Status do projeto</span>
                 <select name="statusProjeto" value={form.statusProjeto} onChange={atualizar}>

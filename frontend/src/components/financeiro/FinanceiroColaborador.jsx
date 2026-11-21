@@ -14,6 +14,7 @@ import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { EtiquetaStatus } from "../comum/EtiquetaStatus.jsx";
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 import { dataBr } from "../../utils/pendencias.js";
+import { contemBusca } from "../../utils/textoBusca.js";
 
 const inputDate = (value) => (value ? String(value).slice(0, 10) : "");
 const formatDate = (value) =>
@@ -72,6 +73,7 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
   const [remunerations, setRemunerations] = useState([]);
   const [formData, setFormData] = useState(initialForm);
   const [statusFilter, setStatusFilter] = useState("");
+  const [buscaConfigs, setBuscaConfigs] = useState("");
   const [loading, setLoading] = useState(false);
   // Histórico já carregado para este colaborador (a pendência só é conferida depois disso).
   const [carregado, setCarregado] = useState(false);
@@ -82,8 +84,19 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
   const isInactive = collaborator?.status === "INATIVO";
   const minStart = minimumStart(configs);
   const filteredConfigs = useMemo(
-    () => configs.filter((config) => !statusFilter || statusOf(config) === statusFilter),
-    [configs, statusFilter],
+    () =>
+      configs.filter(
+        (config) =>
+          (!statusFilter || statusOf(config) === statusFilter) &&
+          contemBusca(
+            buscaConfigs,
+            config.nivelAplicado,
+            config.itemTabela?.nivel,
+            config.motivo,
+            String(config.valorHoraAplicado ?? "").replace(".", ","),
+          ),
+      ),
+    [configs, statusFilter, buscaConfigs],
   );
   const paginacaoConfigs = usePaginacao(filteredConfigs);
 
@@ -449,10 +462,24 @@ export function FinanceiroColaborador({ collaborator, onChanged, onClose, penden
       </form>
       <div className="team-table-toolbar">
         <label className="field">
+          <span>Buscar</span>
+          <input
+            value={buscaConfigs}
+            onChange={(event) => {
+              setBuscaConfigs(event.target.value);
+              paginacaoConfigs.setPagina(1);
+            }}
+            placeholder="Nível, valor/hora ou motivo"
+          />
+        </label>
+        <label className="field">
           <span>Mostrar</span>
           <select
             value={statusFilter}
-            onChange={(event) => setStatusFilter(event.target.value)}
+            onChange={(event) => {
+              setStatusFilter(event.target.value);
+              paginacaoConfigs.setPagina(1);
+            }}
             title="Filtrar configurações por status"
           >
             <option value="">Todas as vigências</option>

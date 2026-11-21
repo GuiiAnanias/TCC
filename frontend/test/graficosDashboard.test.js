@@ -9,6 +9,7 @@ import {
   mesCurto,
   mesLongo,
   orcamentoPorProjeto,
+  principaisEOutros,
   ranking,
 } from "../src/utils/dadosGraficos.js";
 
@@ -45,6 +46,24 @@ test("ranking ordena do maior para o menor, ignora zeros e junta o excedente em 
     resultado.reduce((soma, item) => soma + item.valor, 0),
     muitos.reduce((soma, item) => soma + item.horas, 0),
     "Nada se perde ao juntar em Outros.",
+  );
+});
+
+test("o resto do ranking vira um resumo fora da escala, sem sobrar um item sozinho", () => {
+  const itens = Array.from({ length: 10 }, (_, indice) => ({
+    nome: `Item ${indice}`,
+    valor: 100 - indice,
+  }));
+  const { principais, outros } = principaisEOutros(itens);
+  assert.deepEqual(
+    principais.map((item) => item.nome),
+    itens.slice(0, 7).map((item) => item.nome),
+  );
+  assert.deepEqual(outros, { quantidade: 3, valor: 93 + 92 + 91 });
+  assert.deepEqual(
+    principaisEOutros(itens.slice(0, 8)),
+    { principais: itens.slice(0, 8), outros: null },
+    "Com um só a mais, ele entra como barra.",
   );
 });
 

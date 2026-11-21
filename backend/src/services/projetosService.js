@@ -9,6 +9,9 @@ import { projetosRepository } from "../repositories/projetosRepository.js";
 import { financeDate, todayFinanceDate } from "../utils/datasFinanceiras.js";
 import { ErroHttp } from "../utils/ErroHttp.js";
 
+// Estados de projeto finalizado: reativar exige confirmação (ver update).
+export const ESTADOS_FINALIZADOS = ["CANCELADO", "ENCERRADO"];
+
 async function ensureProjetoExists(id, db) {
   const projeto = await projetosRepository.findById(id, db);
 
@@ -120,8 +123,22 @@ export const projetosService = {
     });
   },
 
-  async update(id, data) {
+  async update(id, { confirmarReativacao, ...data }) {
     const previous = await ensureProjetoExists(id);
+
+    // [REGRA] Pausado volta para Ativo direto. Cancelado e Encerrado só voltam com confirmação
+    // explícita: a reativação reabre horas, tarefas, sprints e equipe de um projeto finalizado.
+    if (
+      data.status === "ATIVO" &&
+      ESTADOS_FINALIZADOS.includes(previous.status) &&
+      !confirmarReativacao
+    ) {
+      throw new ErroHttp(
+        409,
+        `Este projeto está ${previous.status === "CANCELADO" ? "cancelado" : "encerrado"}. Confirme a reativação para voltar a aceitar horas, tarefas, sprints e alterações na equipe.`,
+        { codigo: "REATIVACAO_SEM_CONFIRMACAO", statusAnterior: previous.status },
+      );
+    }
 
     if (data.clienteId && data.clienteId !== previous.clienteId) {
       await ensureClienteAtivo(data.clienteId);

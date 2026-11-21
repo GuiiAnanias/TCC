@@ -11,6 +11,8 @@ import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
 import { DialogoConfirmacao } from "../comum/DialogoConfirmacao.jsx";
 import { PaginacaoTabela, usePaginacao } from "../comum/PaginacaoTabela.jsx";
 import { EtiquetaStatus } from "../comum/EtiquetaStatus.jsx";
+import { SelecaoComBusca } from "../comum/SelecaoComBusca.jsx";
+import { contemBusca } from "../../utils/textoBusca.js";
 import { todayBusinessDate as today } from "../../utils/datasEmpresa.js";
 import { dataBr, situacaoNaEquipe } from "../../utils/pendencias.js";
 
@@ -57,6 +59,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
   const [saving, setSaving] = useState(false);
   const [closingMember, setClosingMember] = useState(null);
   const [teamStatusFilter, setTeamStatusFilter] = useState("");
+  const [teamSearch, setTeamSearch] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const isInactive = project?.status !== "ATIVO";
@@ -95,17 +98,16 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     }));
   }, [situacao?.situacao, pendencia, project?.id, collaborators]);
 
-  const filteredTeam = useMemo(() => {
-    if (teamStatusFilter === "ATIVO") {
-      return team.filter((member) => !member.dataSaida);
-    }
-
-    if (teamStatusFilter === "INATIVO") {
-      return team.filter((member) => member.dataSaida);
-    }
-
-    return team;
-  }, [team, teamStatusFilter]);
+  const filteredTeam = useMemo(
+    () =>
+      team.filter(
+        (member) =>
+          (teamStatusFilter !== "ATIVO" || !member.dataSaida) &&
+          (teamStatusFilter !== "INATIVO" || member.dataSaida) &&
+          contemBusca(teamSearch, memberName(member), member.colaborador?.cargo, member.papel),
+      ),
+    [team, teamStatusFilter, teamSearch],
+  );
   const paginacaoEquipe = usePaginacao(filteredTeam);
 
   // [REQUISICAO] GET /projetos/:id/equipe: participações atuais e passadas.
@@ -389,14 +391,13 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
       </div>
 
       <form className="team-form" onSubmit={handleSubmit}>
-        <label className="field">
+        <div className="field">
           <span>Colaborador</span>
-          <select
+          <SelecaoComBusca
             id="team-colaboradorId"
-            aria-invalid={Boolean(selectionErrors.colaboradorId)}
-            aria-describedby={
-              selectionErrors.colaboradorId ? "team-colaboradorId-error" : undefined
-            }
+            name="colaboradorId"
+            placeholder="Selecione"
+            error={selectionErrors.colaboradorId}
             value={formData.colaboradorId}
             required
             disabled={isInactive || loading || saving || Boolean(loadError)}
@@ -404,20 +405,17 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
               setSelectionErrors((current) => ({ ...current, colaboradorId: "" }));
               setFormData((current) => ({ ...current, colaboradorId: event.target.value }));
             }}
-          >
-            <option value="">Selecione</option>
-            {activeCollaborators.map((collaborator) => (
-              <option key={collaborator.id} value={collaborator.id}>
-                {collaborator.nomeCompleto}
-              </option>
-            ))}
-          </select>
+            options={activeCollaborators.map((collaborator) => ({
+              value: String(collaborator.id),
+              label: collaborator.nomeCompleto,
+            }))}
+          />
           {selectionErrors.colaboradorId && (
             <small id="team-colaboradorId-error" role="alert">
               {selectionErrors.colaboradorId}
             </small>
           )}
-        </label>
+        </div>
 
         <label className="field">
           <span>Papel no projeto</span>
@@ -495,10 +493,24 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
           />
         </label>
         <label className="field">
+          <span>Buscar na equipe</span>
+          <input
+            value={teamSearch}
+            onChange={(event) => {
+              setTeamSearch(event.target.value);
+              paginacaoEquipe.setPagina(1);
+            }}
+            placeholder="Nome, cargo ou papel"
+          />
+        </label>
+        <label className="field">
           <span>Mostrar</span>
           <select
             value={teamStatusFilter}
-            onChange={(event) => setTeamStatusFilter(event.target.value)}
+            onChange={(event) => {
+              setTeamStatusFilter(event.target.value);
+              paginacaoEquipe.setPagina(1);
+            }}
             title="Filtrar equipe por status"
           >
             <option value="">Todos os vínculos</option>

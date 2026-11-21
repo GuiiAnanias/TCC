@@ -204,6 +204,7 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
 
             <SelecaoComBusca
               id="historico-colaborador"
+              ariaLabel="Filtrar por colaborador"
               name="colaboradorId"
               options={[
                 { value: "", label: "Todos os colaboradores" },
@@ -221,6 +222,7 @@ export function HistoricoApontamentos({ colaboradores = [], projetos = [], refre
 
             <SelecaoComBusca
               id="historico-projeto"
+              ariaLabel="Filtrar por projeto"
               name="projetoId"
               options={[
                 { value: "", label: "Todos os projetos" },

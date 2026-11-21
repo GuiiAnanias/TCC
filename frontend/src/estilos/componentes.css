@@ -216,6 +216,11 @@
   width: 160px;
   flex: 0 0 auto;
 }
+/* Seleção com busca usada como filtro na barra da tabela: tamanho de filtro, não de campo. */
+.table-toolbar .searchable-select {
+  width: 220px;
+  flex: 0 0 auto;
+}
 
 .table-wrap {
   width: 100%;
@@ -559,7 +564,8 @@ td .icon-button {
     flex-direction: column;
   }
 
-  .table-toolbar select {
+  .table-toolbar select,
+  .table-toolbar .searchable-select {
     width: 100%;
   }
 
