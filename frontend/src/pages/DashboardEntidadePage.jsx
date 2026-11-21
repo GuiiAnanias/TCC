@@ -12,6 +12,7 @@ import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AjudaDashboard } from "../components/dashboard/AjudaDashboard.jsx";
 import { entryStatusLabel, projectStatusLabel } from "../config/opcoesProjeto.js";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { SelecaoMultipla } from "../components/comum/SelecaoMultipla.jsx";
 import {
   etiquetasDoRecorte,
@@ -177,32 +178,45 @@ export function DashboardEntidadePage({ type }) {
         />
       </header>
       <div className="dashboard-overview">
-        <label className="field entity-picker">
+        <div className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>
-          <select
-            value={id}
+          <SelecaoComBusca
+            id="entidade-atual"
+            name={individual ? "colaborador" : "projeto"}
+            options={[
+              ...(!(individual ? options.colaboradores : options.projetos).some(
+                (row) => String(row.id) === id,
+              )
+                ? [
+                    {
+                      value: String(id),
+                      label: entity
+                        ? individual
+                          ? entity.nomeCompleto
+                          : entity.nome
+                        : "Selecionado",
+                    },
+                  ]
+                : []),
+              ...(individual ? options.colaboradores : options.projetos).map((row) => ({
+                value: String(row.id),
+                label: `${individual ? row.nomeCompleto : row.nome}${
+                  individual
+                    ? row.status === "INATIVO"
+                      ? " (inativo)"
+                      : ""
+                    : ` (${projectStatusLabel(row.status)})`
+                }`,
+              })),
+            ]}
+            value={String(id)}
+            placeholder={`Selecione um ${individual ? "colaborador" : "projeto"}`}
             disabled={loading || Boolean(optionsError)}
-            onChange={(event) => navigate(`/dashboard/${type}/${event.target.value}`)}
-          >
-            {!(individual ? options.colaboradores : options.projetos).some(
-              (row) => String(row.id) === id,
-            ) && (
-              <option value={id}>
-                {entity ? (individual ? entity.nomeCompleto : entity.nome) : "Selecionado"}
-              </option>
-            )}
-            {(individual ? options.colaboradores : options.projetos).map((row) => (
-              <option key={row.id} value={row.id}>
-                {individual ? row.nomeCompleto : row.nome}
-                {individual
-                  ? row.status === "INATIVO"
-                    ? " (inativo)"
-                    : ""
-                  : ` (${projectStatusLabel(row.status)})`}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={(event) =>
+              event.target.value && navigate(`/dashboard/${type}/${event.target.value}`)
+            }
+          />
+        </div>
         {entity && (
           <p className="dashboard-scope">
             {individual
@@ -735,26 +749,27 @@ function EntitySelection({ individual, options, optionsError, onRefresh, onPick 
         <AcoesPagina onRefresh={onRefresh} loading={false} />
       </header>
       <div className="dashboard-overview">
-        <label className="field entity-picker">
+        <div className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>
-          <select
-            value=""
-            disabled={Boolean(optionsError) || !rows.length}
-            onChange={(event) => event.target.value && onPick(event.target.value)}
-          >
-            <option value="">Selecione um {noun}</option>
-            {rows.map((row) => (
-              <option key={row.id} value={row.id}>
-                {individual ? row.nomeCompleto : row.nome}
-                {individual
+          <SelecaoComBusca
+            id="entidade-escolha"
+            name={noun}
+            options={rows.map((row) => ({
+              value: String(row.id),
+              label: `${individual ? row.nomeCompleto : row.nome}${
+                individual
                   ? row.status === "INATIVO"
                     ? " (inativo)"
                     : ""
-                  : ` (${projectStatusLabel(row.status)})`}
-              </option>
-            ))}
-          </select>
-        </label>
+                  : ` (${projectStatusLabel(row.status)})`
+              }`,
+            }))}
+            value=""
+            placeholder={`Selecione um ${noun}`}
+            disabled={Boolean(optionsError) || !rows.length}
+            onChange={(event) => event.target.value && onPick(event.target.value)}
+          />
+        </div>
         {optionsError ? (
           <div className="feedback error" role="alert">
             {optionsError}

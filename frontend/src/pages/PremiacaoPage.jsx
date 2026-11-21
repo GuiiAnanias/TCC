@@ -9,6 +9,7 @@ import { api } from "../api/conexao.js";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 import {
   IndicatorTasksTable,
@@ -285,6 +286,11 @@ export function PremiacaoPage() {
   // sessão).
   async function save(event) {
     event.preventDefault();
+    if (!editor && !form.colaboradorId) {
+      setError("Selecione um colaborador para a avaliação.");
+      document.getElementById("premiacao-colaborador")?.focus();
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");
@@ -481,23 +487,22 @@ export function PremiacaoPage() {
                 <form onSubmit={save}>
                   <fieldset disabled={busy || loading || readOnly} className="tasks-form-fields">
                     <div className="form-grid">
-                      <label className="field">
+                      <div className="field">
                         <span>Colaborador</span>
-                        <select
+                        <SelecaoComBusca
+                          id="premiacao-colaborador"
+                          name="colaboradorId"
+                          options={people.map((row) => ({
+                            value: String(row.id),
+                            label: `${row.nomeCompleto}${row.status === "INATIVO" ? " (inativo)" : ""}`,
+                          }))}
+                          value={String(form.colaboradorId || "")}
+                          placeholder="Selecione"
                           required
                           disabled={Boolean(editor || form.anteriorId)}
-                          value={form.colaboradorId}
                           onChange={(e) => change("colaboradorId", e.target.value)}
-                        >
-                          <option value="">Selecione</option>
-                          {people.map((row) => (
-                            <option key={row.id} value={row.id}>
-                              {row.nomeCompleto}
-                              {row.status === "INATIVO" ? " (inativo)" : ""}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
+                        />
+                      </div>
                       <label className="field">
                         <span>Competência</span>
                         <input

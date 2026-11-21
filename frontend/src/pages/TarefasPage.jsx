@@ -11,6 +11,7 @@ import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 
 const statuses = {
@@ -401,24 +402,25 @@ export function TarefasPage() {
         )}
       </div>
       <div className="form-panel">
-        <label className="field">
+        <div className="field">
           <span>Projeto</span>
-          <select
-            value={projectId}
-            onChange={(event) => changeProject(event.target.value)}
-            disabled={saving}
-          >
-            <option value="">Selecione um projeto</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.nome}
-                {project.status !== "ATIVO"
+          <SelecaoComBusca
+            id="tarefas-projeto"
+            name="projetoId"
+            options={projects.map((project) => ({
+              value: String(project.id),
+              label: `${project.nome}${
+                project.status !== "ATIVO"
                   ? ` (${projectStatusLabel(project.status).toLowerCase()})`
-                  : ""}
-              </option>
-            ))}
-          </select>
-        </label>
+                  : ""
+              }`,
+            }))}
+            value={String(projectId)}
+            placeholder="Selecione um projeto"
+            disabled={saving}
+            onChange={(event) => changeProject(event.target.value)}
+          />
+        </div>
       </div>
       <div className="tasks-tabs" role="group" aria-label="Tipo de cadastro">
         {[

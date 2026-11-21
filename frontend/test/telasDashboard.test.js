@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import React, { act } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
-import { installDom, mount, click, change } from "../scripts/testes/dom.mjs";
+import { installDom, mount, click } from "../scripts/testes/dom.mjs";
 import { api } from "../src/api/conexao.js";
 import { DashboardGeralPage } from "../src/pages/DashboardGeralPage.jsx";
 import { DashboardEntidadePage } from "../src/pages/DashboardEntidadePage.jsx";
@@ -157,12 +157,20 @@ test("pelo menu, o dashboard individual começa pela escolha e abre o escolhido"
     const raiz = view.container;
     assert.equal(raiz.querySelector("h1").textContent, "Escolha um projeto");
     assert.deepEqual(api.chamadas, ["/dashboard/opcoes"], "Sem projeto, nada além das opções.");
-    const seletor = raiz.querySelector(".entity-picker select");
+    const seletor = raiz.querySelector(".entity-picker .searchable-select__control");
+    assert.equal(seletor.textContent.trim(), "Selecione um projeto");
+    await click(seletor);
     assert.deepEqual(
-      [...seletor.options].map((item) => item.textContent),
-      ["Selecione um projeto", "Portal (Ativo)", "Mobile (Pausado)"],
+      [...raiz.querySelectorAll('.entity-picker [role="option"]')].map((item) =>
+        item.textContent.trim(),
+      ),
+      ["Portal (Ativo)", "Mobile (Pausado)"],
     );
-    await change(seletor, "11");
+    await click(
+      [...raiz.querySelectorAll('.entity-picker [role="option"]')].find((item) =>
+        item.textContent.includes("Mobile"),
+      ),
+    );
     assert.equal(raiz.textContent, "Dashboard aberto");
   } finally {
     api.restaurar();
