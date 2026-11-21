@@ -13,6 +13,7 @@ import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabe
 import { AjudaDashboard } from "../components/dashboard/AjudaDashboard.jsx";
 import { entryStatusLabel, projectStatusLabel } from "../config/opcoesProjeto.js";
 import { SelecaoMultipla } from "../components/comum/SelecaoMultipla.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import {
   etiquetasDoRecorte,
   mesmoRecorte,
@@ -29,6 +30,16 @@ import {
 } from "../components/dashboard/DashboardOperacional.jsx";
 
 const emptyFilters = { dataInicio: "", dataFim: "", projetoIds: [], sprintId: "" };
+
+// Opções da seleção de colaborador ou projeto, com a situação no fim do nome.
+function opcoesEntidade(rows, individual) {
+  return rows.map((row) => ({
+    value: String(row.id),
+    label: individual
+      ? `${row.nomeCompleto}${row.status === "INATIVO" ? " (inativo)" : ""}`
+      : `${row.nome} (${projectStatusLabel(row.status)})`,
+  }));
+}
 // [TELA] type = "projetos" ou "colaboradores".
 export function DashboardEntidadePage({ type }) {
   const { id } = useParams();
@@ -179,29 +190,29 @@ export function DashboardEntidadePage({ type }) {
       <div className="dashboard-overview">
         <label className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>
-          <select
+          <SelecaoComBusca
+            name={individual ? "colaboradorId" : "projetoId"}
             value={id}
             disabled={loading || Boolean(optionsError)}
             onChange={(event) => navigate(`/dashboard/${type}/${event.target.value}`)}
-          >
-            {!(individual ? options.colaboradores : options.projetos).some(
-              (row) => String(row.id) === id,
-            ) && (
-              <option value={id}>
-                {entity ? (individual ? entity.nomeCompleto : entity.nome) : "Selecionado"}
-              </option>
-            )}
-            {(individual ? options.colaboradores : options.projetos).map((row) => (
-              <option key={row.id} value={row.id}>
-                {individual ? row.nomeCompleto : row.nome}
-                {individual
-                  ? row.status === "INATIVO"
-                    ? " (inativo)"
-                    : ""
-                  : ` (${projectStatusLabel(row.status)})`}
-              </option>
-            ))}
-          </select>
+            options={[
+              ...(!(individual ? options.colaboradores : options.projetos).some(
+                (row) => String(row.id) === id,
+              )
+                ? [
+                    {
+                      value: id,
+                      label: entity
+                        ? individual
+                          ? entity.nomeCompleto
+                          : entity.nome
+                        : "Selecionado",
+                    },
+                  ]
+                : []),
+              ...opcoesEntidade(individual ? options.colaboradores : options.projetos, individual),
+            ]}
+          />
         </label>
         {entity && (
           <p className="dashboard-scope">
@@ -272,15 +283,19 @@ export function DashboardEntidadePage({ type }) {
           ) : (
             <label className="field">
               <span>Sprint</span>
-              <select name="sprintId" value={filters.sprintId} onChange={update} disabled={loading}>
-                <option value="">Todas as sprints</option>
-                {entity?.sprints.map((row) => (
-                  <option key={row.id} value={row.id}>
-                    {row.nome}
-                    {row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}
-                  </option>
-                ))}
-              </select>
+              <SelecaoComBusca
+                name="sprintId"
+                value={filters.sprintId}
+                onChange={update}
+                disabled={loading}
+                options={[
+                  { value: "", label: "Todas as sprints" },
+                  ...(entity?.sprints ?? []).map((row) => ({
+                    value: String(row.id),
+                    label: `${row.nome}${row.statusRegistro === "INATIVO" ? " (arquivada)" : ""}`,
+                  })),
+                ]}
+              />
             </label>
           )}
           <div className="dashboard-filter-actions">
@@ -737,23 +752,14 @@ function EntitySelection({ individual, options, optionsError, onRefresh, onPick 
       <div className="dashboard-overview">
         <label className="field entity-picker">
           <span>{individual ? "Colaborador" : "Projeto"}</span>
-          <select
+          <SelecaoComBusca
+            name={individual ? "colaboradorId" : "projetoId"}
             value=""
+            placeholder={`Selecione um ${noun}`}
             disabled={Boolean(optionsError) || !rows.length}
             onChange={(event) => event.target.value && onPick(event.target.value)}
-          >
-            <option value="">Selecione um {noun}</option>
-            {rows.map((row) => (
-              <option key={row.id} value={row.id}>
-                {individual ? row.nomeCompleto : row.nome}
-                {individual
-                  ? row.status === "INATIVO"
-                    ? " (inativo)"
-                    : ""
-                  : ` (${projectStatusLabel(row.status)})`}
-              </option>
-            ))}
-          </select>
+            options={opcoesEntidade(rows, individual)}
+          />
         </label>
         {optionsError ? (
           <div className="feedback error" role="alert">

@@ -17,6 +17,11 @@ const clicarFora = () =>
   );
 const opcao = (raiz, texto) =>
   [...raiz.querySelectorAll('[role="option"]')].find((item) => item.textContent.includes(texto));
+// Seleção com busca: abre a lista pelo botão do campo e escolhe a opção pelo texto.
+async function escolher(raiz, nome, texto) {
+  await click(raiz.querySelector(`#${nome}`));
+  await click(opcao(raiz, texto));
+}
 
 test("a seleção múltipla marca, desmarca, busca e limpa mantendo a ordem da lista", async () => {
   const cleanup = installDom();
@@ -141,7 +146,7 @@ test("o dashboard geral filtra por vários projetos, colaborador e sprint, expor
     await click(opcao(raiz, "Integração"));
     await click(opcao(raiz, "Portal"));
     await clicarFora();
-    await change(raiz.querySelector('select[name="colaboradorId"]'), "5");
+    await escolher(raiz, "colaboradorId", "Ana Martins");
     assert.equal(sprint.disabled, true, "Com dois projetos, a sprint continua bloqueada.");
     await click(botao(raiz, "Aplicar filtros"));
     await esperar();
@@ -172,7 +177,7 @@ test("o dashboard geral filtra por vários projetos, colaborador e sprint, expor
       ["Todas as sprints", "Sprint 1"],
     );
     await change(sprint, "100");
-    await change(raiz.querySelector('select[name="clienteId"]'), "2");
+    await escolher(raiz, "clienteId", "Cliente B");
     assert.equal(
       raiz.querySelector("#filtro-projetos").textContent,
       "Todos os projetos",
@@ -184,7 +189,7 @@ test("o dashboard geral filtra por vários projetos, colaborador e sprint, expor
     await esperar();
     assert.deepEqual(ultimo("/dashboard"), { statusProjeto: "ATIVO" });
     assert.equal(raiz.querySelector(".dashboard-tags"), null);
-    assert.equal(raiz.querySelector('select[name="colaboradorId"]').value, "");
+    assert.equal(raiz.querySelector("#colaboradorId").textContent, "Todos os colaboradores");
   } finally {
     api.get = original;
     await view.unmount();

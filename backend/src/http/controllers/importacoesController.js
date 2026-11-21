@@ -16,6 +16,9 @@ const historicoSchema = z
   .object({
     pagina: z.coerce.number().int().min(1).default(1),
     porPagina: z.coerce.number().int().min(1).max(LIMITE_POR_PAGINA_IMPORTACOES).default(10),
+    // Busca no arquivo, no usuário, na mensagem e nos nomes dos projetos.
+    busca: z.string().trim().max(200).optional(),
+    status: z.enum(["CONCLUIDA", "FALHOU"]).optional(),
   })
   .strict();
 

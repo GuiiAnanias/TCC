@@ -167,7 +167,10 @@ test("o histórico lista, filtra, pagina e baixa os arquivos de cada relatório"
     assert.equal(antiga[1], "Todos os períodos");
     assert.match(antiga[2], /^Projetos: Portal1 projeto no recorte$/);
 
-    await change(raiz.querySelector("select[name='projetoId']"), "10");
+    await click(raiz.querySelector("#projetoId"));
+    await click(
+      [...raiz.querySelectorAll('[role="option"]')].find((item) => item.textContent === "Portal"),
+    );
     await change(raiz.querySelector("input[name='geradoDe']"), "2026-11-01");
     await click(botao(raiz, "Filtrar"));
     await esperar();

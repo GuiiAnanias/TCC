@@ -85,7 +85,12 @@ test("equipe valida colaborador e papel antes de enviar, inclusive sem validaç�
       "true",
     );
     assert.equal(view.container.querySelector("#team-papel").getAttribute("aria-invalid"), "true");
-    await change(view.container.querySelector("#team-colaboradorId"), "2");
+    await click(view.container.querySelector("#team-colaboradorId"));
+    await click(
+      [...view.container.querySelectorAll('[role="option"]')].find(
+        (item) => item.textContent === "Pessoa disponível",
+      ),
+    );
     await change(view.container.querySelector("#team-papel"), "Dev");
     assert.equal(view.container.querySelector("#team-papel-error"), null);
     await submit(view.container.querySelector("form"));

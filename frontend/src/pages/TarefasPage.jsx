@@ -11,6 +11,8 @@ import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
+import { contemBusca } from "../utils/textoBusca.js";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 
 const statuses = {
@@ -132,20 +134,20 @@ export function TarefasPage() {
   }, [team, editing]);
   const visibleTasks = tasks.filter(
     (task) =>
-      (!filters.busca ||
-        task.titulo
-          .toLocaleLowerCase("pt-BR")
-          .includes(filters.busca.toLocaleLowerCase("pt-BR"))) &&
+      contemBusca(
+        filters.busca,
+        task.titulo,
+        task.descricao,
+        task.sprint?.nome,
+        ...(task.responsaveis ?? []).map((row) => row.colaborador?.nomeCompleto),
+      ) &&
       (!filters.status || task.status === filters.status) &&
       (!filters.sprintId || String(task.sprintId) === filters.sprintId) &&
       (!filters.registro || task.statusRegistro === filters.registro),
   );
   const visibleSprints = sprints.filter(
     (sprint) =>
-      (!filters.busca ||
-        sprint.nome
-          .toLocaleLowerCase("pt-BR")
-          .includes(filters.busca.toLocaleLowerCase("pt-BR"))) &&
+      contemBusca(filters.busca, sprint.nome) &&
       (!filters.registro || sprint.statusRegistro === filters.registro),
   );
   const paginacaoTarefas = usePaginacao(visibleTasks);
@@ -403,21 +405,21 @@ export function TarefasPage() {
       <div className="form-panel">
         <label className="field">
           <span>Projeto</span>
-          <select
+          <SelecaoComBusca
+            name="projetoId"
             value={projectId}
+            placeholder="Selecione um projeto"
             onChange={(event) => changeProject(event.target.value)}
             disabled={saving}
-          >
-            <option value="">Selecione um projeto</option>
-            {projects.map((project) => (
-              <option key={project.id} value={project.id}>
-                {project.nome}
-                {project.status !== "ATIVO"
+            options={projects.map((project) => ({
+              value: String(project.id),
+              label: `${project.nome}${
+                project.status !== "ATIVO"
                   ? ` (${projectStatusLabel(project.status).toLowerCase()})`
-                  : ""}
-              </option>
-            ))}
-          </select>
+                  : ""
+              }`,
+            }))}
+          />
         </label>
       </div>
       <div className="tasks-tabs" role="group" aria-label="Tipo de cadastro">
@@ -664,7 +666,11 @@ export function TarefasPage() {
                 <Search size={18} />
                 <input
                   aria-label="Buscar tarefas ou sprints"
-                  placeholder="Buscar"
+                  placeholder={
+                    tab === "tarefas"
+                      ? "Buscar por título, descrição, sprint ou responsável"
+                      : "Buscar sprint pelo nome"
+                  }
                   value={filters.busca}
                   onChange={(event) =>
                     setFilters((current) => ({ ...current, busca: event.target.value }))
@@ -687,20 +693,21 @@ export function TarefasPage() {
                       </option>
                     ))}
                   </select>
-                  <select
-                    aria-label="Filtrar sprint"
+                  <SelecaoComBusca
+                    name="filtroSprint"
+                    ariaLabel="Filtrar sprint"
                     value={filters.sprintId}
                     onChange={(event) =>
                       setFilters((current) => ({ ...current, sprintId: event.target.value }))
                     }
-                  >
-                    <option value="">Todas as sprints</option>
-                    {sprints.map((sprint) => (
-                      <option key={sprint.id} value={sprint.id}>
-                        {sprint.nome}
-                      </option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: "", label: "Todas as sprints" },
+                      ...sprints.map((sprint) => ({
+                        value: String(sprint.id),
+                        label: sprint.nome,
+                      })),
+                    ]}
+                  />
                 </>
               )}
               <select

@@ -3,7 +3,7 @@
  * rosca de horas e de tarefas por status e rankings. Os dados vêm de utils/dadosGraficos.js.
  */
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Bar,
   BarChart,
@@ -27,6 +27,7 @@ import {
   mesCurto,
   mesLongo,
   orcamentoPorProjeto,
+  principaisEOutros,
   ranking,
 } from "../../utils/dadosGraficos.js";
 
@@ -372,7 +373,9 @@ function Rosca({ titulo, subtitulo, categorias, valorDe, formatar, centro }) {
 }
 
 // Barras horizontais do maior para o menor, numa cor só, com o valor no fim de cada barra.
-// `eixo` é a largura dos nomes e `margem` o espaço do valor no fim da barra.
+// `itens` é o ranking completo: o gráfico mostra os maiores e resume o resto num botão
+// "Outros", que abre a lista inteira (com rolagem) sem distorcer a escala das barras.
+// `eixo` é a largura dos nomes e `margem` o espaço mínimo do valor no fim da barra.
 function Ranking({
   titulo,
   subtitulo,
@@ -381,20 +384,27 @@ function Ranking({
   nota,
   eixo: larguraEixo = 150,
   margem = 72,
+  plural = "itens",
 }) {
-  const altura = Math.max(120, itens.length * 40 + 24);
+  const [todos, setTodos] = useState(false);
+  const { principais, outros } = principaisEOutros(itens);
+  const visiveis = todos ? itens : principais;
+  const altura = Math.max(120, visiveis.length * 40 + 24);
+  // O valor no fim da barra maior precisa caber inteiro (ex.: "R$ 657.004,84").
+  const maiorRotulo = Math.max(0, ...visiveis.map((item) => formatar(item.valor).length));
+  const margemDireita = Math.max(margem, Math.ceil(maiorRotulo * 7.2) + 12);
   return (
     <Cartao titulo={titulo} subtitulo={subtitulo} vazio={!itens.length} nota={nota}>
       <div
-        className="chart-area"
+        className={todos ? "chart-area chart-area-rolagem" : "chart-area"}
         role="img"
-        aria-label={`${titulo}: ${itens.map((item) => `${item.nome}, ${formatar(item.valor)}`).join("; ")}.`}
+        aria-label={`${titulo}: ${visiveis.map((item) => `${item.nome}, ${formatar(item.valor)}`).join("; ")}${outros && !todos ? `; outros ${outros.quantidade} ${plural}, ${formatar(outros.valor)}` : ""}.`}
       >
         <ResponsiveContainer width="100%" height={altura}>
           <BarChart
-            data={itens}
+            data={visiveis}
             layout="vertical"
-            margin={{ top: 0, right: margem, bottom: 0, left: 8 }}
+            margin={{ top: 0, right: margemDireita, bottom: 0, left: 8 }}
             barCategoryGap="30%"
             accessibilityLayer
           >
@@ -420,7 +430,7 @@ function Ranking({
               radius={[0, 4, 4, 0]}
               maxBarSize={20}
             >
-              {itens.map((item) => (
+              {visiveis.map((item) => (
                 <Cell key={item.nome} fill={item.outros ? "var(--chart-muted)" : COR[0]} />
               ))}
               <LabelList
@@ -433,6 +443,25 @@ function Ranking({
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {outros && (
+        <button
+          type="button"
+          className="chart-more"
+          aria-expanded={todos}
+          onClick={() => setTodos((atual) => !atual)}
+        >
+          {todos ? (
+            <span>Mostrar só os {principais.length} maiores</span>
+          ) : (
+            <>
+              <span>
+                Outros {outros.quantidade} {plural} · <strong>{formatar(outros.valor)}</strong>
+              </span>
+              <span className="chart-more-acao">Ver todos ({itens.length})</span>
+            </>
+          )}
+        </button>
+      )}
     </Cartao>
   );
 }
@@ -469,8 +498,13 @@ export default function GraficosDashboard({ data, recortado = false }) {
       <Ranking
         titulo="Custo por cliente"
         subtitulo="Do maior para o menor custo"
-        itens={ranking(data.clientes ?? [], { valor: (row) => row.custo, nome: (row) => row.nome })}
+        itens={ranking(data.clientes ?? [], {
+          valor: (row) => row.custo,
+          nome: (row) => row.nome,
+          limite: Infinity,
+        })}
         formatar={money}
+        plural="clientes"
       />
       <Ranking
         titulo="Horas por equipe"
@@ -478,8 +512,10 @@ export default function GraficosDashboard({ data, recortado = false }) {
         itens={ranking(data.equipes ?? [], {
           valor: (row) => row.horas,
           nome: (row) => row.equipe,
+          limite: Infinity,
         })}
         formatar={horas}
+        plural="equipes"
       />
       <Ranking
         titulo="Ocorrências de auditoria por tipo"
@@ -487,7 +523,9 @@ export default function GraficosDashboard({ data, recortado = false }) {
         itens={ranking(Object.entries(issueLabels), {
           valor: ([tipo]) => ocorrenciasPorTipo(tipo),
           nome: ([, rotulo]) => rotulo,
+          limite: Infinity,
         })}
+        plural="tipos"
         formatar={number}
         eixo={190}
         margem={36}

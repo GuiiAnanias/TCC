@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Check, ChevronDown, Search } from "lucide-react";
+import { contemBusca } from "../../utils/textoBusca.js";
 
 export function SelecaoComBusca({
   id,
@@ -16,6 +17,7 @@ export function SelecaoComBusca({
   required = false,
   disabled = false,
   error = "",
+  ariaLabel,
 }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -27,17 +29,10 @@ export function SelecaoComBusca({
     [options, value],
   );
 
-  const filteredOptions = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("pt-BR");
-
-    if (!normalizedQuery) {
-      return options;
-    }
-
-    return options.filter((option) =>
-      String(option.label).toLocaleLowerCase("pt-BR").includes(normalizedQuery),
-    );
-  }, [options, query]);
+  const filteredOptions = useMemo(
+    () => options.filter((option) => contemBusca(query, option.label)),
+    [options, query],
+  );
 
   useEffect(() => {
     function handleOutsideClick(event) {
@@ -87,7 +82,10 @@ export function SelecaoComBusca({
         id={id || name}
         className="searchable-select__control"
         type="button"
+        name={name}
+        value={value}
         aria-haspopup="listbox"
+        aria-label={ariaLabel ? `${ariaLabel}: ${selectedOption?.label || placeholder}` : undefined}
         aria-expanded={open}
         aria-required={required}
         aria-invalid={Boolean(error)}
@@ -113,7 +111,7 @@ export function SelecaoComBusca({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Digite para buscar..."
-              aria-label={`Buscar opções de ${name || "seleção"}`}
+              aria-label={`Buscar opções de ${ariaLabel || name || "seleção"}`}
               autoComplete="off"
             />
           </div>

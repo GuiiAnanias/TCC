@@ -4,6 +4,68 @@
   margin: 24px 0;
   scroll-margin-top: 16px;
 }
+/* Blocos que abrem e fecham (preencher avaliação, base de conferência): painel com cabeçalho
+   clicável e a ação "Mostrar/Ocultar" visível, para não parecerem só texto. */
+.award-form-details,
+.award-evidence {
+  margin: 20px 0;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.award-form-details > summary,
+.award-evidence > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  color: var(--text);
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+}
+.award-form-details > summary::-webkit-details-marker,
+.award-evidence > summary::-webkit-details-marker {
+  display: none;
+}
+.award-form-details > summary::after,
+.award-evidence > summary::after {
+  content: "Mostrar ▾";
+  margin-left: auto;
+  color: var(--primary);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.award-form-details[open] > summary::after,
+.award-evidence[open] > summary::after {
+  content: "Ocultar ▴";
+}
+.award-form-details > summary:hover,
+.award-evidence > summary:hover {
+  background: var(--surface-soft);
+}
+.award-form-details > summary:focus-visible,
+.award-evidence > summary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.award-form-details[open] > summary,
+.award-evidence[open] > summary {
+  border-bottom: 1px solid var(--line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.award-form-details > :not(summary) {
+  margin: 0;
+  padding: 1rem;
+}
+.award-evidence > :not(summary) {
+  margin-right: 1rem;
+  margin-left: 1rem;
+}
+.award-evidence > :last-child {
+  margin-bottom: 1rem;
+}
 .award-section-heading {
   display: flex;
   justify-content: space-between;
@@ -124,27 +186,6 @@
 }
 .award-result {
   margin-top: 26px;
-}
-.award-evidence {
-  margin: 20px 0;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
-}
-.award-evidence summary {
-  cursor: pointer;
-  font-weight: 600;
-}
-.award-form-details {
-  margin: 20px 0;
-}
-.award-form-details > summary {
-  cursor: pointer;
-  font-weight: 600;
-  padding: 12px 0;
-}
-.award-form-details > form {
-  margin-top: 18px;
 }
 .award-rule-criteria {
   display: grid;
@@ -687,6 +728,9 @@
 .entries-history-filters select {
   width: auto;
   min-width: 180px;
+}
+.entries-history-filters .searchable-select {
+  width: 220px;
 }
 .entries-history-changes {
   margin: 0;

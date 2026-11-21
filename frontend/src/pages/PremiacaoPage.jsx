@@ -9,6 +9,7 @@ import { api } from "../api/conexao.js";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { PaginacaoTabela, usePaginacao } from "../components/comum/PaginacaoTabela.jsx";
 import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
+import { SelecaoComBusca } from "../components/comum/SelecaoComBusca.jsx";
 import { projectStatusLabel } from "../config/opcoesProjeto.js";
 import {
   IndicatorTasksTable,
@@ -285,6 +286,11 @@ export function PremiacaoPage() {
   // sessão).
   async function save(event) {
     event.preventDefault();
+    // A seleção com busca não é um campo nativo: o "obrigatório" é conferido aqui.
+    if (!editor && !form.colaboradorId) {
+      setError("Selecione o colaborador da avaliação.");
+      return;
+    }
     setBusy(true);
     setError("");
     setMessage("");
@@ -483,20 +489,18 @@ export function PremiacaoPage() {
                     <div className="form-grid">
                       <label className="field">
                         <span>Colaborador</span>
-                        <select
+                        <SelecaoComBusca
+                          name="colaboradorId"
+                          placeholder="Selecione"
                           required
                           disabled={Boolean(editor || form.anteriorId)}
                           value={form.colaboradorId}
                           onChange={(e) => change("colaboradorId", e.target.value)}
-                        >
-                          <option value="">Selecione</option>
-                          {people.map((row) => (
-                            <option key={row.id} value={row.id}>
-                              {row.nomeCompleto}
-                              {row.status === "INATIVO" ? " (inativo)" : ""}
-                            </option>
-                          ))}
-                        </select>
+                          options={people.map((row) => ({
+                            value: String(row.id),
+                            label: `${row.nomeCompleto}${row.status === "INATIVO" ? " (inativo)" : ""}`,
+                          }))}
+                        />
                       </label>
                       <label className="field">
                         <span>Competência</span>

@@ -397,6 +397,47 @@
 .chart-area {
   min-width: 0;
 }
+/* Lista completa do ranking: rola dentro do cartão em vez de esticar a página. */
+.chart-area-rolagem {
+  max-height: 420px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* "Outros" do ranking: um botão abaixo do gráfico, fora da escala das barras. */
+.chart-more {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-soft);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+.chart-more:hover {
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.chart-more:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.chart-more strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.chart-more-acao {
+  color: var(--primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
 .chart-empty {
   margin: auto 0;
   padding: 32px 0;
