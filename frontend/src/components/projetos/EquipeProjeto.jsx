@@ -4,7 +4,16 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Check, Link2, Save, UserMinus, UsersRound, X } from "lucide-react";
+import {
+  AlertTriangle,
+  CalendarX,
+  Check,
+  Link2,
+  Save,
+  UserMinus,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { api } from "../../api/conexao.js";
 import { useValorMaisRecente, useEscopoRequisicao } from "../../hooks/useEscopoRequisicao.js";
 import { DialogoAjuda } from "../comum/DialogoAjuda.jsx";
@@ -32,6 +41,40 @@ function formatDate(value) {
   return new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" });
 }
 
+// Situação do vínculo hoje. Uma troca de papel com data futura fecha o vínculo atual na
+// véspera e cria o novo a partir da data: até lá, o atual segue ativo e o novo fica agendado.
+export function situacaoVinculo(vinculo, hoje = today()) {
+  if (toInputDate(vinculo.dataEntrada) > hoje) return "AGENDADO";
+  if (vinculo.dataSaida && toInputDate(vinculo.dataSaida) < hoje) return "INATIVO";
+  return "ATIVO";
+}
+
+// Dia seguinte a uma data "AAAA-MM-DD" (a troca de papel só pode valer depois da entrada).
+function diaSeguinte(dia) {
+  const data = new Date(`${dia}T00:00:00Z`);
+  data.setUTCDate(data.getUTCDate() + 1);
+  return data.toISOString().slice(0, 10);
+}
+
+// Primeira data aceita para a troca de papel: hoje, ou o dia seguinte à entrada se ela for hoje
+// ou no futuro.
+export function inicioTrocaPapel(vinculo, hoje = today()) {
+  const minimo = diaSeguinte(toInputDate(vinculo.dataEntrada));
+  return minimo > hoje ? minimo : hoje;
+}
+
+// Vínculo que termina na véspera do agendado: é o papel que volta a valer se o agendamento for
+// cancelado.
+export function vinculoAnterior(team, agendado) {
+  return team.find(
+    (outro) =>
+      outro.id !== agendado.id &&
+      outro.colaboradorId === agendado.colaboradorId &&
+      outro.dataSaida &&
+      diaSeguinte(toInputDate(outro.dataSaida)) === toInputDate(agendado.dataEntrada),
+  );
+}
+
 function memberName(vinculo) {
   return vinculo.colaborador?.nomeCompleto || "Colaborador";
 }
@@ -54,7 +97,8 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
   });
   const [editingRoles, setEditingRoles] = useState({});
   const [editingEntryDates, setEditingEntryDates] = useState({});
-  const [roleEffectiveDate, setRoleEffectiveDate] = useState(today());
+  // Data a partir da qual vale a troca de papel, por vínculo (aparece abaixo do papel trocado).
+  const [editingRoleDates, setEditingRoleDates] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [closingMember, setClosingMember] = useState(null);
@@ -63,7 +107,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const isInactive = project?.status !== "ATIVO";
-  const activeTeamCount = team.filter((member) => !member.dataSaida).length;
+  const activeTeamCount = team.filter((member) => situacaoVinculo(member) === "ATIVO").length;
 
   const activeCollaborators = useMemo(() => {
     const activeMemberIds = new Set(
@@ -102,8 +146,8 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     () =>
       team.filter(
         (member) =>
-          (teamStatusFilter !== "ATIVO" || !member.dataSaida) &&
-          (teamStatusFilter !== "INATIVO" || member.dataSaida) &&
+          (teamStatusFilter !== "ATIVO" || situacaoVinculo(member) !== "INATIVO") &&
+          (teamStatusFilter !== "INATIVO" || situacaoVinculo(member) === "INATIVO") &&
           contemBusca(teamSearch, memberName(member), member.colaborador?.cargo, member.papel),
       ),
     [team, teamStatusFilter, teamSearch],
@@ -135,6 +179,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
       setEditingRoles(
         Object.fromEntries(teamResponse.data.map((member) => [member.id, member.papel])),
       );
+      setEditingRoleDates({});
       setEditingEntryDates(
         Object.fromEntries(
           teamResponse.data.map((member) => [member.id, toInputDate(member.dataEntrada)]),
@@ -159,7 +204,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     setRoles([]);
     setEditingRoles({});
     setEditingEntryDates({});
-    setRoleEffectiveDate(today());
+    setEditingRoleDates({});
     setSelectionErrors({});
     setSaving(false);
     setClosingMember(null);
@@ -233,10 +278,12 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
       document.getElementById(`team-role-${member.id}`)?.focus();
       return;
     }
-    if (editingRoles[member.id] !== member.papel && !roleEffectiveDate) {
-      setSelectionErrors((current) => ({ ...current, vigencia: true }));
-      setError("Informe a vigência da troca de papel.");
-      document.getElementById("team-role-date")?.focus();
+    const trocaPapel = editingRoles[member.id] !== member.papel;
+    const dataTroca = editingRoleDates[member.id] ?? inicioTrocaPapel(member);
+    if (trocaPapel && !dataTroca) {
+      setSelectionErrors((current) => ({ ...current, [`role-date-${member.id}`]: true }));
+      setError("Informe a partir de quando vale o novo papel.");
+      document.getElementById(`team-role-date-${member.id}`)?.focus();
       return;
     }
     const request = requestScope.begin("mutation");
@@ -246,8 +293,8 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
 
     try {
       await api.put(`/projetos/${project.id}/equipe/${member.id}`, {
-        ...(editingRoles[member.id] !== member.papel
-          ? { papel: editingRoles[member.id], dataVigencia: roleEffectiveDate }
+        ...(trocaPapel
+          ? { papel: editingRoles[member.id], dataVigencia: dataTroca }
           : { dataEntrada: editingEntryDates[member.id] }),
       });
       if (!request.isCurrent()) return;
@@ -272,6 +319,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     const member = closingMember;
     if (!member || isInactive || saving || loading || loadError) return;
     setClosingMember(null);
+    const agendado = situacaoVinculo(member) === "AGENDADO";
 
     const request = requestScope.begin("mutation");
     setSaving(true);
@@ -281,12 +329,21 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     try {
       await api.delete(`/projetos/${project.id}/equipe/${member.id}`);
       if (!request.isCurrent()) return;
-      setMessage("Participação encerrada e histórico preservado.");
+      setMessage(
+        agendado
+          ? "Agendamento cancelado. A equipe voltou a ser como estava antes dele."
+          : "Participação encerrada e histórico preservado.",
+      );
       await loadTeam();
       if (request.isCurrent()) await callbacks.current.onChanged?.();
     } catch (requestError) {
       if (!request.isCurrent()) return;
-      setError(requestError.response?.data?.message || "Não foi possível encerrar a participação.");
+      setError(
+        requestError.response?.data?.message ||
+          (agendado
+            ? "Não foi possível cancelar o agendamento."
+            : "Não foi possível encerrar a participação."),
+      );
     } finally {
       if (request.isCurrent()) setSaving(false);
     }
@@ -311,8 +368,11 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                 <h3>Participação e histórico</h3>
                 <p>
                   Selecione o colaborador, o papel e a data de entrada para vincular à equipe. Para
-                  trocar um papel, defina a data no campo Vigência ao alterar um papel e salve o
-                  vínculo. A troca preserva o histórico anterior.
+                  trocar um papel, escolha o novo papel na linha do colaborador, informe a partir de
+                  quando ele vale no campo que aparece logo abaixo e salve o vínculo. Com data
+                  futura, o papel atual continua ativo até a véspera e o novo aparece como Agendado;
+                  para desfazer, use Cancelar agendamento na linha agendada. A troca preserva o
+                  histórico anterior.
                 </p>
                 <p>
                   Encerrar participação mantém o vínculo no histórico. Use o filtro para consultar
@@ -477,22 +537,6 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
 
       <div className="team-table-toolbar">
         <label className="field">
-          <span>Vigência ao alterar um papel</span>
-          <input
-            type="date"
-            required
-            value={roleEffectiveDate}
-            id="team-role-date"
-            aria-invalid={Boolean(selectionErrors.vigencia)}
-            aria-describedby={selectionErrors.vigencia ? "team-operation-error" : undefined}
-            onChange={(event) => {
-              setSelectionErrors((current) => ({ ...current, vigencia: false }));
-              setRoleEffectiveDate(event.target.value);
-            }}
-            disabled={isInactive || loading || saving || Boolean(loadError)}
-          />
-        </label>
-        <label className="field">
           <span>Buscar na equipe</span>
           <input
             value={teamSearch}
@@ -514,7 +558,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
             title="Filtrar equipe por status"
           >
             <option value="">Todos os vínculos</option>
-            <option value="ATIVO">Ativos</option>
+            <option value="ATIVO">Ativos e agendados</option>
             <option value="INATIVO">Inativos</option>
           </select>
         </label>
@@ -556,7 +600,7 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                     {member.colaborador?.cargo || "-"}
                   </td>
                   <td>
-                    {member.dataSaida ? (
+                    {member.dataSaida || situacaoVinculo(member) === "AGENDADO" ? (
                       member.papel
                     ) : (
                       <select
@@ -589,9 +633,45 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                         ))}
                       </select>
                     )}
+                    {!member.dataSaida &&
+                      situacaoVinculo(member) !== "AGENDADO" &&
+                      editingRoles[member.id] !== member.papel && (
+                        <label className="team-role-date">
+                          <span>A partir de</span>
+                          <input
+                            type="date"
+                            id={`team-role-date-${member.id}`}
+                            required
+                            min={diaSeguinte(toInputDate(member.dataEntrada))}
+                            value={editingRoleDates[member.id] ?? inicioTrocaPapel(member)}
+                            aria-invalid={Boolean(selectionErrors[`role-date-${member.id}`])}
+                            aria-describedby={
+                              selectionErrors[`role-date-${member.id}`]
+                                ? "team-operation-error"
+                                : undefined
+                            }
+                            disabled={isInactive || loading || saving || Boolean(loadError)}
+                            onChange={(event) => {
+                              setSelectionErrors((current) => ({
+                                ...current,
+                                [`role-date-${member.id}`]: false,
+                              }));
+                              setEditingRoleDates((current) => ({
+                                ...current,
+                                [member.id]: event.target.value,
+                              }));
+                            }}
+                          />
+                        </label>
+                      )}
                   </td>
                   <td>
-                    {!member.dataSaida && !isInactive ? (
+                    {/* Durante uma troca de papel, a entrada fica fixa: a data que vale é a
+                        "A partir de", logo abaixo do papel. */}
+                    {!member.dataSaida &&
+                    !isInactive &&
+                    situacaoVinculo(member) !== "AGENDADO" &&
+                    editingRoles[member.id] === member.papel ? (
                       <input
                         type="date"
                         aria-label={`Entrada de ${memberName(member)}`}
@@ -609,11 +689,28 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
                   </td>
                   <td>{formatDate(member.dataSaida)}</td>
                   <td>
-                    <EtiquetaStatus status={member.dataSaida ? "INATIVO" : "ATIVO"} />
+                    {situacaoVinculo(member) === "AGENDADO" ? (
+                      <span title={`Passa a valer em ${formatDate(member.dataEntrada)}`}>
+                        <EtiquetaStatus status="AGENDADO" />
+                      </span>
+                    ) : (
+                      <EtiquetaStatus status={situacaoVinculo(member)} />
+                    )}
                   </td>
                   <td>
                     <div className="row-actions">
-                      {!member.dataSaida && !isInactive ? (
+                      {situacaoVinculo(member) === "AGENDADO" && !isInactive ? (
+                        <button
+                          type="button"
+                          className="icon-button danger"
+                          onClick={() => closeParticipation(member)}
+                          title="Cancelar agendamento"
+                          aria-label={`Cancelar agendamento de ${memberName(member)}`}
+                          disabled={saving || loading || Boolean(loadError)}
+                        >
+                          <CalendarX size={17} />
+                        </button>
+                      ) : !member.dataSaida && !isInactive ? (
                         <>
                           <button
                             type="button"
@@ -654,7 +751,23 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
         onPageChange={paginacaoEquipe.setPagina}
         rotulo="Páginas da equipe do projeto"
       />
-      {closingMember && (
+      {closingMember && situacaoVinculo(closingMember) === "AGENDADO" ? (
+        <DialogoConfirmacao
+          title="Cancelar agendamento"
+          description={
+            vinculoAnterior(team, closingMember)
+              ? `Cancelar a troca de ${memberName(closingMember)} para ${closingMember.papel}, marcada para ${formatDate(closingMember.dataEntrada)}? O papel ${vinculoAnterior(team, closingMember).papel} volta a valer sem data de saída.`
+              : `Cancelar a entrada de ${memberName(closingMember)} marcada para ${formatDate(closingMember.dataEntrada)}?`
+          }
+          confirmLabel="Cancelar agendamento"
+          cancelLabel="Manter agendamento"
+          danger
+          busy={saving}
+          onConfirm={confirmCloseParticipation}
+          onCancel={() => setClosingMember(null)}
+        />
+      ) : null}
+      {closingMember && situacaoVinculo(closingMember) !== "AGENDADO" && (
         <DialogoConfirmacao
           title="Encerrar participação na equipe"
           description={`Encerrar a participação de ${memberName(closingMember)} neste projeto? O vínculo anterior e o histórico serão preservados.`}

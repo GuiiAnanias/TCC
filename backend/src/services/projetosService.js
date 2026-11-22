@@ -232,7 +232,8 @@ export const projetosService = {
     });
   },
 
-  // [REGRA] Encerra a participação hoje; o histórico continua.
+  // [REGRA] Encerra a participação hoje; o histórico continua. Se o vínculo ainda não começou,
+  // cancela o agendamento.
   async removeTeamMember(projetoId, vinculoId) {
     return projetosRepository.transaction(async (db) => {
       const projeto = await ensureProjetoExists(projetoId, db);
@@ -245,6 +246,10 @@ export const projetosService = {
       }
 
       const dataSaida = todayFinanceDate();
+      // Vínculo que ainda não começou (troca de papel ou entrada agendada): encerrar não faz
+      // sentido; a ação cancela o agendamento e devolve a pessoa ao papel anterior, se houver.
+      if (vinculo.dataEntrada > dataSaida)
+        return projetosRepository.cancelScheduledTeamMember(vinculo, db);
 
       return projetosRepository.updateTeamMember(
         vinculoId,

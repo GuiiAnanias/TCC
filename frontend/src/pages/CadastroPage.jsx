@@ -4,6 +4,7 @@
  * config/cadastros.jsx. Formulário de cadastro/edição no topo e tabela com busca e filtro embaixo.
  */
 
+import { TextoAutoAjustavel } from "../components/comum/TextoAutoAjustavel.jsx";
 import { DialogoExclusaoProjeto } from "../components/projetos/DialogoExclusaoProjeto.jsx";
 import { DialogoAjuda } from "../components/comum/DialogoAjuda.jsx";
 import { DialogoConfirmacao } from "../components/comum/DialogoConfirmacao.jsx";
@@ -133,6 +134,17 @@ export function CadastroPage({ config }) {
   const [formOpen, setFormOpen] = useState(false);
   const clientDrafts = useRef({});
   const formRegion = useRef(null);
+  const errorRegion = useRef(null);
+  const [rolarParaErro, setRolarParaErro] = useState(0);
+  // Depois que o aviso aparece (e o diálogo devolve o foco ao botão da tabela), leva a tela até ele.
+  useEffect(() => {
+    if (!rolarParaErro) return undefined;
+    const espera = setTimeout(
+      () => errorRegion.current?.scrollIntoView({ behavior: "smooth", block: "center" }),
+      50,
+    );
+    return () => clearTimeout(espera);
+  }, [rolarParaErro]);
   const formFields = useMemo(
     () => (isClient && clientKind === "PF" ? config.personFields(config.fields) : config.fields),
     [config, isClient, clientKind],
@@ -737,13 +749,16 @@ export function CadastroPage({ config }) {
       await loadRecords();
       await loadClientes();
     } catch (requestError) {
-      if (request.isCurrent())
-        setError(
-          requestError.response?.data?.message ||
-            (reactivating
-              ? "Não foi possível ativar o registro."
-              : "Não foi possível remover o registro."),
-        );
+      if (!request.isCurrent()) return;
+      setError(
+        requestError.response?.data?.message ||
+          (reactivating
+            ? "Não foi possível ativar o registro."
+            : "Não foi possível remover o registro."),
+      );
+      // A ação foi clicada na tabela, longe do aviso: sobe a tela até ele (ex.: apontamento
+      // faturado não pode ser excluído).
+      setRolarParaErro((valor) => valor + 1);
     }
   }
 
@@ -971,6 +986,17 @@ export function CadastroPage({ config }) {
       );
     }
 
+    if (field.type === "texto-longo") {
+      return (
+        <TextoAutoAjustavel
+          {...commonProps}
+          className="texto-auto"
+          maxLength={field.maxLength}
+          placeholder={field.placeholder}
+        />
+      );
+    }
+
     return (
       <input
         {...commonProps}
@@ -1165,7 +1191,7 @@ export function CadastroPage({ config }) {
           </div>
         ) : null}
         {error ? (
-          <div className="feedback error">
+          <div className="feedback error" role="alert" ref={errorRegion}>
             <X size={18} />
             {error}
           </div>
@@ -1247,7 +1273,7 @@ export function CadastroPage({ config }) {
                           .map((field) => (
                             <div
                               key={field.name}
-                              className={`field ${field.name === "cnpj" ? "field-wide" : ""}`}
+                              className={`field ${field.name === "cnpj" || field.type === "texto-longo" ? "field-wide" : ""}`}
                             >
                               <label htmlFor={field.name}>
                                 <span>
@@ -1271,7 +1297,10 @@ export function CadastroPage({ config }) {
                 ) : (
                   <div className="form-grid">
                     {visibleFields.map((field) => (
-                      <label key={field.name} className="field">
+                      <label
+                        key={field.name}
+                        className={`field ${field.type === "texto-longo" ? "field-wide" : ""}`}
+                      >
                         <span>{field.label}</span>
                         {renderField(field)}
                         {fieldErrors[field.name] && (
@@ -1401,7 +1430,11 @@ export function CadastroPage({ config }) {
                               : undefined;
                           return (
                             <td key={column.key} title={textTitle}>
-                              {content}
+                              {column.limitarLinhas ? (
+                                <span className="celula-limitada">{content}</span>
+                              ) : (
+                                content
+                              )}
                             </td>
                           );
                         })}

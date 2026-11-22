@@ -173,10 +173,10 @@ test("troca de papel exige papel e data antes de enviar a atualização do vínc
     assert.equal(writes, 0);
     assert.equal(view.container.querySelector("#team-role-1").getAttribute("aria-invalid"), "true");
     await change(view.container.querySelector("#team-role-1"), "QA");
-    await change(view.container.querySelector("#team-role-date"), "");
+    await change(view.container.querySelector("#team-role-date-1"), "");
     await click(view.container.querySelector('[title="Salvar vínculo"]'));
     assert.equal(writes, 0);
-    assert.equal(document.activeElement.id, "team-role-date");
+    assert.equal(document.activeElement.id, "team-role-date-1");
   } finally {
     await view.unmount();
     api.get = originalGet;

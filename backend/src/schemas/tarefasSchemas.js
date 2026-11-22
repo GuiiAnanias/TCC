@@ -18,6 +18,14 @@ const statusRegistro = z.enum(["ATIVO", "INATIVO"]);
 const sprintFields = z.object({
   projetoId: id,
   nome: z.string().trim().min(3).max(150),
+  // O que foi feito ou planejado na sprint; vazio vira null.
+  descricao: z
+    .string()
+    .trim()
+    .max(3000, "A descrição pode ter até 3000 caracteres.")
+    .nullable()
+    .optional()
+    .transform((value) => value || null),
   dataInicio: day.nullable().optional(),
   dataFim: day.nullable().optional(),
   statusRegistro: statusRegistro.default("ATIVO"),

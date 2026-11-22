@@ -616,3 +616,35 @@ a.secondary-button {
   cursor: not-allowed;
   opacity: 0.68;
 }
+
+/* Descrição que cresce com o texto (formulário de apontamento): mesmo visual dos outros
+   campos; começa com a altura de um campo comum e aumenta a cada linha digitada. */
+.texto-auto {
+  display: block;
+  width: 100%;
+  min-height: 2.375rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  padding: 0.4375rem 0.75rem;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  resize: none;
+  font: inherit;
+  /* Uma linha fica com a mesma altura dos campos ao lado (2,375rem). */
+  line-height: 1.4;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
+}
+.texto-auto:hover:not(:disabled):not(:focus) {
+  border-color: var(--line-hover);
+}
+.texto-auto:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.texto-auto::placeholder {
+  color: var(--muted);
+}

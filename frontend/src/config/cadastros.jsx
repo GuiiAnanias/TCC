@@ -467,8 +467,13 @@ export const resources = [
       },
     ],
     columns: [
-      { key: "nome", label: "Projeto" },
-      { key: "cliente", label: "Cliente", render: (item) => item.cliente?.nome || "-" },
+      { key: "nome", label: "Projeto", limitarLinhas: true },
+      {
+        key: "cliente",
+        label: "Cliente",
+        limitarLinhas: true,
+        render: (item) => item.cliente?.nome || "-",
+      },
       {
         key: "tipoContrato",
         label: "Contrato",
@@ -535,7 +540,7 @@ export const resources = [
       {
         name: "descricao",
         label: "Descrição da atividade",
-        type: "text",
+        type: "texto-longo",
         placeholder: "O que foi feito nessas horas",
         required: true,
       },
