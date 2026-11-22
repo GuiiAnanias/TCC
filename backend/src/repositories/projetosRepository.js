@@ -172,6 +172,42 @@ export const projetosRepository = {
     });
   },
 
+  // [REGRA][TRANSACAO] Cancela um vínculo que ainda não começou. Se ele veio de uma troca de
+  // papel (o vínculo anterior termina na véspera), o anterior volta a ficar sem data de saída.
+  // Sem vínculo anterior, horas já lançadas a partir da data ficariam sem participação: recusa.
+  async cancelScheduledTeamMember(member, tx) {
+    const anterior = await tx.projetoColaborador.findFirst({
+      where: {
+        projetoId: member.projetoId,
+        colaboradorId: member.colaboradorId,
+        dataSaida: previousFinanceDay(member.dataEntrada),
+      },
+    });
+    if (!anterior) {
+      const horas = await tx.apontamentoHora.count({
+        where: {
+          projetoId: member.projetoId,
+          colaboradorId: member.colaboradorId,
+          data: { gte: member.dataEntrada },
+        },
+      });
+      if (horas)
+        throw new ErroHttp(
+          409,
+          "Há horas lançadas a partir da data deste vínculo. Ajuste essas horas antes de cancelar.",
+        );
+    }
+    await tx.projetoColaborador.delete({ where: { id: member.id } });
+    const reaberto = anterior
+      ? await tx.projetoColaborador.update({
+          where: { id: anterior.id },
+          data: { dataSaida: null },
+          include: { colaborador: true },
+        })
+      : null;
+    return { cancelado: true, vinculoId: member.id, reaberto };
+  },
+
   // [REGRA][TRANSACAO] Troca de papel: encerra a participação atual no dia anterior e abre outra
   // com o novo papel.
   async changeTeamRole(member, papel, dataVigencia, tx) {

@@ -194,6 +194,56 @@ try {
   });
   assert.equal(periods.filter((x) => !x.dataSaida).length, 1);
   assert.equal(periods.length, 3);
+
+  // Troca de papel agendada (data futura): cancelar apaga o vínculo novo e reabre o anterior.
+  const { todayFinanceDate } = await import("../src/utils/datasFinanceiras.js");
+  const emDias = (dias) => new Date(todayFinanceDate().getTime() + dias * 86400000);
+  const [agendada, semAnterior] = await Promise.all(
+    [4, 5].map((n) =>
+      client.colaborador.create({
+        data: {
+          nomeCompleto: `Pessoa ${n}`,
+          email: `team${n}@example.local`,
+          cargo: "QA",
+          departamento: "TI",
+        },
+      }),
+    ),
+  );
+  const atual = await teams.addTeamMember(project.id, {
+    colaboradorId: agendada.id,
+    papel: "Dev",
+    dataEntrada: new Date("2026-01-01"),
+  });
+  const futuro = await teams.updateTeamMember(project.id, atual.id, {
+    papel: "QA",
+    dataVigencia: emDias(10),
+  });
+  const cancelamento = await teams.removeTeamMember(project.id, futuro.id);
+  assert.equal(cancelamento.cancelado, true);
+  assert.equal(cancelamento.reaberto.id, atual.id);
+  assert.equal(await client.projetoColaborador.findUnique({ where: { id: futuro.id } }), null);
+  assert.equal(
+    (await client.projetoColaborador.findUnique({ where: { id: atual.id } })).dataSaida,
+    null,
+    "O papel anterior volta a valer sem data de saída",
+  );
+  // Entrada agendada sem vínculo anterior e com horas já lançadas: cancelar é recusado.
+  const entradaFutura = await teams.addTeamMember(project.id, {
+    colaboradorId: semAnterior.id,
+    papel: "Dev",
+    dataEntrada: emDias(5),
+  });
+  await client.apontamentoHora.create({
+    data: {
+      colaboradorId: semAnterior.id,
+      projetoId: project.id,
+      data: emDias(6),
+      horas: 2,
+      descricao: "Horas lançadas antes do cancelamento",
+    },
+  });
+  await assert.rejects(teams.removeTeamMember(project.id, entradaFutura.id), { statusCode: 409 });
   await client.cliente.update({ where: { id: customer.id }, data: { status: "INATIVO" } });
   await teams.update(project.id, { clienteId: customer.id, nome: "Projeto com cliente histórico" });
   assert.equal(
@@ -210,7 +260,7 @@ try {
     statusCode: 400,
   });
   console.log(
-    "OK: migração recusa conflitos sem alterar dados, fronteiras antigas preservadas, concorrência, restrições diretas, reabertura e troca de papel.",
+    "OK: migração recusa conflitos sem alterar dados, fronteiras antigas preservadas, concorrência, restrições diretas, reabertura, troca de papel e cancelamento de troca agendada.",
   );
 } finally {
   await client?.$disconnect();
