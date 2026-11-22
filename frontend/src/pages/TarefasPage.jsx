@@ -33,7 +33,7 @@ const emptyTask = () => ({
   dataConclusao: "",
   responsavelIds: [],
 });
-const emptySprint = () => ({ nome: "", dataInicio: "", dataFim: "" });
+const emptySprint = () => ({ nome: "", descricao: "", dataInicio: "", dataFim: "" });
 const day = (value) => (value ? String(value).slice(0, 10) : "");
 const date = (value) =>
   value ? new Date(value).toLocaleDateString("pt-BR", { timeZone: "UTC" }) : "—";
@@ -147,7 +147,7 @@ export function TarefasPage() {
   );
   const visibleSprints = sprints.filter(
     (sprint) =>
-      contemBusca(filters.busca, sprint.nome) &&
+      contemBusca(filters.busca, sprint.nome, sprint.descricao) &&
       (!filters.registro || sprint.statusRegistro === filters.registro),
   );
   const paginacaoTarefas = usePaginacao(visibleTasks);
@@ -216,6 +216,7 @@ export function TarefasPage() {
     setEditingSprint(sprint);
     setSprintForm({
       nome: sprint.nome,
+      descricao: sprint.descricao ?? "",
       dataInicio: day(sprint.dataInicio),
       dataFim: day(sprint.dataFim),
     });
@@ -256,6 +257,7 @@ export function TarefasPage() {
         const payload = {
           projetoId: Number(projectId),
           nome: sprintForm.nome,
+          descricao: sprintForm.descricao || null,
           dataInicio: sprintForm.dataInicio || null,
           dataFim: sprintForm.dataFim || null,
         };
@@ -616,6 +618,21 @@ export function TarefasPage() {
                           }
                         />
                       </label>
+                      <label className="field tasks-sprint-description">
+                        <span>Descrição (opcional)</span>
+                        <textarea
+                          maxLength={3000}
+                          rows={3}
+                          placeholder="Objetivo da sprint e o que foi entregue."
+                          value={sprintForm.descricao}
+                          onChange={(event) =>
+                            setSprintForm((current) => ({
+                              ...current,
+                              descricao: event.target.value,
+                            }))
+                          }
+                        />
+                      </label>
                     </>
                   )}
                 </div>
@@ -837,7 +854,16 @@ export function TarefasPage() {
                   ) : visibleSprints.length ? (
                     paginacaoSprints.itensPaginados.map((sprint) => (
                       <tr key={sprint.id}>
-                        <td title={sprint.nome}>{sprint.nome}</td>
+                        <td
+                          title={
+                            sprint.descricao ? `${sprint.nome} — ${sprint.descricao}` : sprint.nome
+                          }
+                        >
+                          <strong>{sprint.nome}</strong>
+                          {sprint.descricao && (
+                            <span className="tasks-detail">{sprint.descricao}</span>
+                          )}
+                        </td>
                         <td>{date(sprint.dataInicio)}</td>
                         <td>{date(sprint.dataFim)}</td>
                         <td>{sprint._count.tarefas}</td>

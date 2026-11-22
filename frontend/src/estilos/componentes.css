@@ -188,6 +188,15 @@
   width: 100%;
 }
 
+/* Troca de papel: a data de vigência aparece logo abaixo do papel escolhido na linha. */
+.team-role-date {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 .table-toolbar {
   justify-content: space-between;
   padding: 0.75rem 0.875rem;
@@ -316,6 +325,16 @@ td {
 
 td {
   line-height: 1.45;
+}
+
+/* Nomes muito longos (cliente, projeto): no máximo duas linhas na tabela; o nome inteiro
+   aparece ao passar o mouse. */
+.celula-limitada {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-width: 260px;
 }
 
 th {
@@ -556,7 +575,8 @@ tbody tr:last-child > td {
   margin-top: 12px;
 }
 
-.status-pendente {
+.status-pendente,
+.status-agendado {
   background-color: var(--warning-soft);
   color: var(--warning);
   border: 1px solid var(--warning-line);
@@ -1034,6 +1054,10 @@ td .icon-button {
 }
 .tasks-filters {
   flex-wrap: wrap;
+}
+/* A descrição da sprint ocupa a linha inteira, abaixo do nome e das datas. */
+.tasks-sprint-description {
+  grid-column: 1 / -1;
 }
 .tasks-page textarea {
   width: 100%;
