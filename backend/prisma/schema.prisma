@@ -302,6 +302,7 @@ model Sprint {
   id            Int       @id @default(autoincrement())
   projetoId     Int
   nome          String
+  descricao     String?
   dataInicio    DateTime? @db.Date
   dataFim       DateTime? @db.Date
   statusRegistro Status   @default(ATIVO)

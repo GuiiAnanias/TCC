@@ -126,7 +126,14 @@ export const tarefasRepository = {
     return prisma.sprint.findMany({
       where: {
         ...(projetoId ? { projetoId } : {}),
-        ...(busca ? { nome: { contains: busca, mode: "insensitive" } } : {}),
+        ...(busca
+          ? {
+              OR: [
+                { nome: { contains: busca, mode: "insensitive" } },
+                { descricao: { contains: busca, mode: "insensitive" } },
+              ],
+            }
+          : {}),
         ...(statusRegistro ? { statusRegistro } : {}),
       },
       include: includeSprint,
