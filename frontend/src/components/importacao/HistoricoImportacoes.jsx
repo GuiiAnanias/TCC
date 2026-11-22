@@ -9,7 +9,7 @@ import { api } from "../../api/conexao.js";
 import { date, number } from "../dashboard/DashboardOperacional.jsx";
 import { mensagemDeErro } from "../../utils/baixarArquivos.js";
 
-const POR_PAGINA = 20;
+const POR_PAGINA = 10;
 const STATUS = {
   CONCLUIDA: { rotulo: "Concluída", classe: "status-concluida" },
   FALHOU: { rotulo: "Falhou", classe: "status-falhou" },

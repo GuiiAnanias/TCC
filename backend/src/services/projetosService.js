@@ -75,6 +75,20 @@ function ensurePeriodoValido(dataEntrada, dataSaida) {
   }
 }
 
+// [VALIDACAO] Entrada do colaborador na equipe não pode ser anterior ao início do projeto.
+function ensureEntradaAposInicioProjeto(dataEntrada, dataInicioProjeto) {
+  if (
+    dataEntrada &&
+    dataInicioProjeto &&
+    financeDate(dataEntrada) < financeDate(dataInicioProjeto)
+  ) {
+    throw new ErroHttp(
+      400,
+      "A data de entrada do colaborador não pode ser anterior à data de início do projeto.",
+    );
+  }
+}
+
 // [REGRA] A mesma pessoa não pode ter duas participações com períodos sobrepostos no mesmo projeto.
 async function ensureSemSobreposicao(projetoId, colaboradorId, entrada, saida, exceptId, db) {
   if (
@@ -107,7 +121,10 @@ export const projetosService = {
     const { equipeInicial = [], ...project } = data;
     return projetosRepository.transaction(async (db) => {
       await ensureClienteAtivo(project.clienteId, db);
-      for (const member of equipeInicial) await ensureColaboradorAtivo(member.colaboradorId, db);
+      for (const member of equipeInicial) {
+        await ensureColaboradorAtivo(member.colaboradorId, db);
+        ensureEntradaAposInicioProjeto(member.dataEntrada, project.dataInicio);
+      }
       return projetosRepository.create(
         {
           ...project,
@@ -167,6 +184,7 @@ export const projetosService = {
       await ensureColaboradorAtivo(data.colaboradorId, db);
 
       const entrada = financeDate(data.dataEntrada);
+      ensureEntradaAposInicioProjeto(entrada, projeto.dataInicio);
       await ensureSemSobreposicao(projetoId, data.colaboradorId, entrada, null, undefined, db);
 
       return projetosRepository.addTeamMember(
@@ -212,6 +230,9 @@ export const projetosService = {
           : data.dataSaida && financeDate(data.dataSaida);
 
       ensurePeriodoValido(nextDataEntrada, nextDataSaida);
+      if (data.dataEntrada !== undefined) {
+        ensureEntradaAposInicioProjeto(nextDataEntrada, projeto.dataInicio);
+      }
 
       await ensureSemSobreposicao(
         projetoId,

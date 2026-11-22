@@ -104,3 +104,11 @@ export function parseHoras(value) {
   if (!digits) return "";
   return Number(digits) / 100;
 }
+
+export function temNomeESobrenome(value) {
+  const partes = String(value ?? "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  return partes.length >= 2 && partes.every((parte) => /\p{L}/u.test(parte));
+}

@@ -4,7 +4,12 @@
  */
 
 import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./comunsSchemas.js";
+import {
+  MENSAGEM_NOME_SOBRENOME,
+  optionalStatusSchema,
+  paginationQuerySchema,
+  temNomeESobrenome,
+} from "./comunsSchemas.js";
 import { isValidCnpj, normalizeCnpj } from "../utils/cnpj.js";
 import { isValidCpf, normalizeCpf } from "../utils/cpf.js";
 
@@ -84,6 +89,13 @@ const companyFields = [
 // aceita CPF.
 function validatePersonFields(data, ctx) {
   if (data.tipoPessoa === "PF") {
+    if (data.nome !== undefined && !temNomeESobrenome(data.nome)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["nome"],
+        message: MENSAGEM_NOME_SOBRENOME,
+      });
+    }
     for (const field of companyFields) {
       if (data[field])
         ctx.addIssue({

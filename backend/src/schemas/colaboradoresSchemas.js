@@ -5,7 +5,12 @@
  */
 
 import { z } from "zod";
-import { optionalStatusSchema, paginationQuerySchema } from "./comunsSchemas.js";
+import {
+  MENSAGEM_NOME_SOBRENOME,
+  optionalStatusSchema,
+  paginationQuerySchema,
+  temNomeESobrenome,
+} from "./comunsSchemas.js";
 import { departamentosTi, cargosTi } from "./opcoesCadastro.js";
 
 export const colaboradorQuerySchema = paginationQuerySchema;
@@ -15,7 +20,8 @@ export const colaboradorCreateSchema = z.object({
     .string()
     .trim()
     .min(3, "Nome completo deve ter ao menos 3 caracteres.")
-    .refine((nome) => !/\p{N}/u.test(nome), "Nome não pode conter números."),
+    .refine((nome) => !/\p{N}/u.test(nome), "Nome não pode conter números.")
+    .refine(temNomeESobrenome, MENSAGEM_NOME_SOBRENOME),
   email: z.email("E-mail inválido.").trim().toLowerCase(),
   cargo: z.enum(cargosTi, { message: "Selecione um cargo válido." }),
   departamento: z.enum(departamentosTi, { message: "Selecione um departamento válido." }),

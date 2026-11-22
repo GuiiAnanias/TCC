@@ -30,6 +30,7 @@ test("equipe inicial é opcional e cada integrante exige pessoa, papel e entrada
     [member(2), member(2)],
     [{ colaboradorId: 2 }],
     [{ ...member(2), papel: "" }],
+    [{ colaboradorId: 2, papel: "Dev", dataEntrada: "2026-08-31" }],
   ])
     assert.equal(projetoCreateSchema.safeParse({ ...project, equipeInicial }).success, false);
   assert.equal(projetoUpdateSchema.safeParse({ equipeInicial: [] }).success, false);

@@ -41,6 +41,10 @@ test("estados de projetos não vazam para o cadastro de colaboradores", () => {
     departamento: "Qualidade",
   };
   assert.equal(colaboradorCreateSchema.safeParse({ ...person, status: "PAUSADO" }).success, false);
+  assert.equal(
+    colaboradorCreateSchema.safeParse({ ...person, nomeCompleto: "Pessoa" }).success,
+    false,
+  );
   assert.equal(colaboradorCreateSchema.parse({ ...person, status: "INATIVO" }).status, "INATIVO");
 });
 
