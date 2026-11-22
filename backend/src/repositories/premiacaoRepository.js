@@ -5,7 +5,12 @@
 
 import prisma from "../config/prisma.js";
 import { ErroHttp } from "../utils/ErroHttp.js";
-import { calculateAward, premiacaoTemplates } from "../services/regrasPremiacao.js";
+import {
+  NOME_CATEGORIA,
+  calculateAward,
+  categoriaDoPapel,
+  premiacaoTemplates,
+} from "../services/regrasPremiacao.js";
 import { operationalIndicators } from "../services/indicadoresOperacionais.js";
 
 const relations = {
@@ -38,8 +43,7 @@ export async function buildAwardContent(tx, identity, rule, dados, actor) {
     throw new ErroHttp(400, "Resposta não pertence à versão das regras selecionada.");
   const person = await tx.colaborador.findUnique({ where: { id: identity.colaboradorId } });
   if (!person) throw new ErroHttp(404, "Colaborador não encontrado.");
-  const start = new Date(`${identity.competencia}-01T00:00:00Z`);
-  const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
+  const { inicio: start, fim: end } = periodoDaCompetencia(identity.competencia);
   const projects = await tx.projeto.findMany({
     where: { id: { in: dados.projetoIds } },
     include: {
@@ -77,6 +81,28 @@ export async function buildAwardContent(tx, identity, rule, dados, actor) {
   });
   if (projects.length !== dados.projetoIds.length)
     throw new ErroHttp(400, "Um dos projetos não existe mais.");
+  // Só entram projetos em que a pessoa participou da equipe em algum dia da competência,
+  // com um papel da categoria avaliada (ex.: quem foi Product Owner não entra como Dev).
+  const mes = identity.competencia.split("-").reverse().join("/");
+  const semParticipacao = projects.filter((row) => !row.equipe.length).map((row) => row.nome);
+  if (semParticipacao.length)
+    throw new ErroHttp(
+      400,
+      `${person.nomeCompleto} não participou da equipe de ${semParticipacao.join(", ")} em ${mes}. Escolha apenas projetos da pessoa no mês.`,
+    );
+  const outraCategoria = projects.filter(
+    (row) => !row.equipe.some((vinculo) => categoriaDoPapel(vinculo.papel) === identity.categoria),
+  );
+  if (outraCategoria.length)
+    throw new ErroHttp(
+      400,
+      `Na avaliação ${NOME_CATEGORIA[identity.categoria]}, entram só projetos em que ${person.nomeCompleto} teve um papel dessa categoria em ${mes}. ${outraCategoria
+        .map(
+          (row) =>
+            `${row.nome}: ${[...new Set(row.equipe.map((vinculo) => vinculo.papel))].join(", ")}`,
+        )
+        .join("; ")}.`,
+    );
   if (projects.flatMap((row) => row.sprints).length !== dados.sprintIds.length)
     throw new ErroHttp(400, "As sprints precisam pertencer aos projetos selecionados.");
   const filters = {
@@ -116,9 +142,40 @@ export async function buildAwardContent(tx, identity, rule, dados, actor) {
   });
 }
 
+// Período da competência "AAAA-MM": do primeiro ao último dia do mês.
+function periodoDaCompetencia(competencia) {
+  const inicio = new Date(`${competencia}-01T00:00:00Z`);
+  const fim = new Date(Date.UTC(inicio.getUTCFullYear(), inicio.getUTCMonth() + 1, 0));
+  return { inicio, fim };
+}
+
 export const premiacaoRepository = {
   templates() {
     return premiacaoTemplates;
+  },
+  // [BANCO] Projetos em que a pessoa participou da equipe em algum dia da competência, com os
+  // papéis do mês. São os únicos que podem entrar na avaliação.
+  async projectsForPerson({ colaboradorId, competencia }) {
+    const { inicio, fim } = periodoDaCompetencia(competencia);
+    const participacao = {
+      colaboradorId,
+      dataEntrada: { lte: fim },
+      OR: [{ dataSaida: null }, { dataSaida: { gte: inicio } }],
+    };
+    const projetos = await prisma.projeto.findMany({
+      where: { equipe: { some: participacao } },
+      select: {
+        id: true,
+        nome: true,
+        status: true,
+        equipe: { where: participacao, select: { papel: true }, orderBy: { dataEntrada: "asc" } },
+      },
+      orderBy: { nome: "asc" },
+    });
+    return projetos.map(({ equipe, ...projeto }) => {
+      const papeis = [...new Set(equipe.map((row) => row.papel))];
+      return { ...projeto, papeis, categorias: [...new Set(papeis.map(categoriaDoPapel))] };
+    });
   },
   rules() {
     return prisma.regraPremiacao.findMany({ orderBy: { id: "desc" } });

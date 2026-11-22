@@ -114,6 +114,13 @@ export const awardCreateSchema = z
   .strict();
 export const awardUpdateSchema = z.object({ revisao: id, dados: awardInputSchema }).strict();
 export const awardCloseSchema = z.object({ revisao: id }).strict();
+export const awardProjectsQuerySchema = z
+  .object({
+    colaboradorId: z.coerce.number().int().positive(),
+    competencia: identity.competencia,
+  })
+  .strict();
+
 export const awardQuerySchema = z
   .object({
     colaboradorId: z.coerce.number().int().positive().optional(),

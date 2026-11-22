@@ -251,9 +251,34 @@ try {
       ).status,
       201,
     );
+    // Em agosto a Ana ainda não estava na equipe do Portal (entrou em setembro): recusado.
+    const foraDaEquipe = await request("", "POST", { ...input, competencia: "2026-08" });
+    assert.equal(foraDaEquipe.status, 400);
+    assert.match((await foraDaEquipe.json()).message, /não participou da equipe/);
+    // A lista de projetos da avaliação traz só os da pessoa no mês, com o papel.
+    const lista = await request(`/projetos?colaboradorId=${ana.id}&competencia=2026-09`, "GET");
+    assert.equal(lista.status, 200);
+    const projetosDaAna = await lista.json();
+    assert.ok(projetosDaAna.some((row) => row.id === portal.id && row.papeis.includes("Dev")));
+    assert.ok(projetosDaAna.every((row) => row.papeis.length));
+    assert.deepEqual(projetosDaAna.find((row) => row.id === portal.id).categorias, ["DEV"]);
+    // A Ana é Dev no Portal: uma avaliação PO/SM não pode usar esse projeto.
+    const regraPoSm = await client.regraPremiacao.findFirst({ where: { categoria: "PO_SM" } });
+    const categoriaErrada = await request("", "POST", {
+      ...input,
+      competencia: "2026-11",
+      regraId: regraPoSm.id,
+    });
+    assert.equal(categoriaErrada.status, 400);
+    assert.match((await categoriaErrada.json()).message, /Portal do Cliente \(demo\): Dev/);
+    assert.equal(
+      (await (await request(`/projetos?colaboradorId=${ana.id}&competencia=2026-08`, "GET")).json())
+        .length,
+      0,
+    );
     const posted = await request("", "POST", {
       ...input,
-      competencia: "2026-08",
+      competencia: "2026-11",
       dados: {
         ...data,
         percentualInformado: 80,

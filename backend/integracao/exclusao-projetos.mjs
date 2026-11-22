@@ -136,6 +136,17 @@ try {
         dataInicio: new Date("2026-01-01"),
       },
     });
+  // Participação da pessoa no projeto durante o primeiro trimestre de 2025.
+  const participar = (projetoId) =>
+    client.projetoColaborador.create({
+      data: {
+        projetoId,
+        colaboradorId: person.id,
+        papel: "Dev",
+        dataEntrada: new Date("2025-01-01"),
+        dataSaida: new Date("2025-03-31"),
+      },
+    });
   const awardData = (projectId) => ({
     projetoIds: [projectId],
     sprintIds: [],
@@ -183,8 +194,11 @@ try {
           criadoPorId: user.id,
         },
       }),
-    avaliacoes: (id) =>
-      awards.create(
+    // A avaliação só aceita projetos em que a pessoa participou no mês: o vínculo de equipe
+    // vem junto e também bloqueia a exclusão.
+    avaliacoes: async (id) => {
+      await participar(id);
+      return awards.create(
         {
           colaboradorId: person.id,
           competencia: "2025-01",
@@ -192,7 +206,8 @@ try {
           dados: awardData(id),
         },
         user,
-      ),
+      );
+    },
   };
   const blockedProjects = [];
   for (const [key, add] of Object.entries(children)) {
@@ -210,6 +225,7 @@ try {
     where: { competencia: "2025-01" },
   });
   const alternate = await createProject();
+  await participar(alternate.id);
   await awards.update(originalAward.id, { revisao: 1, dados: awardData(alternate.id) }, user);
   assert.equal((await repository.inspect(blockedProjects.at(-1).id)).vinculos.avaliacoes, 1);
   assert.equal((await repository.inspect(alternate.id)).vinculos.avaliacoes, 1);
@@ -236,16 +252,22 @@ try {
     const project = await createProject();
     const attach =
       key === "avaliacoes"
-        ? () =>
-            awards.create(
-              {
+        ? // Pela API a avaliação exige participação na equipe, que já bloquearia a exclusão;
+          // aqui a referência é gravada direto, para testar a corrida no banco.
+          () =>
+            client.avaliacaoPremiacao.create({
+              data: {
                 colaboradorId: person.id,
                 competencia: "2025-03",
+                categoria: "DEV",
                 regraId: rule.id,
-                dados: awardData(project.id),
+                criadoPorId: user.id,
+                conteudo: {
+                  dados: awardData(project.id),
+                  base: { projetos: [{ id: project.id }] },
+                },
               },
-              user,
-            )
+            })
         : () => add(project.id);
     const results = await Promise.allSettled([attach(), repository.remove(project.id)]);
     assert.ok(

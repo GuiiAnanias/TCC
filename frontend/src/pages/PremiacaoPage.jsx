@@ -18,6 +18,34 @@ import {
 } from "../components/dashboard/DashboardOperacional.jsx";
 
 const categories = { DEV: "Dev", PO_SM: "PO/SM" };
+
+// Categoria em que a pessoa mais atuou no mês (pela quantidade de projetos de cada tipo de
+// papel). Empate, ou nenhum projeto, mantém a categoria atual.
+export function categoriaSugerida(projetosDaPessoa, atual) {
+  const contagem = { DEV: 0, PO_SM: 0 };
+  for (const projeto of projetosDaPessoa ?? [])
+    for (const categoria of projeto.categorias ?? []) contagem[categoria] += 1;
+  if (contagem.DEV === contagem.PO_SM) return atual;
+  return contagem.PO_SM > contagem.DEV ? "PO_SM" : "DEV";
+}
+
+// Mantém na seleção só os projetos em que a pessoa teve papel da categoria no mês (e as sprints
+// deles). Devolve o mesmo objeto quando nada muda.
+export function selecaoDaCategoria(dados, projetosDaPessoa, categoria, sprints) {
+  const validos = new Set(
+    (projetosDaPessoa ?? [])
+      .filter((projeto) => projeto.categorias?.includes(categoria))
+      .map((projeto) => projeto.id),
+  );
+  if (dados.projetoIds.every((id) => validos.has(id))) return dados;
+  return {
+    ...dados,
+    projetoIds: dados.projetoIds.filter((id) => validos.has(id)),
+    sprintIds: dados.sprintIds.filter((id) =>
+      sprints.some((sprint) => sprint.id === id && validos.has(sprint.projetoId)),
+    ),
+  };
+}
 const failure = (error) =>
   error.response?.data?.errors?.[0]?.message ||
   error.response?.data?.message ||
@@ -144,6 +172,13 @@ export function PremiacaoPage() {
     statusSprint: "",
   });
   const sequence = useRef(0);
+  // Projetos em que a pessoa participou da equipe na competência (com os papéis do mês):
+  // só eles podem entrar na avaliação. null enquanto falta pessoa/competência ou carrega.
+  const [projetosDaPessoa, setProjetosDaPessoa] = useState(null);
+  const [carregandoProjetos, setCarregandoProjetos] = useState(false);
+  const consultaProjetos = useRef(0);
+  // A categoria é sugerida pelos papéis do mês até a pessoa escolher outra manualmente.
+  const categoriaManual = useRef(false);
   const region = useRef(null);
   // [REQUISICAO] Modelos, regras, colaboradores, projetos, sprints e avaliações.
   async function load() {
@@ -178,9 +213,58 @@ export function PremiacaoPage() {
       sequence.current++;
     };
   }, []);
+  const pessoaDaAvaliacao = form?.colaboradorId;
+  const competenciaDaAvaliacao = form?.competencia;
+  const avaliacaoNova = Boolean(form) && !editor;
+  useEffect(() => {
+    const consulta = ++consultaProjetos.current;
+    setProjetosDaPessoa(null);
+    if (!pessoaDaAvaliacao || !/^\d{4}-\d{2}$/.test(competenciaDaAvaliacao || "")) return;
+    setCarregandoProjetos(true);
+    api
+      .get("/premiacoes/projetos", {
+        params: { colaboradorId: pessoaDaAvaliacao, competencia: competenciaDaAvaliacao },
+      })
+      .then(({ data }) => {
+        if (consulta !== consultaProjetos.current) return;
+        setProjetosDaPessoa(data);
+        // Numa avaliação nova: sugere a categoria pelos papéis do mês e tira da seleção os
+        // projetos de fora da equipe ou de outra categoria.
+        if (avaliacaoNova)
+          setForm((current) => {
+            if (!current) return current;
+            const categoria =
+              current.anteriorId || categoriaManual.current
+                ? current.categoria
+                : categoriaSugerida(data, current.categoria);
+            const dados = selecaoDaCategoria(current.dados, data, categoria, sprints);
+            if (categoria === current.categoria && dados === current.dados) return current;
+            return {
+              ...current,
+              categoria,
+              ...(categoria !== current.categoria
+                ? {
+                    regraId: rules.find((row) => row.categoria === categoria)?.id || "",
+                    dados: { ...dados, respostas: [] },
+                  }
+                : { dados }),
+            };
+          });
+      })
+      .catch((err) => {
+        if (consulta === consultaProjetos.current) setError(failure(err));
+      })
+      .finally(() => {
+        if (consulta === consultaProjetos.current) setCarregandoProjetos(false);
+      });
+    // A seleção só é revista quando muda a pessoa ou a competência.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pessoaDaAvaliacao, competenciaDaAvaliacao]);
   const selectedRule = rules.find((row) => row.id === Number(form?.regraId));
   const readOnly = editor?.status === "CONCLUIDA";
   function change(key, value) {
+    // Outra pessoa: a categoria volta a ser sugerida pelos papéis dela.
+    if (key === "colaboradorId") categoriaManual.current = false;
     setForm((current) => ({ ...current, [key]: value }));
     setDirty(true);
     setMessage("");
@@ -194,6 +278,7 @@ export function PremiacaoPage() {
   function newEvaluation(previous = null) {
     const category = previous?.categoria || "DEV";
     const rule = rules.find((row) => row.categoria === category);
+    categoriaManual.current = false;
     setEditor(null);
     setForm({
       colaboradorId: previous?.colaboradorId || "",
@@ -245,11 +330,15 @@ export function PremiacaoPage() {
     }
   }
   function changeCategory(category) {
+    categoriaManual.current = true;
     setForm((current) => ({
       ...current,
       categoria: category,
       regraId: rules.find((row) => row.categoria === category)?.id || "",
-      dados: { ...current.dados, respostas: [] },
+      dados: {
+        ...selecaoDaCategoria(current.dados, projetosDaPessoa, category, sprints),
+        respostas: [],
+      },
     }));
     setDirty(true);
   }
@@ -347,7 +436,14 @@ export function PremiacaoPage() {
         .includes(filters.busca.toLocaleLowerCase("pt-BR")),
   );
   const paginacaoAvaliacoes = usePaginacao(visible);
-  const projetosFiltradosEscolhas = projects.filter((row) => {
+  // Projetos da pessoa no mês; os já selecionados de fora (rascunho antigo) continuam visíveis
+  // para poderem ser desmarcados.
+  const daPessoaPorProjeto = new Map((projetosDaPessoa ?? []).map((row) => [row.id, row]));
+  const daCategoria = (id) => daPessoaPorProjeto.get(id)?.categorias.includes(form?.categoria);
+  const projetosDaAvaliacao = projects.filter(
+    (row) => daCategoria(row.id) || form?.dados.projetoIds.includes(row.id),
+  );
+  const projetosFiltradosEscolhas = projetosDaAvaliacao.filter((row) => {
     if (!form) return false;
     const selecionado = form.dados.projetoIds.includes(row.id);
     if (choiceFilters.statusProjeto === "SELECIONADOS" && !selecionado) return false;
@@ -553,9 +649,19 @@ export function PremiacaoPage() {
                     </div>
                     <div className="award-choice-section">
                       <div className="award-choice-header">
-                        <h3>Projetos avaliados</h3>
+                        <div>
+                          <h3>Projetos avaliados</h3>
+                          <p className="award-choice-hint">
+                            Só projetos em que a pessoa teve papel de {categories[form.categoria]}{" "}
+                            no mês.{" "}
+                            {form.categoria === "PO_SM"
+                              ? "PO/SM: Product Owner, Scrum Master, Gerente de Projeto, Tech Lead ou Líder Técnico."
+                              : "Dev: os demais papéis (Dev, QA, Designer, DevOps, Arquiteto e outros)."}
+                          </p>
+                        </div>
                         <span className="award-choice-count">
-                          {form.dados.projetoIds.length} selecionado(s) de {projects.length}
+                          {form.dados.projetoIds.length} selecionado(s) de{" "}
+                          {projetosDaAvaliacao.length}
                         </span>
                       </div>
                       <div className="award-choice-toolbar">
@@ -590,7 +696,25 @@ export function PremiacaoPage() {
                         </select>
                       </div>
                       <div className="award-choices">
-                        {!projetosFiltradosEscolhas.length ? (
+                        {!form.colaboradorId ? (
+                          <p className="award-choices-empty">
+                            Escolha o colaborador e a competência para ver os projetos em que ele
+                            participou da equipe.
+                          </p>
+                        ) : carregandoProjetos ? (
+                          <p className="award-choices-empty">Carregando os projetos do mês…</p>
+                        ) : !projetosDaPessoa?.length && !projetosDaAvaliacao.length ? (
+                          <p className="award-choices-empty">
+                            Este colaborador não participou da equipe de nenhum projeto nesta
+                            competência.
+                          </p>
+                        ) : !projetosDaAvaliacao.length ? (
+                          <p className="award-choices-empty">
+                            Nesta competência, o colaborador não teve papel de{" "}
+                            {categories[form.categoria]} em nenhum projeto. Troque a categoria para
+                            avaliar os projetos dele.
+                          </p>
+                        ) : !projetosFiltradosEscolhas.length ? (
                           <p className="award-choices-empty">
                             Nenhum projeto encontrado para este filtro.
                           </p>
@@ -609,6 +733,20 @@ export function PremiacaoPage() {
                               <span>
                                 {row.nome}
                                 {` (${projectStatusLabel(row.status)})`}
+                                {daCategoria(row.id) ? (
+                                  <small className="award-choice-role">
+                                    {daPessoaPorProjeto.get(row.id).papeis.join(", ")}
+                                  </small>
+                                ) : daPessoaPorProjeto.has(row.id) ? (
+                                  <small className="award-choice-role award-choice-fora">
+                                    {daPessoaPorProjeto.get(row.id).papeis.join(", ")}: não é{" "}
+                                    {categories[form.categoria]}, desmarque para salvar
+                                  </small>
+                                ) : projetosDaPessoa ? (
+                                  <small className="award-choice-role award-choice-fora">
+                                    Fora da equipe no mês: desmarque para salvar
+                                  </small>
+                                ) : null}
                               </span>
                             </label>
                           ))
