@@ -169,11 +169,20 @@ export function EquipeInicialProjeto({ members, onChange, projectStart, disabled
                   <input
                     type="date"
                     required
+                    min={projectStart || undefined}
+                    aria-invalid={Boolean(
+                      projectStart && member.dataEntrada && member.dataEntrada < projectStart,
+                    )}
                     value={member.dataEntrada}
                     onChange={(event) =>
                       update(member.colaboradorId, { dataEntrada: event.target.value })
                     }
                   />
+                  {projectStart && member.dataEntrada && member.dataEntrada < projectStart && (
+                    <small role="alert">
+                      A data de entrada não pode ser anterior ao início do projeto.
+                    </small>
+                  )}
                 </label>
               </div>
               <button

@@ -43,6 +43,7 @@ import { AcoesPagina } from "../components/comum/AcoesPagina.jsx";
 import { BonificacaoPapeis } from "../components/financeiro/BonificacaoPapeis.jsx";
 import { useValorMaisRecente, useEscopoRequisicao } from "../hooks/useEscopoRequisicao.js";
 import { EquipeInicialProjeto } from "../components/projetos/EquipeInicialProjeto.jsx";
+import { temNomeESobrenome } from "../utils/formatosCadastro.js";
 
 // Formulário vazio a partir da lista de campos do cadastro.
 function getInitialForm(fields, isEditing = false) {
@@ -582,10 +583,8 @@ export function CadastroPage({ config }) {
       return;
     const missing = {};
     for (const field of visibleFields) {
-      if (
-        (field.required || (field.requiredOnCreate && !isEditing)) &&
-        !String(formData[field.name] ?? "").trim()
-      ) {
+      const value = String(formData[field.name] ?? "").trim();
+      if ((field.required || (field.requiredOnCreate && !isEditing)) && !value) {
         const isSelectField = [
           "cliente",
           "projeto",
@@ -595,12 +594,27 @@ export function CadastroPage({ config }) {
         ].includes(field.type);
         missing[field.name] =
           `${isSelectField ? "Selecione" : "Informe"} ${field.label.toLocaleLowerCase("pt-BR")}.`;
+      } else if ((field.noNumbers || field.requireFullName) && /\p{N}/u.test(value)) {
+        missing[field.name] = "Nome não pode conter números.";
+      } else if (field.requireFullName && value && !temNomeESobrenome(value)) {
+        missing[field.name] = "Informe no mínimo um nome e sobrenome.";
       }
     }
     setFieldErrors(missing);
     if (Object.keys(missing).length) {
       setError("Confira os campos obrigatórios indicados no formulário.");
       document.getElementById(Object.keys(missing)[0])?.focus();
+      return;
+    }
+    if (
+      config.teamManager &&
+      !isEditing &&
+      formData.dataInicio &&
+      initialTeam.some((member) => member.dataEntrada && member.dataEntrada < formData.dataInicio)
+    ) {
+      setError(
+        "A data de entrada do colaborador não pode ser anterior à data de início do projeto.",
+      );
       return;
     }
     // [REGRA] Projeto cancelado ou encerrado só volta para Ativo depois da confirmação.

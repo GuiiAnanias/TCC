@@ -102,6 +102,8 @@ export const resources = [
                 ...field,
                 label: "Nome completo",
                 placeholder: "Nome completo da pessoa",
+                requireFullName: true,
+                noNumbers: true,
                 section: "Dados pessoais",
               }
             : field.name === "status"
@@ -324,6 +326,7 @@ export const resources = [
         type: "text",
         placeholder: "Nome do colaborador",
         required: true,
+        requireFullName: true,
         noNumbers: true,
       },
       {

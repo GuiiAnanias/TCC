@@ -18,7 +18,7 @@ export const projetoQuerySchema = paginationQuerySchema.extend({
   clienteId: z.coerce.number().int().positive().optional(),
 });
 
-export const projetoCreateSchema = z.object({
+const projetoBaseSchema = z.object({
   clienteId: z.coerce.number().int().positive("Cliente e obrigatorio."),
   nome: z.string().trim().min(2, "Nome do projeto deve ter ao menos 2 caracteres."),
   tipoContrato: tipoContratoSchema,
@@ -29,7 +29,22 @@ export const projetoCreateSchema = z.object({
   equipeInicial: equipeInicialSchema.optional(),
 });
 
-export const projetoUpdateSchema = projetoCreateSchema
+export const projetoCreateSchema = projetoBaseSchema.superRefine((data, ctx) => {
+  const inicioProjeto = data.dataInicio.toISOString().slice(0, 10);
+  (data.equipeInicial ?? []).forEach((member, index) => {
+    const entrada = member.dataEntrada.toISOString().slice(0, 10);
+    if (entrada < inicioProjeto) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["equipeInicial", index, "dataEntrada"],
+        message:
+          "A data de entrada do colaborador não pode ser anterior à data de início do projeto.",
+      });
+    }
+  });
+});
+
+export const projetoUpdateSchema = projetoBaseSchema
   .extend({
     status: statusProjetoSchema.optional(),
     equipeInicial: z.never().optional(),

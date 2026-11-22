@@ -19,6 +19,10 @@ test("individual validation requires CPF and rejects company data", () => {
   for (const cpf of ["11111111111", "00000000000", "52998224726", "529982247", "abc52998224725"])
     assert.equal(isValidCpf(cpf), false);
   assert.equal(clienteCreateSchema.safeParse({ tipoPessoa: "PF", nome: "Pessoa" }).success, false);
+  assert.equal(
+    clienteCreateSchema.safeParse({ tipoPessoa: "PF", nome: "Pessoa", cpf: "52998224725" }).success,
+    false,
+  );
   assert.equal(clienteCreateSchema.safeParse({ ...data, cnpj: "00000000000191" }).success, false);
   assert.equal(clienteCreateSchema.safeParse({ ...data, nomeFantasia: "Empresa" }).success, false);
   assert.equal(

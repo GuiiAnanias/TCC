@@ -233,6 +233,11 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
     if (!activeCollaborators.some((person) => String(person.id) === String(formData.colaboradorId)))
       missing.colaboradorId = "Selecione um colaborador disponível.";
     if (!roles.includes(formData.papel)) missing.papel = "Selecione um papel no projeto.";
+    const projectStart = toInputDate(project?.dataInicio);
+    if (projectStart && formData.dataEntrada && formData.dataEntrada < projectStart) {
+      missing.dataEntrada =
+        "A data de entrada do colaborador não pode ser anterior à data de início do projeto.";
+    }
     setSelectionErrors(missing);
     if (Object.keys(missing).length) {
       document.getElementById(`team-${Object.keys(missing)[0]}`)?.focus();
@@ -508,14 +513,24 @@ export function EquipeProjeto({ project, onChanged, onClose, pendencia = null })
         <label className="field">
           <span>Data de entrada</span>
           <input
+            id="team-dataEntrada"
             type="date"
+            min={toInputDate(project?.dataInicio) || undefined}
+            aria-invalid={Boolean(selectionErrors.dataEntrada)}
+            aria-describedby={selectionErrors.dataEntrada ? "team-dataEntrada-error" : undefined}
             value={formData.dataEntrada}
             required
             disabled={isInactive || loading || saving || Boolean(loadError)}
-            onChange={(event) =>
-              setFormData((current) => ({ ...current, dataEntrada: event.target.value }))
-            }
+            onChange={(event) => {
+              setSelectionErrors((current) => ({ ...current, dataEntrada: "" }));
+              setFormData((current) => ({ ...current, dataEntrada: event.target.value }));
+            }}
           />
+          {selectionErrors.dataEntrada && (
+            <small id="team-dataEntrada-error" role="alert">
+              {selectionErrors.dataEntrada}
+            </small>
+          )}
         </label>
 
         <button

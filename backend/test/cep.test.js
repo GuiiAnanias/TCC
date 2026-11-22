@@ -10,7 +10,7 @@ test("telephone accepts landlines and mobiles with DDD, rejects incomplete and e
   assert.equal(formatTelefone("abc"), "");
   assert.equal(formatTelefone("119"), "(11) 9");
   assert.equal(formatTelefone("(11) 3333-1234 / (11) 99999-1234"), "(11) 3333-1234");
-  const base = { tipoPessoa: "PF", nome: "Pessoa", cpf: "52998224725" };
+  const base = { tipoPessoa: "PF", nome: "Pessoa Teste", cpf: "52998224725" };
   assert.equal(
     clienteCreateSchema.parse({ ...base, telefone: "(11) 99999-1234" }).telefone,
     "11999991234",

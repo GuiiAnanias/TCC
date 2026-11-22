@@ -5,6 +5,7 @@
  */
 
 import { clientesRepository } from "../repositories/clientesRepository.js";
+import { MENSAGEM_NOME_SOBRENOME, temNomeESobrenome } from "../schemas/comunsSchemas.js";
 import { ErroHttp } from "../utils/ErroHttp.js";
 
 // [ERRO] Cliente inexistente: 404 "Cliente não encontrado."
@@ -85,6 +86,12 @@ export const clientesService = {
       )
         throw new ErroHttp(400, "Dados de empresa não pertencem a uma pessoa física.");
       if (data.cpf === null) throw new ErroHttp(400, "Informe o CPF.");
+      if (data.nome !== undefined && /\p{N}/u.test(data.nome)) {
+        throw new ErroHttp(400, "Nome não pode conter números.");
+      }
+      if (data.nome !== undefined && !temNomeESobrenome(data.nome)) {
+        throw new ErroHttp(400, MENSAGEM_NOME_SOBRENOME);
+      }
       if (data.cpf) {
         const duplicate = await clientesRepository.findByCpf(data.cpf);
         if (duplicate && duplicate.id !== id)
