@@ -630,8 +630,13 @@ a.secondary-button {
   background: var(--surface);
   outline: none;
   resize: none;
-  line-height: 1.45;
   font: inherit;
+  /* Uma linha fica com a mesma altura dos campos ao lado (2,375rem). */
+  line-height: 1.4;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease,
+    background 0.16s ease;
 }
 .texto-auto:hover:not(:disabled):not(:focus) {
   border-color: var(--line-hover);

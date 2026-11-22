@@ -1297,7 +1297,10 @@ export function CadastroPage({ config }) {
                 ) : (
                   <div className="form-grid">
                     {visibleFields.map((field) => (
-                      <label key={field.name} className="field">
+                      <label
+                        key={field.name}
+                        className={`field ${field.type === "texto-longo" ? "field-wide" : ""}`}
+                      >
                         <span>{field.label}</span>
                         {renderField(field)}
                         {fieldErrors[field.name] && (
