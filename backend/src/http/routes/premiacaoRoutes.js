@@ -13,6 +13,7 @@ import {
   awardUpdateSchema,
   awardCloseSchema,
   awardQuerySchema,
+  awardProjectsQuerySchema,
 } from "../../schemas/premiacaoSchemas.js";
 export const premiacaoRoutes = Router();
 premiacaoRoutes.get("/modelos", (req, res) => res.json(repository.templates()));
@@ -30,6 +31,13 @@ premiacaoRoutes.get(
   "/",
   tratarAssincrono(async (req, res) =>
     res.json(await repository.list(awardQuerySchema.parse(req.query))),
+  ),
+);
+// Antes de "/:id": projetos que podem entrar na avaliação da pessoa naquela competência.
+premiacaoRoutes.get(
+  "/projetos",
+  tratarAssincrono(async (req, res) =>
+    res.json(await repository.projectsForPerson(awardProjectsQuerySchema.parse(req.query))),
   ),
 );
 premiacaoRoutes.get(

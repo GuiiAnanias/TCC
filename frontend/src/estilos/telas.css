@@ -126,6 +126,22 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Papel da pessoa no projeto naquele mês, ao lado do nome; em vermelho quando o projeto já
+   selecionado ficou fora da equipe no mês (precisa ser desmarcado). */
+.award-choice-hint {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.award-choice-role {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.award-choice-fora {
+  color: var(--danger);
+  font-weight: 500;
+}
 .award-choices-empty {
   grid-column: 1 / -1;
   margin: 6px 0;

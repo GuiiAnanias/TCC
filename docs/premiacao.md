@@ -62,6 +62,8 @@ percentual final = percentual-base × elegibilidade ÷ 100
 
 A avaliação escolhe pessoa, competência (mês), categoria, projetos e, opcionalmente, sprints. Sem sprint escolhida, entram todas as sprints e as tarefas sem sprint dos projetos.
 
+Só podem entrar projetos em que a pessoa participou da equipe em algum dia da competência, com um papel da categoria avaliada. A categoria **PO/SM** vale para quem conduz o time (Product Owner, Scrum Master, Gerente de Projeto, Tech Lead e Líder Técnico); a categoria **Dev**, para os demais papéis. Quem foi Product Owner num projeto não entra nele numa avaliação Dev, e vice-versa. Quem teve os dois tipos de papel no mês pode ter uma avaliação de cada categoria, cada uma com os seus projetos. Numa avaliação nova, a tela sugere a categoria do papel que a pessoa mais exerceu no mês. A tela lista apenas esses projetos, com o papel da pessoa no mês; ao trocar a pessoa ou a competência de uma avaliação nova, projetos que deixaram de valer saem da seleção. A API recusa um projeto fora da equipe no mês ("… não participou da equipe de … Escolha apenas projetos da pessoa no mês.") ou com papel de outra categoria ("Na avaliação Dev, entram só projetos em que … teve um papel dessa categoria …"). Avaliações concluídas antes dessa regra continuam como foram gravadas.
+
 Ao salvar o rascunho, o sistema consulta os dados atuais e grava uma cópia da base: data da consulta, projetos, papéis da pessoa no mês, sprints, tarefas e os indicadores de tarefas do dashboard ([indicadores.md](indicadores.md)).
 
 - **Dev**: tarefas em que a pessoa é responsável ou lançou horas; as horas são as dela no mês. Estimativas usam o contexto completo de tarefas compartilhadas.
@@ -82,6 +84,7 @@ Projetos usados em avaliações ficam registrados em `projetos_avaliacoes` e nã
 ```txt
 GET  /api/premiacoes/modelos
 GET  /api/premiacoes/regras
+GET  /api/premiacoes/projetos        ?colaboradorId=&competencia=AAAA-MM (projetos da pessoa no mês, com os papéis e as categorias)
 POST /api/premiacoes/regras          nome, categoria (DEV|PO_SM), pontuacaoBase, criterios, faixas
 GET  /api/premiacoes                 ?colaboradorId=&competencia=AAAA-MM&categoria=&status=RASCUNHO|CONCLUIDA
 GET  /api/premiacoes/:id

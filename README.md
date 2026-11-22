@@ -495,6 +495,7 @@ Premiação:
 ```txt
 GET    /premiacoes/modelos
 GET    /premiacoes/regras
+GET    /premiacoes/projetos
 POST   /premiacoes/regras
 GET    /premiacoes
 POST   /premiacoes

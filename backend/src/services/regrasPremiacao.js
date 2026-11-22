@@ -129,6 +129,18 @@ export const premiacaoTemplates = {
   },
 };
 
+// Papéis que conduzem o time são avaliados pela categoria PO/SM; os demais, pela categoria Dev.
+// A pessoa só entra numa avaliação pelos projetos em que teve um papel da categoria no mês.
+export const PAPEIS_PO_SM = [
+  "Product Owner",
+  "Scrum Master",
+  "Gerente de Projeto",
+  "Tech Lead",
+  "Líder Técnico",
+];
+export const categoriaDoPapel = (papel) => (PAPEIS_PO_SM.includes(papel) ? "PO_SM" : "DEV");
+export const NOME_CATEGORIA = { DEV: "Dev", PO_SM: "PO/SM" };
+
 export const round = (value) => Math.round((value + Number.EPSILON) * 10000) / 10000;
 // [REGRA] Nota = pontuação-base - deduções dos critérios com ocorrência; percentual final =
 // percentual-base x elegibilidade / 100. Com critério a conferir, a nota é provisória.
