@@ -103,6 +103,7 @@ export const resources = [
                 label: "Nome completo",
                 placeholder: "Nome completo da pessoa",
                 requireFullName: true,
+                noNumbers: true,
                 section: "Dados pessoais",
               }
             : field.name === "status"

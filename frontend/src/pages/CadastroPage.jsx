@@ -594,6 +594,8 @@ export function CadastroPage({ config }) {
         ].includes(field.type);
         missing[field.name] =
           `${isSelectField ? "Selecione" : "Informe"} ${field.label.toLocaleLowerCase("pt-BR")}.`;
+      } else if ((field.noNumbers || field.requireFullName) && /\p{N}/u.test(value)) {
+        missing[field.name] = "Nome não pode conter números.";
       } else if (field.requireFullName && value && !temNomeESobrenome(value)) {
         missing[field.name] = "Informe no mínimo um nome e sobrenome.";
       }

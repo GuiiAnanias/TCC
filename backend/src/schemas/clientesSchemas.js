@@ -89,7 +89,13 @@ const companyFields = [
 // aceita CPF.
 function validatePersonFields(data, ctx) {
   if (data.tipoPessoa === "PF") {
-    if (data.nome !== undefined && !temNomeESobrenome(data.nome)) {
+    if (data.nome !== undefined && /\p{N}/u.test(data.nome)) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["nome"],
+        message: "Nome não pode conter números.",
+      });
+    } else if (data.nome !== undefined && !temNomeESobrenome(data.nome)) {
       ctx.addIssue({
         code: "custom",
         path: ["nome"],

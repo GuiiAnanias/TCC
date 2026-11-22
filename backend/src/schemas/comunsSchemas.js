@@ -22,9 +22,8 @@ export const paginationQuerySchema = z.object({
 export const MENSAGEM_NOME_SOBRENOME = "Informe no mínimo um nome e sobrenome.";
 
 export function temNomeESobrenome(value) {
-  const partes = String(value ?? "")
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
+  const texto = String(value ?? "").trim();
+  if (/\p{N}/u.test(texto)) return false;
+  const partes = texto.split(/\s+/).filter(Boolean);
   return partes.length >= 2 && partes.every((parte) => /\p{L}/u.test(parte));
 }
