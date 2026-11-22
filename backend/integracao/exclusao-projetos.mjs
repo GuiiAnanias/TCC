@@ -18,6 +18,8 @@ if (!["localhost", "127.0.0.1", "[::1]"].includes(originalUrl.hostname))
 const schema = `project_delete_test_${Date.now().toString(36)}`;
 if (!/^project_delete_test_[a-z0-9]+$/.test(schema)) throw new Error("Schema temporário inválido.");
 const MIGRACAO_CONTRATOS = "20261111010000_tipos_contrato_genericos";
+// Migrações que o seed de demonstração já usa: entram antes dele, como a dos contratos.
+const MIGRACOES_DO_SEED = [MIGRACAO_CONTRATOS, "20261122120000_descricao_sprint"];
 const admin = new PrismaClient();
 let client;
 let created = false;
@@ -39,11 +41,11 @@ try {
     withFileTypes: true,
   }).filter(
     // As migrações a partir das referências entram depois do seed, na ordem original.
-    // A dos tipos de contrato entra antes, porque o seed já usa os tipos genéricos.
+    // As que o seed já usa (tipos de contrato, descrição da sprint) entram antes.
     (item) =>
       item.isDirectory() &&
       (item.name < "20261107010000_referencias_projetos_avaliacoes" ||
-        item.name === MIGRACAO_CONTRATOS),
+        MIGRACOES_DO_SEED.includes(item.name)),
   )) {
     const target = path.join(temporaryProject, "migrations", directory.name);
     mkdirSync(target);
@@ -88,7 +90,7 @@ try {
       (item) =>
         item.isDirectory() &&
         item.name >= "20261107010000_referencias_projetos_avaliacoes" &&
-        item.name !== MIGRACAO_CONTRATOS,
+        !MIGRACOES_DO_SEED.includes(item.name),
     )
     .map((item) => item.name)) {
     mkdirSync(path.join(temporaryProject, "migrations", migrationName));
