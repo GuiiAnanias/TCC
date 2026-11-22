@@ -6,12 +6,29 @@ import {
   STATUS_TAREFA,
   contar,
   fatias,
+  larguraEixoValores,
   mesCurto,
   mesLongo,
   orcamentoPorProjeto,
   principaisEOutros,
   ranking,
 } from "../src/utils/dadosGraficos.js";
+
+test("eixo de valores fica largo o bastante para o maior rótulo em reais", () => {
+  const compacto = new Intl.NumberFormat("pt-BR", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  });
+  const reais = (valor) => `R$ ${compacto.format(valor)}`;
+  // "R$ 220 mil" tem 10 caracteres: não cabe nos 64 px fixos de antes.
+  const largura = larguraEixoValores([140000, 207500, 198000], reais);
+  assert.ok(largura >= reais(220000).length * 7, `largura ${largura}`);
+  assert.ok(largura > 64);
+  // Valores pequenos não deixam o eixo menor que o mínimo.
+  assert.equal(larguraEixoValores([5], reais, { minimo: 80 }), 80);
+  // Sem dados, também usa o mínimo.
+  assert.equal(larguraEixoValores([], reais, { minimo: 60 }), 60);
+});
 
 test("meses aparecem abreviados no eixo e por extenso na dica", () => {
   assert.equal(mesCurto("2026-10"), "out/26");

@@ -95,6 +95,17 @@ export function contar(lista, chave) {
 }
 
 /**
+ * Largura do eixo de valores para o maior rótulo caber sem cortar (ex.: "R$ 220 mil").
+ * O eixo arredonda o topo para cima, então a conta considera uma folga sobre o maior valor.
+ * Os rótulos usam 12 px: cerca de 7 px por caractere, mais o espaço até a marca.
+ */
+export function larguraEixoValores(valores, formatar, { minimo = 48 } = {}) {
+  const maior = Math.max(0, ...(valores ?? []).map(Number).filter(Number.isFinite));
+  const letras = Math.max(...[maior, maior * 1.25].map((valor) => formatar(valor).length));
+  return Math.max(minimo, Math.ceil(letras * 7) + 10);
+}
+
+/**
  * Orçamento integral × custo do recorte, por projeto, dos que têm orçamento ou custo.
  * Os maiores custos primeiro; passando do limite, mostra só os maiores.
  */

@@ -24,6 +24,7 @@ import {
   STATUS_TAREFA,
   contar,
   fatias,
+  larguraEixoValores,
   mesCurto,
   mesLongo,
   orcamentoPorProjeto,
@@ -143,7 +144,10 @@ function CustoPorMes({ evolucao }) {
               tick={eixo}
               tickLine={false}
               axisLine={false}
-              width={64}
+              width={larguraEixoValores(
+                dados.map((row) => row.custo),
+                reaisCurto,
+              )}
               tickFormatter={(value) => reaisCurto(value)}
             />
             <Tooltip

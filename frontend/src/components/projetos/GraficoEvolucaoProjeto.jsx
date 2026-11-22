@@ -16,11 +16,13 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { larguraEixoValores } from "../../utils/dadosGraficos.js";
 
 const money = (value) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 const compact = (value) =>
   new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+const reais = (value) => `R$ ${compact(value)}`;
 
 /** Custo de cada mês (base + bonificação) e custo acumulado, com a linha do orçamento. */
 export default function GraficoEvolucaoProjeto({ rows, budget, label }) {
@@ -37,8 +39,8 @@ export default function GraficoEvolucaoProjeto({ rows, budget, label }) {
         <YAxis
           domain={[0, Math.ceil(highest * 1.1) || 1]}
           tick={{ fill: "var(--muted)", fontSize: 12 }}
-          tickFormatter={(value) => `R$ ${compact(value)}`}
-          width={80}
+          tickFormatter={reais}
+          width={larguraEixoValores([highest], reais, { minimo: 80 })}
         />
         <Tooltip
           contentStyle={{
