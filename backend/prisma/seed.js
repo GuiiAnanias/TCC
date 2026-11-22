@@ -1,6 +1,6 @@
 /**
  * [BANCO] Seed: popula o banco com os dados de demonstração e a conta admin/admin123. Rodar na
- * pasta backend com `corepack pnpm run seed`. Rodar de novo não duplica nem redefine a senha da
+ * pasta backend com `corepack pnpm run seed:demo`. Rodar de novo não duplica nem redefine a senha da
  * conta.
  */
 

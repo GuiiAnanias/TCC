@@ -32,6 +32,11 @@ corepack pnpm run seed
 corepack pnpm run dev
 ```
 
+O comando `seed` carrega os dados completos de apresentação em um PostgreSQL local
+com as migrações aplicadas. Se o schema já tiver dados, ele recusa a execução sem
+alterá-los. Veja [Seed principal de apresentação](#seed-principal-de-apresentação)
+para a opção de recriação explícita e a diferença para o seed mínimo dos testes.
+
 A API ficará disponível em:
 
 ```txt
@@ -58,11 +63,11 @@ http://localhost:5173
 
 ### Login e proteção de acesso
 
-Após executar o seed, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha `admin123`. O seed também cria `admin2` (`admin2@sistema.local`, mesma senha), útil para demonstrar o bloqueio por tentativas numa conta e seguir usando a outra. Executar o seed novamente não redefine uma conta existente.
+Após executar o seed principal, use usuário `admin` (ou e-mail `admin@sistema.local`) e senha fictícia `Admin123@`. O seed também cria `admin2` (`admin2@sistema.local`, mesma senha), útil para demonstrar o bloqueio por tentativas numa conta e seguir usando a outra. Sem `--apagar-tudo`, executar o seed novamente recusa a operação e preserva os dados existentes. O seed mínimo `seed:demo` mantém a senha antiga `admin123` e não redefine contas existentes.
 
 As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A sessão é validada pela API antes de exibir o sistema e permanece na mesma aba durante recargas, até expirar ou clicar em **Sair**. Não há tela de cadastro de usuários: as contas vêm do seed. Sessões, limites de tentativas e regras de senha estão em [docs/seguranca.md](docs/seguranca.md).
 
-Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "admin123" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
+Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "Admin123@" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
 
 Para testar a autenticação e a proteção da API com banco simulado, execute `corepack pnpm test` na pasta `backend`.
 
@@ -224,7 +229,8 @@ sistema-indicadores/
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   ├── migrations/
-│   │   └── seed.js               # seed-demonstracao, seed-empresas e seed-premiacao
+│   │   ├── seed-banca.mjs        # seed principal de apresentação
+│   │   └── seed.js               # seed mínimo: seed-demonstracao, seed-empresas e seed-premiacao
 │   ├── src/
 │   │   ├── app.js
 │   │   ├── server.js
@@ -760,14 +766,48 @@ refactor: reorganização interna
 chore: configuração ou manutenção
 ```
 
-## Dados de demonstração e conferência dos indicadores
+## Seed principal de apresentação
+
+Em uma instalação nova, depois de configurar o `.env` e iniciar o PostgreSQL local,
+execute na pasta `backend`:
+
+```powershell
+corepack pnpm run prisma:migrate
+corepack pnpm run prisma:generate
+corepack pnpm run seed
+```
+
+`seed` executa `prisma/seed-banca.mjs`: cria 30 clientes, 45 colaboradores,
+30 projetos, históricos financeiros, equipes, sprints, tarefas e mais de sete mil
+apontamentos. Inclui regras e avaliações de premiação, histórico de importações,
+histórico de apontamentos e 22 relatórios gerados. Os dados são fictícios, com datas
+fixas de janeiro de 2025 a novembro de 2026; o histórico financeiro de um colaborador
+começa em 2015. Os acessos são `admin` e `admin2`, ambos com senha fictícia `Admin123@`.
+
+O seed só aceita PostgreSQL local e atua no schema indicado por `DATABASE_URL`
+(`public` por padrão). Se qualquer tabela desse schema já tiver registros, ele
+recusa a execução e não altera nada. Não é necessário recriar um banco já preparado
+para atualizar o código do sistema.
+
+Para **apagar os dados e recriar a demonstração**, confira `DATABASE_URL`, pare a API
+e execute apenas quando a perda dos dados desse schema tiver sido autorizada:
+
+```powershell
+corepack pnpm run seed --apagar-tudo
+```
+
+O seed antigo continua disponível como `corepack pnpm run seed:demo`. Ele é menor,
+aditivo e usado nas integrações automatizadas existentes. Seus números de referência
+estão na seção seguinte; eles não se aplicam ao seed principal de apresentação.
+
+## Seed mínimo e conferência dos indicadores
 
 Com o PostgreSQL iniciado e o `.env` configurado, execute na pasta `backend`:
 
 ```powershell
 corepack pnpm run prisma:migrate
 corepack pnpm run prisma:generate
-corepack pnpm run seed
+corepack pnpm run seed:demo
 ```
 
 O seed acrescenta cenários sem apagar dados, redefinir a senha de contas existentes

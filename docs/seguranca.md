@@ -4,7 +4,7 @@
 
 - O login aceita nome de usuário ou e-mail e a senha. A conta precisa estar ativa.
 - As senhas são guardadas só como hash bcrypt. Usuário inexistente, senha errada e conta inativa recebem a mesma mensagem ("Usuário ou senha inválidos."), e a comparação de senha é feita mesmo quando o usuário não existe, para não revelar quais contas existem.
-- As contas vêm do seed (`admin` e `admin2`, ambas com senha `admin123` numa base nova; a segunda serve para continuar a demonstração enquanto a primeira está bloqueada por tentativas). Não há tela de cadastro de usuários.
+- As contas vêm do seed (`admin` e `admin2`, ambas com senha fictícia `Admin123@` no seed principal; no seed mínimo `seed:demo`, a senha inicial continua `admin123`). A segunda conta serve para continuar a demonstração enquanto a primeira está bloqueada por tentativas. Não há tela de cadastro de usuários.
 - A opção "Lembrar meu usuário" guarda só o identificador no navegador ([login.md](login.md)).
 
 ## Sessões
@@ -65,4 +65,4 @@ A API não confia no cabeçalho `X-Forwarded-For`: atrás de um proxy reverso, t
 - A API aceita chamadas de qualquer origem (CORS padrão); o controle de acesso é feito pelo token.
 - As consultas de CNPJ (ReceitaWS) e de CEP (ViaCEP) saem do backend e enviam apenas o documento ou o CEP consultado.
 - A planilha exportada contém custos internos e valor/hora e é marcada como de uso interno.
-- O seed usa pessoas, valores e horas fictícios. Os dois CNPJs do seed são dados públicos de empresas, usados sem relação com os projetos de exemplo.
+- O seed principal usa clientes, pessoas, valores e horas fictícios. O seed mínimo `seed:demo` mantém dois CNPJs públicos de empresas, usados sem relação com os projetos de exemplo.
