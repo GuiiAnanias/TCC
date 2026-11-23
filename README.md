@@ -2,34 +2,37 @@
 
 ## Guia rápido para rodar o projeto
 
-Use os comandos abaixo no PowerShell, a partir da pasta raiz do projeto.
+Use os comandos abaixo no Git Bash, a partir da pasta raiz do projeto.
 
-### 1. Habilitar o gerenciador de pacotes
+### 1. Instalar o gerenciador de pacotes
 
-```powershell
-corepack enable
+Instale o Node.js 22 e depois o pnpm na versão usada pelo projeto:
+
+```bash
+npm install --global pnpm@11.19.0
+pnpm --version
 ```
 
-> Se o comando `pnpm` não for reconhecido no terminal, use sempre `corepack pnpm`, como nos exemplos abaixo.
+> Os comandos usam `pnpm` diretamente. Se acabou de instalar o Node.js e o terminal não reconhecer `npm`, reabra o Git Bash antes de continuar.
 
 ### 2. Subir o banco PostgreSQL
 
 Abra o Docker Desktop e execute:
 
-```powershell
+```bash
 docker compose up -d postgres
 ```
 
 ### 3. Configurar e rodar o back-end
 
-```powershell
+```bash
 cd backend
-corepack pnpm install
-Copy-Item .env.example .env
-corepack pnpm run prisma:generate
-corepack pnpm run prisma:migrate
-corepack pnpm run seed
-corepack pnpm run dev
+pnpm install
+cp .env.example .env
+pnpm run prisma:generate
+pnpm run prisma:migrate
+pnpm run seed
+pnpm run dev
 ```
 
 O comando `seed` carrega os dados completos de apresentação em um PostgreSQL local
@@ -48,11 +51,11 @@ http://localhost:3333/api/health
 
 Em outro terminal:
 
-```powershell
+```bash
 cd frontend
-corepack pnpm install
-Copy-Item .env.example .env
-corepack pnpm run dev
+pnpm install
+cp .env.example .env
+pnpm run dev
 ```
 
 Abra o sistema no navegador:
@@ -69,7 +72,7 @@ As páginas internas exigem login, inclusive ao abrir o endereço diretamente. A
 
 Configure `JWT_SECRET` no `.env` do backend. Para usar a API ou o Postman, envie `POST /api/auth/login` com `{ "login": "admin", "senha": "Admin123@" }` e use o `token` retornado em `Authorization: Bearer <token>`. `GET /api/auth/me` consulta a conta autenticada. Todas as rotas de negócio, incluindo opções de cadastro, exigem token válido de uma conta ativa; `/api/health` é público.
 
-Para testar a autenticação e a proteção da API com banco simulado, execute `corepack pnpm test` na pasta `backend`.
+Para testar a autenticação e a proteção da API com banco simulado, execute `pnpm test` na pasta `backend`.
 
 #### Esqueci minha senha
 
@@ -79,8 +82,8 @@ Em desenvolvimento e na demonstração, os e-mails vão para o **Mailpit**, que 
 
 Quem administra o servidor também pode gerar o link manualmente na pasta `backend`, informando o usuário ou o e-mail:
 
-```powershell
-corepack pnpm run senha:link admin
+```bash
+pnpm run senha:link admin
 ```
 
 O comando imprime um link para a tela `/redefinir-senha`, válido por 30 minutos e de uso único. O endereço do front vem de `FRONTEND_URL` no `.env` (padrão `http://localhost:5173`). Só o hash do token fica salvo em `usuarios.resetToken`, e gerar um novo link invalida o anterior.
@@ -89,9 +92,9 @@ O comando imprime um link para a tela `/redefinir-senha`, válido por 30 minutos
 
 Em outro terminal, com o banco e o back-end configurados:
 
-```powershell
+```bash
 cd backend
-corepack pnpm run prisma:studio
+pnpm run prisma:studio
 ```
 
 Abra o Prisma Studio no navegador:
@@ -216,7 +219,6 @@ Docker
 Prisma Studio
 Postman
 pnpm
-Corepack
 ```
 
 ---
@@ -672,27 +674,27 @@ baseUrl = http://localhost:3333/api
 
 Back-end:
 
-```powershell
-corepack pnpm run dev
-corepack pnpm run start
-corepack pnpm run prisma:generate
-corepack pnpm run prisma:migrate
-corepack pnpm run prisma:studio
-corepack pnpm run seed
-corepack pnpm run senha:link admin
-corepack pnpm test
-corepack pnpm run format
-corepack pnpm run lint
+```bash
+pnpm run dev
+pnpm run start
+pnpm run prisma:generate
+pnpm run prisma:migrate
+pnpm run prisma:studio
+pnpm run seed
+pnpm run senha:link admin
+pnpm test
+pnpm run format
+pnpm run lint
 ```
 
 Front-end:
 
-```powershell
-corepack pnpm run dev
-corepack pnpm run build
-corepack pnpm run preview
-corepack pnpm run format
-corepack pnpm run lint
+```bash
+pnpm run dev
+pnpm run build
+pnpm run preview
+pnpm run format
+pnpm run lint
 ```
 
 ---
@@ -725,7 +727,7 @@ No GitHub ficam só `main` e `develop` de forma permanente. A branch `feature/..
 
 Rotina:
 
-```powershell
+```bash
 git switch develop
 git pull
 git switch -c feature/nome-da-funcionalidade
@@ -744,9 +746,9 @@ Recomendações:
 
 O código segue o Prettier (formatação) e o ESLint (erros comuns). Antes de commitar, rode na pasta que você alterou (`backend` ou `frontend`):
 
-```powershell
-corepack pnpm run format
-corepack pnpm run lint
+```bash
+pnpm run format
+pnpm run lint
 ```
 
 O `format` arruma a formatação sozinho. O `lint` lista o que precisa de correção: erro bloqueia, aviso não. No VS Code, a extensão Prettier com "Format On Save" faz o `format` a cada salvamento.
@@ -771,10 +773,10 @@ chore: configuração ou manutenção
 Em uma instalação nova, depois de configurar o `.env` e iniciar o PostgreSQL local,
 execute na pasta `backend`:
 
-```powershell
-corepack pnpm run prisma:migrate
-corepack pnpm run prisma:generate
-corepack pnpm run seed
+```bash
+pnpm run prisma:migrate
+pnpm run prisma:generate
+pnpm run seed
 ```
 
 `seed` executa `prisma/seed-banca.mjs`: cria 30 clientes, 45 colaboradores,
@@ -792,11 +794,11 @@ para atualizar o código do sistema.
 Para **apagar os dados e recriar a demonstração**, confira `DATABASE_URL`, pare a API
 e execute apenas quando a perda dos dados desse schema tiver sido autorizada:
 
-```powershell
-corepack pnpm run seed --apagar-tudo
+```bash
+pnpm run seed --apagar-tudo
 ```
 
-O seed antigo continua disponível como `corepack pnpm run seed:demo`. Ele é menor,
+O seed antigo continua disponível como `pnpm run seed:demo`. Ele é menor,
 aditivo e usado nas integrações automatizadas existentes. Seus números de referência
 estão na seção seguinte; eles não se aplicam ao seed principal de apresentação.
 
@@ -804,10 +806,10 @@ estão na seção seguinte; eles não se aplicam ao seed principal de apresenta�
 
 Com o PostgreSQL iniciado e o `.env` configurado, execute na pasta `backend`:
 
-```powershell
-corepack pnpm run prisma:migrate
-corepack pnpm run prisma:generate
-corepack pnpm run seed:demo
+```bash
+pnpm run prisma:migrate
+pnpm run prisma:generate
+pnpm run seed:demo
 ```
 
 O seed acrescenta cenários sem apagar dados, redefinir a senha de contas existentes
@@ -903,19 +905,19 @@ O fluxo recomendado é popular uma base limpa e depois experimentar as alteraç�
 Na pasta `backend`, os comandos abaixo usam um schema temporário no PostgreSQL local,
 aplicam as migrações e removem somente o schema de teste ao terminar:
 
-```powershell
-corepack pnpm test
-corepack pnpm run test:seed-db
-corepack pnpm run test:dashboard-db
-corepack pnpm run test:tasks-db
-corepack pnpm run test:hours-db
-corepack pnpm run test:excel-db
-corepack pnpm run test:auth-db
-corepack pnpm run test:team-db
-corepack pnpm run test:finance-db
-corepack pnpm run test:invoiced-costs-db
-corepack pnpm run test:project-deletion-db
-corepack pnpm run test:awards-db
+```bash
+pnpm test
+pnpm run test:seed-db
+pnpm run test:dashboard-db
+pnpm run test:tasks-db
+pnpm run test:hours-db
+pnpm run test:excel-db
+pnpm run test:auth-db
+pnpm run test:team-db
+pnpm run test:finance-db
+pnpm run test:invoiced-costs-db
+pnpm run test:project-deletion-db
+pnpm run test:awards-db
 ```
 
 As verificações de integração exigem PostgreSQL local em execução e `DATABASE_URL`
@@ -951,8 +953,8 @@ API autenticada: `GET /api/premiacoes/modelos`, `GET/POST /api/premiacoes/regras
 
 Depois de aplicar as migrações, o seed completo inclui os exemplos de avaliação.
 Em uma base demo já existente, `node scripts/seed-premiacao-local.mjs` acrescenta apenas
-os exemplos de premiação. Verificação: `corepack pnpm test`, `corepack pnpm run test:awards-db` e
-`corepack pnpm run test:seed-db` no backend; `corepack pnpm run build` no frontend.
+os exemplos de premiação. Verificação: `pnpm test`, `pnpm run test:awards-db` e
+`pnpm run test:seed-db` no backend; `pnpm run build` no frontend.
 As integrações criam e removem somente schemas temporários no PostgreSQL local.
 
 Critérios, cálculo e fluxo completos estão em [docs/premiacao.md](docs/premiacao.md).

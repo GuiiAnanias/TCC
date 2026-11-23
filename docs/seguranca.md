@@ -44,7 +44,7 @@ A API não confia no cabeçalho `X-Forwarded-For`: atrás de um proxy reverso, t
 
 - Nova senha: ao menos 8 caracteres, uma letra maiúscula, um número e um símbolo (qualquer caractere que não seja letra, número ou espaço, como `! @ # $ %`), e no máximo 72 bytes UTF-8 (limite do bcrypt; acentos e emojis ocupam mais de um byte). As regras são conferidas na API e repetidas na tela. Senhas já cadastradas continuam entrando; as regras valem ao definir uma senha nova.
 - Em **Esqueci minha senha**, o usuário informa o e-mail e recebe o link por e-mail. A resposta é a mesma para e-mails cadastrados ou não, e o envio acontece depois da resposta, para que nem o conteúdo nem o tempo revelem quais e-mails existem. Contas inativas não recebem link. Falhas de envio ficam só no log do servidor.
-- Quem administra o servidor também pode gerar o link com `corepack pnpm run senha:link <usuário ou e-mail>`, na pasta `backend`.
+- Quem administra o servidor também pode gerar o link com `pnpm run senha:link <usuário ou e-mail>`, na pasta `backend`.
 - O link vale 30 minutos e só pode ser usado uma vez. A tela de redefinição confere o link assim que abre (`POST /api/auth/redefinir-senha/validar`, com o token no corpo): se ele já foi usado, expirou ou é desconhecido, avisa na hora e não mostra o formulário. Conferir não consome o link. Apenas o hash SHA-256 do token fica no banco, e gerar outro link invalida o anterior.
 
 ## Integridade dos dados

@@ -40,7 +40,7 @@ A seed continua aditiva: executá-la novamente preserva as edições existentes.
 
 A migração `20261106010000_estados_contratos_projetos` cria um enum exclusivo dos projetos, mantendo Ativo/Inativo para clientes, colaboradores e outros cadastros. Também substitui os tipos de contrato anteriores a ela (Fixo/Horas/Fechado). Se encontrar essas classificações, ela **interrompe sem apagá-las ou convertê-las**. Para este ambiente local descartável, a preparação é:
 
-```powershell
+```bash
 # Somente no banco local fictício explicitamente autorizado.
 # Conferir DATABASE_URL e parar a API antes de atualizar o Prisma no Windows.
 cd backend

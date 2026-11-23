@@ -62,4 +62,4 @@ As duas primeiras somam as **inconsistências** de custo do projeto. A falta de 
 
 ## Conferência com o seed
 
-O README traz os resultados esperados do Dashboard Geral com os dados de demonstração e alterações manuais para observar cada fórmula. `corepack pnpm run test:seed-db`, na pasta `backend`, confere esses números num schema temporário.
+O README traz os resultados esperados do Dashboard Geral com os dados de demonstração e alterações manuais para observar cada fórmula. `pnpm run test:seed-db`, na pasta `backend`, confere esses números num schema temporário.

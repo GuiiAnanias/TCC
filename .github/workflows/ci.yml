@@ -16,9 +16,6 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
-
 jobs:
   backend:
     name: Backend (testes e migrations)
@@ -49,8 +46,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Habilitar pnpm
-        run: corepack enable
+      - name: Instalar pnpm
+        run: npm install --global pnpm@11.19.0
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
       - name: Formatação (Prettier)
@@ -100,8 +97,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Habilitar pnpm
-        run: corepack enable
+      - name: Instalar pnpm
+        run: npm install --global pnpm@11.19.0
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
       - name: Formatação (Prettier)

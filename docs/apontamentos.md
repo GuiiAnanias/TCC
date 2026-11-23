@@ -58,7 +58,7 @@ Alterar a equipe do projeto, uma bonificação por papel ou uma configuração f
 
 Nos dashboards e no Excel, apontamentos faturados usam a composição preservada; os demais são calculados com as vigências do dia, como explica [indicadores.md](indicadores.md).
 
-`corepack pnpm run check:invoiced-costs`, na pasta `backend`, faz uma verificação somente de leitura dos apontamentos faturados antes de aplicar migrações.
+`pnpm run check:invoiced-costs`, na pasta `backend`, faz uma verificação somente de leitura dos apontamentos faturados antes de aplicar migrações.
 
 ## API
 

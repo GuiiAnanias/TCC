@@ -1,12 +1,12 @@
 // Gera um link de redefinição de senha de uso único, válido por 30 minutos.
-// Uso, na pasta backend: corepack pnpm run senha:link admin
+// Uso, na pasta backend: pnpm run senha:link admin
 import prisma from "../src/config/prisma.js";
 import { env } from "../src/config/env.js";
 import { senhaService, VALIDADE_LINK_MINUTOS } from "../src/services/senhaService.js";
 
 const login = process.argv.slice(2).find((arg) => arg !== "--");
 if (!login) {
-  console.error("Informe o usuário ou o e-mail. Exemplo: corepack pnpm run senha:link admin");
+  console.error("Informe o usuário ou o e-mail. Exemplo: pnpm run senha:link admin");
   process.exit(1);
 }
 

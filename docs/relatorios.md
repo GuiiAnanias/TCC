@@ -143,12 +143,12 @@ O histórico responde `{ pagina, porPagina, total, paginas, itens }`. `porPagina
 
 A migração `20261108010000_relatorios_gerados` cria as duas tabelas e os gatilhos; `20261108020000_relatorios_exportacoes` cria o registro de downloads, seu gatilho e o índice por autor. Nenhuma altera dados existentes. Aplique-as e gere o Prisma Client antes de iniciar a versão atualizada:
 
-```powershell
+```bash
 cd backend
-corepack pnpm exec prisma migrate deploy
-corepack pnpm run prisma:generate
+pnpm exec prisma migrate deploy
+pnpm run prisma:generate
 ```
 
-`corepack pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto, os arquivos PDF e Excel lidos da fotografia (inclusive depois de mudar os dados), o histórico paginado e filtrado com a contagem de downloads, a proteção do registro de downloads e a API autenticada.
+`pnpm run test:reports-db`, na pasta `backend`, usa um schema temporário no PostgreSQL local. Confere os números da fotografia contra o dashboard, os blocos escolhidos, o recorte por período, a recusa do recorte vazio, a cópia inalterada depois de mudar um apontamento, a proteção no banco, o bloqueio da exclusão do projeto, os arquivos PDF e Excel lidos da fotografia (inclusive depois de mudar os dados), o histórico paginado e filtrado com a contagem de downloads, a proteção do registro de downloads e a API autenticada.
 
 O CI também executa esse teste, incluindo geração por cliente sem duplicação e geração de outra fotografia com um recorte menor.

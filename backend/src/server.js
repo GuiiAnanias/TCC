@@ -1,6 +1,6 @@
 /**
  * [INICIO] Ponto de entrada da API: sobe o servidor Express na porta do .env (PORT, padrão 3333).
- * Rodar com `corepack pnpm run dev`.
+ * Rodar com `pnpm run dev`.
  */
 
 import { app } from "./app.js";

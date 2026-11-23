@@ -18,7 +18,7 @@ export const SENHA_ATUALIZADA = "Senha atualizada com sucesso";
 const ESPERA_LOGIN = 3000;
 
 // Tela aberta pelo link recebido por e-mail ("Esqueci minha senha") ou gerado no servidor
-// com `corepack pnpm run senha:link <usuário>`. O link é conferido assim que a tela abre:
+// com `pnpm run senha:link <usuário>`. O link é conferido assim que a tela abre:
 // se não puder mais ser usado, a tela avisa e não mostra o formulário.
 export function RedefinirSenhaPage() {
   const [params] = useSearchParams();

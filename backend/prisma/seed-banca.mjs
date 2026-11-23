@@ -1,16 +1,16 @@
 /**
- * [BANCO] Seed principal (corepack pnpm run seed): dados plausíveis de uma empresa de software,
+ * [BANCO] Seed principal (pnpm run seed): dados plausíveis de uma empresa de software,
  * com volume suficiente para que todas as tabelas do sistema tenham mais de uma página (20 por
  * página; 10 no histórico de importações). Período: janeiro de 2025 até novembro de 2026.
  *
  * Uso (na pasta backend, com o Docker ligado e as migrations aplicadas):
- *   corepack pnpm run seed                  banco vazio (instalação nova)
- *   corepack pnpm run seed --apagar-tudo    recria os dados num banco que já tem registros
+ *   pnpm run seed                  banco vazio (instalação nova)
+ *   pnpm run seed --apagar-tudo    recria os dados num banco que já tem registros
  *
  * Só aceita PostgreSQL local. Com dados no schema configurado, recusa a execução sem
  * --apagar-tudo; com essa opção, recria os dados desse schema. Logins fictícios:
  * admin / Admin123@ e admin2 / Admin123@.
- * O seed menor de demonstração, usado nos testes, continua em corepack pnpm run seed:demo.
+ * O seed menor de demonstração, usado nos testes, continua em pnpm run seed:demo.
  */
 
 import "dotenv/config";
@@ -315,7 +315,7 @@ async function main() {
       if (existe)
         throw new Error(
           `O schema "${schema}" já tem dados. Nada foi alterado. ` +
-            "Para apagar e recriar esses dados, rode corepack pnpm run seed --apagar-tudo.",
+            "Para apagar e recriar esses dados, rode pnpm run seed --apagar-tudo.",
         );
     }
   }
