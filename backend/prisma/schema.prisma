@@ -1,6 +1,6 @@
 // [BANCO] Modelo do banco de dados (PostgreSQL) usado pelo Prisma. Cada model vira uma tabela (nome
 // em @@map) e cada enum, um tipo do PostgreSQL.
-// Mudanças aqui exigem uma migration nova em prisma/migrations (corepack pnpm exec prisma migrate
+// Mudanças aqui exigem uma migration nova em prisma/migrations (pnpm exec prisma migrate
 // dev --name descricao). Regras que o banco garante sozinho (gatilhos, travas de histórico) estão
 // nos arquivos migration.sql; ver docs/guia-do-codigo.md.
 

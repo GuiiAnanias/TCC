@@ -126,7 +126,7 @@ autenticacaoRoutes.post(
   },
 );
 // Rota pública: o link chega por e-mail ou é gerado no servidor com
-// `corepack pnpm run senha:link <usuário>`.
+// `pnpm run senha:link <usuário>`.
 autenticacaoRoutes.post(
   "/redefinir-senha",
   limiteAutenticacao("reset", env.authResetLimit, "token"),

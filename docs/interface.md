@@ -50,4 +50,4 @@ As fórmulas estão em [indicadores.md](indicadores.md), os filtros em [filtros.
 
 ## Testes da interface
 
-`corepack pnpm test`, na pasta `frontend`, roda os testes de componentes com jsdom, sem navegador e sem API (as respostas são simuladas). O CI também confere formatação, lint e build.
+`pnpm test`, na pasta `frontend`, roda os testes de componentes com jsdom, sem navegador e sem API (as respostas são simuladas). O CI também confere formatação, lint e build.

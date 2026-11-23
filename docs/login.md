@@ -28,7 +28,7 @@ O link **Esqueci minha senha**, na tela de login, abre a tela `/esqueci-senha`:
 - Depois de salvar a nova senha, a tela mostra "Senha atualizada com sucesso" e, em 3 segundos, volta sozinha ao login, que repete a confirmação. O link **Ir para o login** continua disponível.
 - Ao abrir o link, a tela de redefinição confere se ele ainda vale. Se já foi usado, expirou ou é desconhecido, mostra "Este link já foi usado, expirou ou não é válido." com o atalho para pedir outro, sem exibir o formulário. Se a conferência falhar por conexão, a tela oferece tentar de novo.
 
-Em desenvolvimento e na demonstração, os e-mails chegam ao Mailpit ([http://localhost:8025](http://localhost:8025)), que sobe junto do banco com `docker compose up -d`. O administrador continua podendo gerar o link manualmente com `corepack pnpm run senha:link <usuário ou e-mail>`.
+Em desenvolvimento e na demonstração, os e-mails chegam ao Mailpit ([http://localhost:8025](http://localhost:8025)), que sobe junto do banco com `docker compose up -d`. O administrador continua podendo gerar o link manualmente com `pnpm run senha:link <usuário ou e-mail>`.
 
 ## Critérios de aceite
 
